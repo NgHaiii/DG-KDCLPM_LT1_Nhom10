@@ -32,13 +32,24 @@ Route::middleware('auth')->group(function () {
     })->name('doctor.dashboard');
 
     Route::get('employee/dashboard', function () {
-        return view('employee.dashboard');
+        return view('employees.dashboard');  // ✅ SỬA: 'employee' → 'employees'
     })->name('employee.dashboard');
 
     Route::get('patient/dashboard', function () {
         return view('patient.dashboard');
     })->name('patient.dashboard');
 
-    // Quản lý nhân viên
-    Route::resource('employees', EmployeeController::class);
+    // Quản lý bác sĩ và nhân viên (Admin only)
+    Route::prefix('admin')->group(function () {
+        // Danh sách bác sĩ
+        Route::get('doctors', [EmployeeController::class, 'listDoctors'])->name('admin.doctors');
+        
+        // Danh sách nhân viên
+        Route::get('employees', [EmployeeController::class, 'listEmployees'])->name('admin.employees');
+        
+        // Thêm/sửa/xóa nhân viên hoặc bác sĩ
+        Route::post('employee/store', [EmployeeController::class, 'store'])->name('admin.employee.store');
+        Route::put('employee/{employee}', [EmployeeController::class, 'update'])->name('admin.employee.update');
+        Route::delete('employee/{employee}', [EmployeeController::class, 'destroy'])->name('admin.employee.destroy');
+    });
 });

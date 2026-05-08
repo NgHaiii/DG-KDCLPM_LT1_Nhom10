@@ -17,5 +17,6 @@ class Employee extends Model
         'position',
         'is_doctor',
         'specialization',
+        'code', // Thêm dòng này để cho phép lưu mã nhân viên/bác sĩ
     ];
 }

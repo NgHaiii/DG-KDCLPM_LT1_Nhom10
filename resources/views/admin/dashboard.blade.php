@@ -175,18 +175,22 @@
         <!-- Sidebar -->
         <div class="sidebar">
             <h2>🦷 DentalCare</h2>
-            <ul class="nav-menu">
-                <li class="nav-item active">📊 Dashboard</li>
-                <li class="nav-item">👥 Quản lý người dùng</li>
-                <li class="nav-item">🩺 Quản lý bác sĩ</li>
-                <li class="nav-item">👨‍💼 Quản lý nhân viên</li>
-                <li class="nav-item">🤝 Quản lý bệnh nhân</li>
-                <li class="nav-item">❤️ Dịch vụ nha khoa</li>
-                <li class="nav-item">💰 Bảng giá</li>
-                <li class="nav-item">📅 Lịch khám</li>
-                <li class="nav-item">📈 Báo cáo thống kê</li>
-                <li class="nav-item">⚙️ Cài đặt hệ thống</li>
-            </ul>
+           <ul class="nav-menu">
+    <li class="nav-item active">📊 Dashboard</li>
+    <li class="nav-item">👥 Quản lý người dùng</li>
+    <li class="nav-item">
+        <a href="{{ url('admin/doctors') }}" style="color:inherit;text-decoration:none;display:block;">🩺 Quản lý bác sĩ</a>
+    </li>
+    <li class="nav-item">
+        <a href="{{ url('admin/employees') }}" style="color:inherit;text-decoration:none;display:block;">👨‍💼 Quản lý nhân viên</a>
+    </li>
+    <li class="nav-item">🤝 Quản lý bệnh nhân</li>
+    <li class="nav-item">❤️ Dịch vụ nha khoa</li>
+    <li class="nav-item">💰 Bảng giá</li>
+    <li class="nav-item">📅 Lịch khám</li>
+    <li class="nav-item">📈 Báo cáo thống kê</li>
+    <li class="nav-item">⚙️ Cài đặt hệ thống</li>
+</ul>
         </div>
 
         <!-- Main Content -->
