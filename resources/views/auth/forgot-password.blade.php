@@ -3,14 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng ký - Quản lý Phòng khám Nha khoa</title>
+    <title>Quên Mật khẩu - Quản lý Phòng khám Nha khoa</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -20,7 +15,6 @@
             align-items: center;
             padding: 20px;
         }
-
         .container {
             background: #fff;
             border-radius: 12px;
@@ -28,38 +22,15 @@
             padding: 50px 40px;
             max-width: 450px;
             width: 100%;
+            min-height: auto;
         }
-
         .header {
             text-align: center;
             margin-bottom: 40px;
         }
-
-        .header h1 {
-            color: #333;
-            font-size: 28px;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            color: #999;
-            font-size: 14px;
-        }
-
-        .info-box {
-            background: #f0f4ff;
-            border-left: 4px solid #667eea;
-            padding: 12px 15px;
-            border-radius: 6px;
-            margin-bottom: 25px;
-            font-size: 13px;
-            color: #555;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
+        .header h1 { color: #333; font-size: 28px; margin-bottom: 10px; }
+        .header p { color: #999; font-size: 14px; }
+        .form-group { margin-bottom: 20px; }
         label {
             display: block;
             color: #444;
@@ -67,10 +38,7 @@
             margin-bottom: 8px;
             font-size: 14px;
         }
-
-        input[type="text"],
-        input[type="email"],
-        input[type="password"] {
+        input[type="email"], input[type="text"] {
             width: 100%;
             padding: 12px 15px;
             border: 2px solid #e0e0e0;
@@ -79,16 +47,12 @@
             transition: border-color 0.3s ease;
             font-family: Arial, sans-serif;
         }
-
-        input[type="text"]:focus,
-        input[type="email"]:focus,
-        input[type="password"]:focus {
+        input[type="email"]:focus, input[type="text"]:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
-
-        .btn-register {
+        .btn-submit {
             width: 100%;
             padding: 12px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -101,16 +65,13 @@
             transition: transform 0.2s ease, box-shadow 0.2s ease;
             margin-top: 20px;
         }
-
-        .btn-register:hover {
+        .btn-submit:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
         }
-
-        .btn-register:active {
+        .btn-submit:active {
             transform: translateY(0);
         }
-
         .alert {
             padding: 15px;
             border-radius: 8px;
@@ -118,22 +79,18 @@
             font-size: 14px;
             animation: slideDown 0.3s ease;
         }
-
         .alert-error {
             background-color: #fee;
             color: #c33;
             border-left: 4px solid #f44;
         }
-
-        .alert-error ul {
-            margin-left: 20px;
-            margin-top: 5px;
+        .alert-error ul { margin-left: 20px; margin-top: 5px; }
+        .alert-error li { margin-bottom: 5px; }
+        .alert-success {
+            background-color: #efe;
+            color: #3a3;
+            border-left: 4px solid #4a4;
         }
-
-        .alert-error li {
-            margin-bottom: 5px;
-        }
-
         .divider {
             text-align: center;
             margin: 30px 0 20px;
@@ -141,7 +98,6 @@
             color: #999;
             font-size: 14px;
         }
-
         .divider::before {
             content: '';
             position: absolute;
@@ -152,19 +108,13 @@
             background: #e0e0e0;
             transform: translateY(-50%);
         }
-
         .divider span {
             background: #fff;
             padding: 0 10px;
             position: relative;
             z-index: 1;
         }
-
-        .footer-link {
-            text-align: center;
-            margin-top: 20px;
-        }
-
+        .footer-link { text-align: center; }
         .footer-link a {
             color: #667eea;
             text-decoration: none;
@@ -172,28 +122,15 @@
             font-weight: 500;
             transition: color 0.3s ease;
         }
-
-        .footer-link a:hover {
-            color: #764ba2;
-            text-decoration: underline;
-        }
-
+        .footer-link a:hover { color: #764ba2; text-decoration: underline; }
         @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-
         @media (max-width: 480px) {
             .container {
                 padding: 30px 20px;
             }
-
             .header h1 {
                 font-size: 24px;
             }
@@ -203,12 +140,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🦷 Đăng Ký</h1>
-            <p>Tạo tài khoản bệnh nhân</p>
-        </div>
-
-        <div class="info-box">
-            ℹ️ <strong>Chỉ bệnh nhân mới có thể tự đăng ký.</strong> Bác sĩ và nhân viên vui lòng liên hệ quản trị viên.
+            <h1>🔑 Quên Mật khẩu</h1>
+            <p>Nhập email hoặc số điện thoại để tiếp tục</p>
         </div>
 
         @if ($errors->any())
@@ -222,69 +155,36 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('register') }}">
+        @if (session('status'))
+            <div class="alert alert-success">
+                ✓ {{ session('status') }}
+            </div>
+        @endif
+
+        <form method="POST" action="{{ route('password.handle') }}">
             @csrf
 
-            <!-- Role ẩn, mặc định = patient -->
-            <input type="hidden" name="role" value="patient">
-
             <div class="form-group">
-                <label for="name">👤 Họ Tên</label>
+                <label for="email_or_phone">📧 Email hoặc 📱 Số điện thoại</label>
                 <input 
                     type="text" 
-                    id="name" 
-                    name="name" 
-                    value="{{ old('name') }}" 
-                    placeholder="Nhập họ tên của bạn"
+                    id="email_or_phone" 
+                    name="email_or_phone" 
+                    placeholder="Nhập email hoặc số điện thoại"
                     required
                     autofocus
                 >
             </div>
 
-            <div class="form-group">
-                <label for="email">📧 Email</label>
-                <input 
-                    type="email" 
-                    id="email" 
-                    name="email" 
-                    value="{{ old('email') }}" 
-                    placeholder="Nhập email của bạn"
-                    required
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="password">🔒 Mật khẩu</label>
-                <input 
-                    type="password" 
-                    id="password" 
-                    name="password" 
-                    placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
-                    required
-                >
-            </div>
-
-            <div class="form-group">
-                <label for="password_confirmation">✓ Xác nhận Mật khẩu</label>
-                <input 
-                    type="password" 
-                    id="password_confirmation" 
-                    name="password_confirmation" 
-                    placeholder="Nhập lại mật khẩu"
-                    required
-                >
-            </div>
-
-            <button type="submit" class="btn-register">Đăng Ký</button>
+            <button type="submit" class="btn-submit">Tiếp Tục</button>
         </form>
 
         <div class="divider">
             <span>hoặc</span>
         </div>
 
-                <div class="footer-link">
-            <p>Đã có tài khoản? <a href="{{ route('login') }}">Đăng nhập ngay</a></p>
-            <p><a href="{{ route('password.request') }}">Quên mật khẩu?</a></p>
+        <div class="footer-link">
+            <p><a href="{{ route('login') }}">← Quay lại đăng nhập</a></p>
         </div>
     </div>
 </body>

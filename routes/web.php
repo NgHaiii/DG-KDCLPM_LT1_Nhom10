@@ -17,11 +17,17 @@ Route::post('login', [AuthController::class, 'login']);
 
 Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
+// Quên mật khẩu - KHÔNG cần đăng nhập
+Route::get('forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request');
+Route::post('forgot-password', [AuthController::class, 'handleForgotPassword'])->name('password.handle');
+Route::get('reset-password', [AuthController::class, 'showResetPasswordForm'])->name('password.reset.form');
+Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('password.reset');
+Route::get('forgot-password/otp', [AuthController::class, 'showOtpForm'])->name('password.otp.form');
+Route::post('forgot-password/send-otp', [AuthController::class, 'sendOtp'])->name('password.send.otp');
+Route::post('forgot-password/verify-otp', [AuthController::class, 'verifyOtp'])->name('password.verify.otp');
+
 // Các route cần đăng nhập
 Route::middleware('auth')->group(function () {
-    Route::get('change-password', [AuthController::class, 'showChangePasswordForm'])->name('password.change');
-    Route::post('change-password', [AuthController::class, 'changePassword'])->name('password.update');
-
     // Dashboard cho từng vai trò
     Route::get('admin/dashboard', function () {
         return view('admin.dashboard');
@@ -32,7 +38,7 @@ Route::middleware('auth')->group(function () {
     })->name('doctor.dashboard');
 
     Route::get('employee/dashboard', function () {
-        return view('employees.dashboard');  // ✅ SỬA: 'employee' → 'employees'
+        return view('employees.dashboard');
     })->name('employee.dashboard');
 
     Route::get('patient/dashboard', function () {
@@ -41,13 +47,8 @@ Route::middleware('auth')->group(function () {
 
     // Quản lý bác sĩ và nhân viên (Admin only)
     Route::prefix('admin')->group(function () {
-        // Danh sách bác sĩ
         Route::get('doctors', [EmployeeController::class, 'listDoctors'])->name('admin.doctors');
-        
-        // Danh sách nhân viên
         Route::get('employees', [EmployeeController::class, 'listEmployees'])->name('admin.employees');
-        
-        // Thêm/sửa/xóa nhân viên hoặc bác sĩ
         Route::post('employee/store', [EmployeeController::class, 'store'])->name('admin.employee.store');
         Route::put('employee/{employee}', [EmployeeController::class, 'update'])->name('admin.employee.update');
         Route::delete('employee/{employee}', [EmployeeController::class, 'destroy'])->name('admin.employee.destroy');
