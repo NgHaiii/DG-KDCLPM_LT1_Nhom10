@@ -69,12 +69,13 @@ class EmployeeController extends Controller
         // Sinh mật khẩu ngẫu nhiên
         $passwordPlain = Str::random(8);
 
-        // Tạo user với role chính xác
+        // Tạo user với role chính xác và đồng bộ phone
         $user = User::create([
             'name' => $validated['name'],
             'email' => $email,
             'password' => Hash::make($passwordPlain),
             'role' => $role,
+            'phone' => $validated['phone'] ?? null, // ĐỒNG BỘ PHONE
         ]);
 
         // Lưu vào bảng employees
@@ -103,6 +104,11 @@ class EmployeeController extends Controller
         ]);
         $validated['is_doctor'] = $request->boolean('is_doctor');
         $employee->update($validated);
+
+        // ĐỒNG BỘ PHONE SANG BẢNG USERS
+        if ($employee->email && $validated['phone']) {
+            User::where('email', $employee->email)->update(['phone' => $validated['phone']]);
+        }
 
         if ($employee->is_doctor) {
             return redirect()->route('admin.doctors')->with('success', '✅ Cập nhật bác sĩ thành công!');

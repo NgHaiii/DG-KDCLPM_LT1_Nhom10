@@ -70,8 +70,8 @@
         .btn-forgot {
             width: 100%;
             padding: 10px;
-            background: #e0e0e0;
-            color: #333;
+            background: #ff9800;
+            color: #fff;
             border: none;
             border-radius: 8px;
             font-size: 14px;
@@ -81,7 +81,7 @@
             margin-top: 15px;
         }
         .btn-forgot:hover {
-            background: #d0d0d0;
+            background: #e68900;
         }
         .alert {
             padding: 15px;
@@ -193,8 +193,8 @@
             <button type="submit" class="btn-submit">Đặt lại Mật khẩu</button>
         </form>
 
-        <form action="{{ route('password.otp.form') }}" method="GET">
-            <button type="submit" class="btn-forgot">Tôi quên mật khẩu cũ</button>
+        <form method="GET" action="{{ route('password.otp.form') }}">
+            <button type="submit" class="btn-forgot">📱 Tôi quên mật khẩu cũ (Xác nhận bằng OTP)</button>
         </form>
 
         <div class="divider">

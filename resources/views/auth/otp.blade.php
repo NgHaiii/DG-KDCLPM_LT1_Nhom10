@@ -37,7 +37,7 @@
             margin-bottom: 8px;
             font-size: 14px;
         }
-        input[type="text"], input[type="password"] {
+        input[type="text"], input[type="password"], input[type="tel"] {
             width: 100%;
             padding: 12px 15px;
             border: 2px solid #e0e0e0;
@@ -45,10 +45,15 @@
             font-size: 14px;
             transition: border-color 0.3s ease;
         }
-        input[type="text"]:focus, input[type="password"]:focus {
+        input[type="text"]:focus, input[type="password"]:focus, input[type="tel"]:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        input[type="tel"][readonly] {
+            background-color: #f5f5f5;
+            color: #666;
+            cursor: not-allowed;
         }
         .btn-submit {
             width: 100%;
@@ -133,6 +138,15 @@
             transition: color 0.3s ease;
         }
         .footer-link a:hover { color: #764ba2; text-decoration: underline; }
+        .phone-display {
+            background-color: #f0f4ff;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #444;
+            border-left: 4px solid #667eea;
+        }
         @keyframes slideDown {
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -163,18 +177,36 @@
             </div>
         @endif
 
-        <!-- Gửi OTP nếu chưa gửi -->
+        <!-- Nếu chưa gửi OTP, cho nhập số điện thoại và gửi mã -->
         @if (!session('otp_sent') && !session('otp'))
             <form method="POST" action="{{ route('password.send.otp') }}">
                 @csrf
+                <div class="form-group">
+                    <label for="phone">📞 Số điện thoại</label>
+                    <input 
+                        type="tel" 
+                        id="phone" 
+                        name="phone" 
+                        placeholder="Nhập số điện thoại của bạn (Ví dụ: 0912345678)"
+                        required
+                        autofocus
+                        pattern="^[0-9]{10,11}$"
+                    >
+                </div>
                 <button type="submit" class="btn-send-otp">📤 Gửi Mã OTP</button>
             </form>
         @endif
 
-        <!-- Xác nhận OTP -->
+        <!-- Nếu đã gửi OTP, cho nhập mã OTP và mật khẩu mới -->
         @if (session('otp_sent') || session('otp'))
             <form method="POST" action="{{ route('password.verify.otp') }}">
                 @csrf
+
+                @if (session('phone'))
+                    <div class="phone-display">
+                        <strong>📱 Số điện thoại:</strong> {{ session('phone') }}
+                    </div>
+                @endif
 
                 <div class="form-group">
                     <label for="otp">🔐 Mã OTP</label>
@@ -185,6 +217,8 @@
                         placeholder="Nhập 6 chữ số"
                         required
                         autofocus
+                        pattern="^[0-9]{6}$"
+                        maxlength="6"
                     >
                 </div>
 
