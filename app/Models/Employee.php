@@ -10,13 +10,19 @@ class Employee extends Model
     use HasFactory;
 
     protected $fillable = [
+        'code',           // Mã bác sĩ/nhân viên
         'name',
-        'email',
+        'dob',            // Ngày sinh
+        'gender',         // Giới tính
         'phone',
+        'email',
         'address',
+        'workplace',      // Nơi công tác chính thức
+        'degree',         // Bằng cấp
+        'specialization', // Chuyên môn
         'position',
         'is_doctor',
-        'specialization',
-        'code', // Thêm dòng này để cho phép lưu mã nhân viên/bác sĩ
+        'status',         // Trạng thái (Hoạt động/Tạm nghỉ)
+        'linkedUser',     // Tài khoản liên kết
     ];
 }

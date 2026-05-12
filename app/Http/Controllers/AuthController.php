@@ -210,12 +210,12 @@ class AuthController extends Controller
 
     // Điều hướng dashboard
     protected function redirectToDashboard(string $role)
-    {
-        return match ($role) {
-            'admin' => redirect()->route('admin.dashboard'),
-            'doctor' => redirect()->route('doctor.dashboard'),
-            'employee' => redirect()->route('employee.dashboard'),
-            default => redirect()->route('patient.dashboard'),
-        };
-    }
+{
+    return match ($role) {
+        'admin' => redirect()->route('admin.dashboard'),
+        'doctor' => redirect()->route('doctor.dashboard'),
+        'employee' => redirect()->route('employee.dashboard'),
+        default => redirect()->route('patient.dashboard'),
+    };
+}
 }

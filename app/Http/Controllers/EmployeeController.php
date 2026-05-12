@@ -3,36 +3,31 @@
 namespace App\Http\Controllers;
 
 use App\Models\Employee;
-use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Hash;
+use App\Services\EmployeeService;
 
 class EmployeeController extends Controller
 {
-    // Danh sách bác sĩ
+    protected $employeeService;
+    public function __construct(EmployeeService $employeeService)
+    {
+        $this->employeeService = $employeeService;
+    }
+
     public function listDoctors(Request $request)
     {
-        $employees = Employee::where('is_doctor', true)->get();
-        $editEmployee = null;
-        if ($request->has('edit')) {
-            $editEmployee = Employee::find($request->input('edit'));
-        }
-        return view('admin.doctors.index', compact('employees', 'editEmployee'));
+        $editId = $request->has('edit') ? $request->input('edit') : null;
+        $data = $this->employeeService->listDoctors($editId);
+        return view('admin.doctors.index', $data);
     }
 
-    // Danh sách nhân viên
     public function listEmployees(Request $request)
     {
-        $employees = Employee::where('is_doctor', false)->get();
-        $editEmployee = null;
-        if ($request->has('edit')) {
-            $editEmployee = Employee::find($request->input('edit'));
-        }
-        return view('admin.employees.index', compact('employees', 'editEmployee'));
+        $editId = $request->has('edit') ? $request->input('edit') : null;
+        $data = $this->employeeService->listEmployees($editId);
+        return view('admin.employees.index', $data);
     }
 
-    // Thêm mới nhân viên hoặc bác sĩ, tự sinh tài khoản user
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -45,53 +40,20 @@ class EmployeeController extends Controller
         ]);
         $validated['is_doctor'] = $request->boolean('is_doctor');
 
-        // Sinh mã và email theo vai trò
-        if ($validated['is_doctor']) {
-            $prefix = 'BS';
-            $suffix = 'bs';
-            $role = 'doctor';
-            $count = Employee::where('is_doctor', true)->count() + 1;
-        } else {
-            $prefix = 'NV';
-            $suffix = 'nv';
-            $role = 'employee';
-            $count = Employee::where('is_doctor', false)->count() + 1;
+        try {
+            $result = $this->employeeService->createEmployee($validated);
+        } catch (\Exception $e) {
+            return back()->withErrors(['email' => $e->getMessage()])->withInput();
         }
-
-        $code = $prefix . str_pad($count, 3, '0', STR_PAD_LEFT);
-        $email = $code . $suffix . '@hdat-dental.com.vn';
-
-        // Kiểm tra email đã tồn tại ở bảng users chưa
-        if (User::where('email', $email)->exists()) {
-            return back()->withErrors(['email' => "Email $email đã tồn tại, vui lòng kiểm tra lại!"])->withInput();
-        }
-
-        // Sinh mật khẩu ngẫu nhiên
-        $passwordPlain = Str::random(8);
-
-        // Tạo user với role chính xác và đồng bộ phone
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $email,
-            'password' => Hash::make($passwordPlain),
-            'role' => $role,
-            'phone' => $validated['phone'] ?? null, // ĐỒNG BỘ PHONE
-        ]);
-
-        // Lưu vào bảng employees
-        $validated['email'] = $email;
-        $validated['code'] = $code;
-        Employee::create($validated);
 
         $routeName = $validated['is_doctor'] ? 'admin.doctors' : 'admin.employees';
         $successMessage = $validated['is_doctor'] 
-            ? "✅ Tài khoản bác sĩ đã tạo thành công!<br>Email: <b>$email</b><br>Mã: <b>$code</b><br>Role: <b>Doctor</b><br>Mật khẩu: <b>$passwordPlain</b>"
-            : "✅ Tài khoản nhân viên đã tạo thành công!<br>Email: <b>$email</b><br>Mã: <b>$code</b><br>Role: <b>Employee</b><br>Mật khẩu: <b>$passwordPlain</b>";
+            ? "✅ Tài khoản bác sĩ đã tạo thành công!<br>Email: <b>{$result['email']}</b><br>Mã: <b>{$result['code']}</b><br>Role: <b>Doctor</b><br>Mật khẩu: <b>{$result['password']}</b>"
+            : "✅ Tài khoản nhân viên đã tạo thành công!<br>Email: <b>{$result['email']}</b><br>Mã: <b>{$result['code']}</b><br>Role: <b>Employee</b><br>Mật khẩu: <b>{$result['password']}</b>";
 
         return redirect()->route($routeName)->with('success', $successMessage);
     }
 
-    // Cập nhật nhân viên/bác sĩ
     public function update(Request $request, Employee $employee)
     {
         $validated = $request->validate([
@@ -103,12 +65,7 @@ class EmployeeController extends Controller
             'specialization' => 'nullable',
         ]);
         $validated['is_doctor'] = $request->boolean('is_doctor');
-        $employee->update($validated);
-
-        // ĐỒNG BỘ PHONE SANG BẢNG USERS
-        if ($employee->email && $validated['phone']) {
-            User::where('email', $employee->email)->update(['phone' => $validated['phone']]);
-        }
+        $this->employeeService->updateEmployee($employee, $validated);
 
         if ($employee->is_doctor) {
             return redirect()->route('admin.doctors')->with('success', '✅ Cập nhật bác sĩ thành công!');
@@ -117,18 +74,11 @@ class EmployeeController extends Controller
         }
     }
 
-    // Xóa nhân viên/bác sĩ và user liên quan
     public function destroy(Employee $employee)
     {
         $isDoctor = $employee->is_doctor;
         $name = $employee->name;
-
-        // Xóa user có email trùng với employee
-        if ($employee->email) {
-            User::where('email', $employee->email)->delete();
-        }
-
-        $employee->delete();
+        $this->employeeService->deleteEmployee($employee);
 
         if ($isDoctor) {
             return redirect()->route('admin.doctors')->with('success', "✅ Xóa bác sĩ <b>$name</b> thành công!");

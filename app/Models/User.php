@@ -19,7 +19,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role', // Thêm trường role để phân quyền
+        'role',    // Thêm trường role để phân quyền
+        'phone',   // Thêm trường phone để lưu số điện thoại
     ];
 
     /**

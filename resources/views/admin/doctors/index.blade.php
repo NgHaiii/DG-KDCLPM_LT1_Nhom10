@@ -1,285 +1,805 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản lý bác sĩ - DentalCare</title>
+@extends('layouts.admin-layout')
+
+@section('title', 'Quản lý bác sĩ')
+
+@section('page-title', 'Bác sĩ / Nhân viên')
+@section('page-subtitle', 'Hồ sơ chuyên môn — liên kết với tài khoản người dùng')
+
+@section('header-actions')
+    <button class="btn btn-primary" onclick="openAddModal()">➕ Thêm bác sĩ</button>
+@endsection
+
+@section('styles')
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f7fa; }
-        .container { display: flex; min-height: 100vh; }
-        
-        .sidebar {
-            width: 280px;
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+        }
+
+        .select-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        select {
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            min-width: 200px;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .doctor-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .doctor-card:hover {
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.15);
+            border-color: #667eea;
+        }
+
+        .card-header {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 30px 20px;
-            overflow-y: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
         }
-        .sidebar h2 { font-size: 20px; margin-bottom: 30px; }
-        .nav-menu { list-style: none; }
-        .nav-item {
-            padding: 12px 15px;
-            margin: 8px 0;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background 0.3s ease;
-        }
-        .nav-item:hover { background: rgba(255, 255, 255, 0.2); }
-        .nav-item.active { background: rgba(255, 255, 255, 0.3); }
-        .nav-item a { color: inherit; text-decoration: none; display: block; }
 
-        .main { flex: 1; padding: 30px; overflow-y: auto; }
-        .header {
+        .card-title-group {
+            flex: 1;
+        }
+
+        .card-title {
+            font-weight: bold;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .card-code {
+            font-size: 12px;
+            color: #999;
+            font-family: monospace;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .card-info {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.6;
+            margin-top: 12px;
+        }
+
+        .info-item {
+            margin: 5px 0;
+        }
+
+        .card-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e5e7eb;
         }
-        .header h1 { font-size: 28px; color: #333; }
 
-        .alert {
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 8px;
+        .status {
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status.active {
+            color: #22c55e;
+        }
+
+        .status.inactive {
+            color: #f59e0b;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: #f0f0f0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-icon:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-icon.delete:hover {
+            background: #ef4444;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        /* Modal */
+        .modal {
             display: none;
-        }
-        .alert.success {
-            background: #d1fae5;
-            color: #065f46;
-            border: 1px solid #6ee7b7;
-            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
         }
 
-        .form-card {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-            margin-bottom: 30px;
+        .modal.active {
+            display: flex;
         }
-        .form-card h2 { margin-bottom: 20px; color: #333; font-size: 18px; }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+            width: 90%;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .modal-subtitle {
+            font-size: 13px;
+            color: #999;
+        }
+
         .form-group {
             margin-bottom: 15px;
         }
+
         .form-group label {
             display: block;
             margin-bottom: 5px;
             color: #666;
             font-weight: 600;
+            font-size: 13px;
         }
+
         .form-group input,
-        .form-group textarea,
-        .form-group select {
+        .form-group select,
+        .form-group textarea {
             width: 100%;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 6px;
             font-size: 14px;
             font-family: inherit;
+            box-sizing: border-box;
         }
+
         .form-group input:focus,
-        .form-group textarea:focus,
-        .form-group select:focus {
+        .form-group select:focus,
+        .form-group textarea:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
         }
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .checkbox-group input {
-            width: auto;
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
         }
 
-        .form-actions {
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+
+        .modal-footer {
             display: flex;
+            justify-content: flex-end;
             gap: 10px;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
         }
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4); }
+
         .btn-secondary {
             background: #f0f0f0;
             color: #333;
         }
-        .btn-secondary:hover { background: #e0e0e0; }
 
-        .table-card {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        .btn-secondary:hover {
+            background: #e0e0e0;
         }
-        .table-card h2 { margin-bottom: 20px; color: #333; font-size: 18px; }
-        table {
-            width: 100%;
-            border-collapse: collapse;
+
+        /* View Modal */
+        .view-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
         }
-        thead { background: #f9fafb; }
-        th {
-            padding: 12px;
-            text-align: left;
+
+        .view-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 32px;
+        }
+
+        .view-info {
+            flex: 1;
+        }
+
+        .view-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .view-code {
             font-size: 12px;
+            color: #999;
+            font-family: monospace;
+            margin: 5px 0;
+        }
+
+        .view-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .view-item {
+            border-top: 1px solid #e5e7eb;
+            padding-top: 15px;
+        }
+
+        .view-label {
+            font-size: 12px;
+            color: #999;
             font-weight: 600;
-            color: #666;
-            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 5px;
         }
-        td {
-            padding: 12px;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        tr:hover { background: #f9fafb; }
 
-        .btn-edit, .btn-delete {
-            padding: 6px 12px;
-            font-size: 12px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
+        .view-value {
+            font-size: 14px;
+            color: #333;
         }
-        .btn-edit {
-            background: #3b82f6;
-            color: white;
+
+        .alert-dialog {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
         }
-        .btn-delete {
-            background: #ef4444;
-            color: white;
+
+        .alert-dialog.active {
+            display: flex;
+        }
+
+        .alert-dialog-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 400px;
+        }
+
+        .alert-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .alert-description {
+            color: #666;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .alert-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
         }
 
         @media (max-width: 768px) {
-            .sidebar { width: 200px; }
-            .main { padding: 15px; }
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters {
+                flex-direction: column;
+            }
+
+            .select-group {
+                flex-direction: column;
+            }
+
+            select {
+                min-width: 100%;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .view-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
         }
     </style>
-</head>
-<body>
-    <div class="container">
-        <div class="sidebar">
-            <h2>🦷 DentalCare</h2>
-            <ul class="nav-menu">
-                <li class="nav-item"><a href="{{ route('admin.dashboard') }}">📊 Dashboard</a></li>
-                <li class="nav-item active"><a href="{{ route('admin.doctors') }}">🩺 Quản lý bác sĩ</a></li>
-                <li class="nav-item"><a href="{{ route('admin.employees') }}">👨‍💼 Quản lý nhân viên</a></li>
-            </ul>
+@endsection
+
+@section('content')
+    <div class="card">
+        <div class="filters">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Tìm theo tên bác sĩ..." onkeyup="filterDoctors()">
+            </div>
+            <div class="select-group">
+                <select id="specialtyFilter" onchange="filterDoctors()">
+                    <option value="">Tất cả chuyên khoa</option>
+                    <option value="Niềng răng">Niềng răng</option>
+                    <option value="Implant">Implant</option>
+                    <option value="Tổng quát">Tổng quát</option>
+                    <option value="Nội nha">Nội nha</option>
+                    <option value="Phẫu thuật hàm mặt">Phẫu thuật hàm mặt</option>
+                </select>
+                <select id="statusFilter" onchange="filterDoctors()">
+                    <option value="">Tất cả</option>
+                    <option value="Hoạt động">Hoạt động</option>
+                    <option value="Tạm nghỉ">Tạm nghỉ</option>
+                </select>
+            </div>
         </div>
 
-        <div class="main">
-            <div class="header">
-                <div>
-                    <h1>Quản lý bác sĩ</h1>
-                    <p style="color: #999; margin-top: 5px;">Thêm, sửa, xóa thông tin bác sĩ</p>
+        <div class="grid" id="doctorGrid">
+            @forelse($employees ?? [] as $emp)
+                <div class="doctor-card" data-name="{{ $emp->name }}" data-specialty="{{ $emp->specialization ?? '' }}" data-status="{{ $emp->status ?? 'Hoạt động' }}">
+                    <div class="card-header">
+                        <div class="avatar">{{ strtoupper(substr(explode(' ', $emp->name)[count(explode(' ', $emp->name))-1], 0, 1)) }}</div>
+                        <div class="card-title-group">
+                            <div class="card-title">{{ $emp->name }}</div>
+                            <div class="card-code">{{ $emp->code }}</div>
+                            <span class="badge">{{ $emp->specialization ?? 'Tổng quát' }}</span>
+                        </div>
+                    </div>
+
+                    <div class="card-info">
+                        <div class="info-item">📞 {{ $emp->phone ?? '---' }}</div>
+                        <div class="info-item">✉ {{ $emp->email ?? '---' }}</div>
+                        <div class="info-item">🏥 {{ $emp->workplace ?? '---' }}</div>
+                        <div class="info-item">🎓 {{ $emp->degree ?? '---' }}</div>
+                    </div>
+
+                    <div class="card-footer">
+                        <span class="status {{ $emp->status === 'Hoạt động' ? 'active' : 'inactive' }}">● {{ $emp->status ?? 'Hoạt động' }}</span>
+                        <div class="card-actions">
+                            <button class="btn-icon" onclick="openViewModal({{ $emp->id }})">👁</button>
+                            <button class="btn-icon" onclick="openEditModal({{ $emp->id }})">✏️</button>
+                            <button class="btn-icon delete" onclick="openDeleteModal({{ $emp->id }}, '{{ $emp->name }}')">🗑️</button>
+                        </div>
+                    </div>
+                    <form id="deleteForm-{{ $emp->id }}" method="POST" action="{{ route('admin.employee.destroy', $emp->id) }}" style="display:none;">
+                        @csrf
+                        @method('DELETE')
+                    </form>
                 </div>
+            @empty
+                <div style="grid-column: 1/-1;">
+                    <div class="empty-state">
+                        <p style="font-size: 16px; margin-bottom: 10px;">📭 Chưa có bác sĩ nào</p>
+                        <p>Hãy thêm bác sĩ mới để bắt đầu</p>
+                    </div>
+                </div>
+            @endforelse
+        </div>
+    </div>
+
+    <!-- Modal Thêm/Sửa -->
+    <div class="modal" id="formModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">Thêm bác sĩ mới</div>
+                <div class="modal-subtitle">Hồ sơ liên kết với tài khoản người dùng</div>
             </div>
 
-            @if(session('success'))
-                <div class="alert success">
-                    {!! session('success') !!}
-                </div>
-            @endif
+            <form id="doctorForm" method="POST" action="{{ route('admin.employee.store') }}">
+                @csrf
+                <input type="hidden" name="is_doctor" value="1">
+                <input type="hidden" id="formMethod" name="_method" value="POST">
+                <input type="hidden" id="editId" value="">
 
-            <div class="form-card">
-                <h2>{{ isset($editEmployee) ? '✏️ Sửa thông tin bác sĩ' : '➕ Thêm bác sĩ mới' }}</h2>
-                <form method="POST" action="{{ isset($editEmployee) ? route('admin.employee.update', $editEmployee) : route('admin.employee.store') }}">
-                    @csrf
-                    @if(isset($editEmployee))
-                        @method('PUT')
-                    @endif
-
+                <div class="form-row">
                     <div class="form-group">
                         <label>Họ tên *</label>
-                        <input type="text" name="name" value="{{ old('name', $editEmployee?->name ?? '') }}" required>
+                        <input type="text" name="name" id="name" required>
                     </div>
-
                     <div class="form-group">
                         <label>Chức vụ *</label>
-                        <input type="text" name="position" value="{{ old('position', $editEmployee?->position ?? '') }}" placeholder="VD: Bác sĩ chuyên khoa" required>
+                        <input type="text" name="position" id="position" placeholder="VD: Bác sĩ chuyên khoa" required>
                     </div>
+                </div>
 
+                <div class="form-row">
                     <div class="form-group">
-                        <label>Chuyên môn</label>
-                        <input type="text" name="specialization" value="{{ old('specialization', $editEmployee?->specialization ?? '') }}" placeholder="VD: Cấy ghép implant">
+                        <label>Ngày sinh</label>
+                        <input type="date" name="dob" id="dob">
                     </div>
+                    <div class="form-group">
+                        <label>Giới tính</label>
+                        <select name="gender" id="gender">
+                            <option value="">-- Chọn --</option>
+                            <option value="Nam">Nam</option>
+                            <option value="Nữ">Nữ</option>
+                        </select>
+                    </div>
+                </div>
 
+                <div class="form-row">
                     <div class="form-group">
                         <label>Điện thoại</label>
-                        <input type="tel" name="phone" value="{{ old('phone', $editEmployee?->phone ?? '') }}" placeholder="0123456789">
+                        <input type="tel" name="phone" id="phone" placeholder="0123456789">
                     </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" id="email" readonly style="background-color: #f5f5f5; cursor: not-allowed;">
+                    </div>
+                </div>
 
+                <div class="form-row full">
                     <div class="form-group">
                         <label>Địa chỉ</label>
-                        <textarea name="address" rows="3" placeholder="Địa chỉ thường trú">{{ old('address', $editEmployee?->address ?? '') }}</textarea>
+                        <input type="text" name="address" id="address" placeholder="Địa chỉ thường trú">
                     </div>
+                </div>
 
-                    <input type="hidden" name="is_doctor" value="1">
-
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary">
-                            {{ isset($editEmployee) ? '💾 Cập nhật' : '✅ Thêm bác sĩ' }}
-                        </button>
-                        @if(isset($editEmployee))
-                            <a href="{{ route('admin.doctors') }}" class="btn btn-secondary">❌ Hủy</a>
-                        @endif
+                <div class="form-row full">
+                    <div class="form-group">
+                        <label>Nơi công tác chính thức</label>
+                        <input type="text" name="workplace" id="workplace">
                     </div>
-                </form>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Bằng cấp</label>
+                        <select name="degree" id="degree">
+                            <option value="">-- Chọn --</option>
+                            <option value="Cử nhân">Cử nhân</option>
+                            <option value="Thạc sĩ">Thạc sĩ</option>
+                            <option value="Tiến sĩ">Tiến sĩ</option>
+                            <option value="Giáo sư">Giáo sư</option>
+                            <option value="Phó giáo sư">Phó giáo sư</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Chuyên môn</label>
+                        <input type="text" name="specialization" id="specialization" placeholder="VD: Cấy ghép implant">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Trạng thái</label>
+                        <select name="status" id="status">
+                            <option value="Hoạt động">Hoạt động</option>
+                            <option value="Tạm nghỉ">Tạm nghỉ</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Tài khoản liên kết</label>
+                        <input type="text" name="linkedUser" id="linkedUser" placeholder="-- Tự sinh --" readonly style="background-color: #f5f5f5; cursor: not-allowed;">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Hủy</button>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Thêm mới</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Xem Chi Tiết -->
+    <div class="modal" id="viewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Chi tiết bác sĩ</div>
             </div>
+            <div id="viewContent"></div>
+        </div>
+    </div>
 
-            <div class="table-card">
-                <h2>📋 Danh sách bác sĩ ({{ count($employees ?? []) }} người)</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Mã</th>
-                            <th>Họ tên</th>
-                            <th>Email</th>
-                            <th>Chức vụ</th>
-                            <th>Chuyên môn</th>
-                            <th>Điện thoại</th>
-                            <th>Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($employees ?? [] as $emp)
-                        <tr>
-                            <td><strong>{{ $emp->code }}</strong></td>
-                            <td>{{ $emp->name }}</td>
-                            <td>{{ $emp->email }}</td>
-                            <td>{{ $emp->position }}</td>
-                            <td>{{ $emp->specialization ?? '---' }}</td>
-                            <td>{{ $emp->phone ?? '---' }}</td>
-                            <td>
-                                <form method="GET" action="{{ route('admin.doctors') }}" style="display:inline">
-                                    <input type="hidden" name="edit" value="{{ $emp->id }}">
-                                    <button type="submit" class="btn-edit">✏️ Sửa</button>
-                                </form>
-                                <form action="{{ route('admin.employee.destroy', $emp) }}" method="POST" style="display:inline">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="btn-delete" onclick="return confirm('Bạn chắc chắn muốn xóa?')">🗑️ Xóa</button>
-                                </form>
-                            </td>
-                        </tr>
-                        @empty
-                        <tr>
-                            <td colspan="7" style="text-align:center; color:#999;">Chưa có bác sĩ nào</td>
-                        </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+    <!-- Alert Dialog Xóa -->
+   <!-- Alert Dialog Xóa -->
+    <div class="alert-dialog" id="deleteDialog">
+        <div class="alert-dialog-content">
+            <div class="alert-title">Xóa bác sĩ?</div>
+            <div class="alert-description">Hành động không thể hoàn tác. Xóa <b id="deleteName"></b>?</div>
+            <div class="alert-footer">
+                <button class="btn btn-secondary" onclick="closeDeleteModal()">Hủy</button>
+                <button class="btn btn-primary" style="background: #ef4444; border-color: #ef4444;" onclick="confirmDelete()">Xóa</button>
             </div>
         </div>
     </div>
-</body>
-</html>
+@endsection
+
+@section('scripts')
+    <script>
+        let currentDeleteId = null;
+        let employeesData = {};
+
+        // Load dữ liệu employees
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.doctor-card');
+            cards.forEach((card, index) => {
+                const emp = @json($employees ?? []);
+                if (emp[index]) {
+                    employeesData[emp[index].id] = emp[index];
+                }
+            });
+        });
+
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = 'Thêm bác sĩ mới';
+            document.getElementById('submitBtn').textContent = 'Thêm mới';
+            document.getElementById('doctorForm').reset();
+            document.getElementById('formMethod').value = 'POST';
+            document.getElementById('editId').value = '';
+            document.getElementById('email').removeAttribute('required');
+            document.getElementById('doctorForm').action = '{{ route("admin.employee.store") }}';
+            document.getElementById('formModal').classList.add('active');
+        }
+
+        function openEditModal(id) {
+            const emp = employeesData[id];
+            if (!emp) {
+                alert('Không tìm thấy thông tin bác sĩ');
+                return;
+            }
+
+            document.getElementById('modalTitle').textContent = 'Sửa thông tin bác sĩ';
+            document.getElementById('submitBtn').textContent = 'Cập nhật';
+            document.getElementById('editId').value = id;
+            document.getElementById('formMethod').value = 'PATCH';
+            
+            document.getElementById('name').value = emp.name;
+            document.getElementById('position').value = emp.position;
+            document.getElementById('phone').value = emp.phone || '';
+            document.getElementById('email').value = emp.email || '';
+            document.getElementById('address').value = emp.address || '';
+            document.getElementById('dob').value = emp.dob || '';
+            document.getElementById('gender').value = emp.gender || '';
+            document.getElementById('workplace').value = emp.workplace || '';
+            document.getElementById('degree').value = emp.degree || '';
+            document.getElementById('specialization').value = emp.specialization || '';
+            document.getElementById('status').value = emp.status || 'Hoạt động';
+            document.getElementById('linkedUser').value = emp.linkedUser || '';
+
+            document.getElementById('doctorForm').action = `{{ route('admin.employee.update', ':id') }}`.replace(':id', id);
+            document.getElementById('formModal').classList.add('active');
+        }
+
+        function openViewModal(id) {
+            const emp = employeesData[id];
+            if (!emp) {
+                alert('Không tìm thấy thông tin bác sĩ');
+                return;
+            }
+
+            const lastChar = emp.name.split(' ').pop().charAt(0).toUpperCase();
+            const html = `
+                <div class="view-header">
+                    <div class="view-avatar">${lastChar}</div>
+                    <div class="view-info">
+                        <div class="view-name">${emp.name}</div>
+                        <div class="view-code">${emp.code}</div>
+                        <span class="badge">${emp.specialization || 'Tổng quát'}</span>
+                    </div>
+                </div>
+                <div class="view-grid">
+                    <div class="view-item">
+                        <div class="view-label">Ngày sinh</div>
+                        <div class="view-value">${emp.dob || '---'}</div>
+                    </div>
+                    <div class="view-item">
+                        <div class="view-label">Giới tính</div>
+                        <div class="view-value">${emp.gender || '---'}</div>
+                    </div>
+                    <div class="view-item">
+                        <div class="view-label">Điện thoại</div>
+                        <div class="view-value">${emp.phone || '---'}</div>
+                    </div>
+                    <div class="view-item">
+                        <div class="view-label">Email</div>
+                        <div class="view-value">${emp.email || '---'}</div>
+                    </div>
+                    <div class="view-item" style="grid-column: 1/-1;">
+                        <div class="view-label">Địa chỉ</div>
+                        <div class="view-value">${emp.address || '---'}</div>
+                    </div>
+                    <div class="view-item" style="grid-column: 1/-1;">
+                        <div class="view-label">Nơi công tác</div>
+                        <div class="view-value">${emp.workplace || '---'}</div>
+                    </div>
+                    <div class="view-item">
+                        <div class="view-label">Bằng cấp</div>
+                        <div class="view-value">${emp.degree || '---'}</div>
+                    </div>
+                    <div class="view-item">
+                        <div class="view-label">Trạng thái</div>
+                        <div class="view-value">${emp.status || 'Hoạt động'}</div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('viewContent').innerHTML = html;
+            document.getElementById('viewModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('formModal').classList.remove('active');
+        }
+
+        function openDeleteModal(id, name) {
+            currentDeleteId = id;
+            document.getElementById('deleteName').textContent = name;
+            document.getElementById('deleteDialog').classList.add('active');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteDialog').classList.remove('active');
+        }
+
+        function confirmDelete() {
+            if (currentDeleteId) {
+                document.getElementById('deleteForm-' + currentDeleteId).submit();
+            }
+        }
+
+        function filterDoctors() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const specialty = document.getElementById('specialtyFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            const cards = document.querySelectorAll('.doctor-card');
+
+            cards.forEach(card => {
+                const name = card.dataset.name.toLowerCase();
+                const cardSpecialty = card.dataset.specialty;
+                const cardStatus = card.dataset.status;
+                const match = name.includes(search) 
+                    && (!specialty || cardSpecialty.includes(specialty))
+                    && (!status || cardStatus.includes(status));
+                card.style.display = match ? '' : 'none';
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.getElementById('formModal').classList.remove('active');
+                document.getElementById('viewModal').classList.remove('active');
+                document.getElementById('deleteDialog').classList.remove('active');
+            }
+        });
+
+        document.getElementById('formModal')?.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeModal();
+        });
+
+        document.getElementById('viewModal')?.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) document.getElementById('viewModal').classList.remove('active');
+        });
+
+        document.getElementById('deleteDialog')?.addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) closeDeleteModal();
+        });
+
+        // Load employees data from Blade
+        const employees = @json($employees ?? []);
+        employees.forEach(emp => {
+            employeesData[emp.id] = emp;
+        });
+    </script>
+@endsection
