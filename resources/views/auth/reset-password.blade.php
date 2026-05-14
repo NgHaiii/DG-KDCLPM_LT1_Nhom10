@@ -3,207 +3,288 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đặt lại Mật khẩu - Quản lý Phòng khám Nha khoa</title>
+    <title>Đặt lại Mật khẩu — DentalCare</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+      .floating-shape {
+        position: absolute;
+        border-radius: 50%;
+        opacity: 0.25;
+        animation: float-shape 20s ease-in-out infinite;
+        pointer-events: none;
+        filter: blur(2px);
+      }
+
+      .shape-1 {
+        width: 300px;
+        height: 300px;
+        background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+        top: 10%;
+        left: 5%;
+        animation-delay: 0s;
+      }
+
+      .shape-2 {
+        width: 200px;
+        height: 200px;
+        background: linear-gradient(135deg, #06b6d4, #14b8a6);
+        bottom: 15%;
+        right: 10%;
+        animation-delay: 5s;
+      }
+
+      .shape-3 {
+        width: 250px;
+        height: 250px;
+        background: linear-gradient(135deg, #14b8a6, #0ea5e9);
+        top: 50%;
+        right: 5%;
+        animation-delay: 10s;
+      }
+
+      @keyframes float-shape {
+        0%, 100% {
+          transform: translate(0, 0) rotate(0deg);
         }
-        .container {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            padding: 50px 40px;
-            max-width: 450px;
-            width: 100%;
+        25% {
+          transform: translate(30px, -30px) rotate(90deg);
         }
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
+        50% {
+          transform: translate(-20px, 30px) rotate(180deg);
         }
-        .header h1 { color: #333; font-size: 28px; margin-bottom: 10px; }
-        .header p { color: #999; font-size: 14px; }
-        .form-group { margin-bottom: 20px; }
-        label {
-            display: block;
-            color: #444;
-            font-weight: 500;
-            margin-bottom: 8px;
-            font-size: 14px;
+        75% {
+          transform: translate(40px, 20px) rotate(270deg);
         }
-        input[type="password"] {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s ease;
+      }
+
+      .floating-icon {
+        position: absolute;
+        opacity: 0.2;
+        pointer-events: none;
+        animation: float-icon 15s ease-in-out infinite;
+        filter: drop-shadow(0 0 8px rgba(14, 165, 233, 0.3));
+      }
+
+      .icon-1 {
+        width: 80px;
+        height: 80px;
+        top: 20%;
+        left: 15%;
+        animation-delay: 0s;
+      }
+
+      .icon-2 {
+        width: 100px;
+        height: 100px;
+        bottom: 25%;
+        right: 20%;
+        animation-delay: 3s;
+      }
+
+      .icon-3 {
+        width: 70px;
+        height: 70px;
+        top: 60%;
+        left: 10%;
+        animation-delay: 6s;
+      }
+
+      @keyframes float-icon {
+        0%, 100% {
+          transform: translateY(0) scale(1);
         }
-        input[type="password"]:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        50% {
+          transform: translateY(-30px) scale(1.1);
         }
-        .btn-submit {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            margin-top: 20px;
-        }
-        .btn-submit:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-        }
-        .btn-forgot {
-            width: 100%;
-            padding: 10px;
-            background: #ff9800;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s ease;
-            margin-top: 15px;
-        }
-        .btn-forgot:hover {
-            background: #e68900;
-        }
-        .alert {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            animation: slideDown 0.3s ease;
-        }
-        .alert-error {
-            background-color: #fee;
-            color: #c33;
-            border-left: 4px solid #f44;
-        }
-        .alert-error ul { margin-left: 20px; margin-top: 5px; }
-        .alert-error li { margin-bottom: 5px; }
-        .divider {
-            text-align: center;
-            margin: 30px 0 20px;
-            position: relative;
-            color: #999;
-            font-size: 14px;
-        }
-        .divider::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            width: 100%;
-            height: 1px;
-            background: #e0e0e0;
-            transform: translateY(-50%);
-        }
-        .divider span {
-            background: #fff;
-            padding: 0 10px;
-            position: relative;
-            z-index: 1;
-        }
-        .footer-link { text-align: center; }
-        .footer-link a {
-            color: #667eea;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: color 0.3s ease;
-        }
-        .footer-link a:hover { color: #764ba2; text-decoration: underline; }
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+      }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🔐 Đặt lại Mật khẩu</h1>
-            <p>Nhập mật khẩu cũ và mật khẩu mới</p>
+<div class="aurora-bg relative min-h-screen flex items-center justify-center overflow-hidden">
+  <!-- Floating shapes -->
+  <div class="floating-shape shape-1"></div>
+  <div class="floating-shape shape-2"></div>
+  <div class="floating-shape shape-3"></div>
+
+  <!-- Floating icons -->
+  <svg class="floating-icon icon-1" fill="currentColor" viewBox="0 0 24 24" style="color: #0ea5e9;">
+    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+  </svg>
+
+  <svg class="floating-icon icon-2" fill="currentColor" viewBox="0 0 24 24" style="color: #06b6d4;">
+    <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path>
+  </svg>
+
+  <svg class="floating-icon icon-3" fill="currentColor" viewBox="0 0 24 24" style="color: #14b8a6;">
+    <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+  </svg>
+
+  <!-- Floating particles -->
+  <div class="aurora-particles">
+    @for ($i = 0; $i < 18; $i++)
+      <span
+        style="
+          left: {{ (($i * 53) % 100) }}%;
+          width: {{ (6 + ($i % 5) * 4) }}px;
+          height: {{ (6 + ($i % 5) * 4) }}px;
+          animation-duration: {{ (12 + ($i % 7) * 3) }}s;
+          animation-delay: {{ (($i % 8) * 1.2) }}s;
+        "
+      ></span>
+    @endfor
+  </div>
+
+  <div class="relative z-10 w-full max-w-6xl px-6 py-12">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+      
+      <!-- Left brand panel -->
+      <div class="flex flex-col justify-center animate-fade-in">
+        <div class="flex items-center gap-2 mb-6">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg animate-float">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <span class="text-2xl font-bold text-foreground">DentalCare</span>
         </div>
 
-        @if ($errors->any())
-            <div class="alert alert-error">
-                <strong>❌ Lỗi:</strong>
-                <ul>
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
+        <div class="mb-6 inline-flex items-center gap-2 rounded-full glass px-4 py-2 text-sm font-medium text-primary w-fit">
+          <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+          </svg>
+          Hệ thống thế hệ mới 2026
+        </div>
 
-        <form method="POST" action="{{ route('password.reset') }}">
+        <h1 class="text-5xl lg:text-6xl font-bold leading-tight tracking-tight mb-4">
+          Quản lý <span class="text-gradient">Phòng khám</span><br />
+          Nha khoa hiện đại
+        </h1>
+
+        <p class="text-lg text-muted-foreground mb-8 max-w-md">
+          Giải pháp toàn diện cho lịch khám, hồ sơ bệnh nhân, dịch vụ, doanh thu — phân quyền theo vai trò chuẩn y tế.
+        </p>
+
+        <div class="grid grid-cols-3 gap-4 max-w-md">
+          @php
+            $features = [
+              ['icon' => 'shield', 'label' => 'Bảo mật'],
+              ['icon' => 'activity', 'label' => 'Realtime'],
+              ['icon' => 'heart', 'label' => 'Y tế'],
+            ];
+          @endphp
+          @foreach ($features as $feature)
+            <div class="glass card-lift rounded-2xl p-4 text-center animate-fade-in-up delay-{{ ($loop->index + 1) * 100 }}">
+              <svg class="mx-auto h-6 w-6 text-primary mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                @if ($feature['icon'] === 'shield')
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m7.784-4.817a.75.75 0 00-1.052-.855L12 5.696v5.696a.75.75 0 001.5 0V5.696l5.232 5.228a.75.75 0 10.061-1.06z"></path>
+                @elseif ($feature['icon'] === 'activity')
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                @else
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                @endif
+              </svg>
+              <div class="text-sm font-semibold text-foreground">{{ $feature['label'] }}</div>
+            </div>
+          @endforeach
+        </div>
+
+        <div class="mt-12 text-sm text-muted-foreground animate-fade-in delay-500">
+          © 2026 DentalCare Clinic
+        </div>
+      </div>
+
+      <!-- Right form -->
+      <div class="flex items-center justify-center">
+        <div class="glass w-full rounded-3xl p-8 shadow-2xl animate-scale-in border border-border backdrop-blur-xl">
+          <div class="mb-8">
+            <h2 class="text-3xl font-bold tracking-tight text-foreground">Đặt lại Mật khẩu</h2>
+            <p class="mt-2 text-muted-foreground">Nhập mật khẩu cũ và mật khẩu mới</p>
+          </div>
+
+          @if ($errors->any())
+            <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 animate-fade-in-up">
+              <strong>Lỗi:</strong>
+              <ul class="mt-2 ml-4 list-disc">
+                @foreach ($errors->all() as $error)
+                  <li>{{ $error }}</li>
+                @endforeach
+              </ul>
+            </div>
+          @endif
+
+          <form method="POST" action="{{ route('password.reset') }}" class="space-y-5">
             @csrf
 
-            <div class="form-group">
-                <label for="old_password">🔑 Mật khẩu cũ</label>
-                <input 
-                    type="password" 
-                    id="old_password" 
-                    name="old_password" 
-                    placeholder="Nhập mật khẩu hiện tại"
-                    required
-                    autofocus
-                >
+            <div class="space-y-2 animate-fade-in-up delay-100">
+              <label for="old_password" class="block text-sm font-semibold text-foreground">Mật khẩu cũ</label>
+              <input
+                id="old_password"
+                type="password"
+                name="old_password"
+                placeholder="••••••"
+                required
+                class="input-field h-12"
+              />
+              @error('old_password')
+                <span class="text-xs text-red-600">{{ $message }}</span>
+              @enderror
             </div>
 
-            <div class="form-group">
-                <label for="password">🔒 Mật khẩu mới</label>
-                <input 
-                    type="password" 
-                    id="password" 
-                    name="password" 
-                    placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)"
-                    required
-                >
+            <div class="space-y-2 animate-fade-in-up delay-200">
+              <label for="password" class="block text-sm font-semibold text-foreground">Mật khẩu mới</label>
+              <input
+                id="password"
+                type="password"
+                name="password"
+                placeholder="••••••"
+                required
+                class="input-field h-12"
+              />
+              @error('password')
+                <span class="text-xs text-red-600">{{ $message }}</span>
+              @enderror
             </div>
 
-            <div class="form-group">
-                <label for="password_confirmation">✓ Xác nhận mật khẩu mới</label>
-                <input 
-                    type="password" 
-                    id="password_confirmation" 
-                    name="password_confirmation" 
-                    placeholder="Nhập lại mật khẩu mới"
-                    required
-                >
+            <div class="space-y-2 animate-fade-in-up delay-300">
+              <label for="password_confirmation" class="block text-sm font-semibold text-foreground">Xác nhận Mật khẩu mới</label>
+              <input
+                id="password_confirmation"
+                type="password"
+                name="password_confirmation"
+                placeholder="••••••"
+                required
+                class="input-field h-12"
+              />
+              @error('password_confirmation')
+                <span class="text-xs text-red-600">{{ $message }}</span>
+              @enderror
             </div>
 
-            <button type="submit" class="btn-submit">Đặt lại Mật khẩu</button>
-        </form>
+            <button
+              type="submit"
+              class="btn-primary h-12 w-full text-base font-semibold animate-fade-in-up delay-400"
+            >
+              Đặt lại Mật khẩu
+            </button>
+          </form>
 
-        <form method="GET" action="{{ route('password.otp.form') }}">
-            <button type="submit" class="btn-forgot">📱 Tôi quên mật khẩu cũ (Xác nhận bằng OTP)</button>
-        </form>
+          <div class="mt-6 space-y-4 animate-fade-in-up delay-500">
+            <button
+              type="button"
+              onclick="window.location.href='{{ route('password.otp.form') }}'"
+              class="w-full h-11 rounded-lg border border-primary text-primary font-semibold hover:bg-primary/5 transition-colors"
+            >
+              📱 Xác nhận bằng OTP
+            </button>
 
-        <div class="divider">
-            <span>hoặc</span>
+            <p class="text-center text-sm text-muted-foreground">
+              <a href="{{ route('login') }}" class="font-semibold text-primary hover:underline">← Quay lại đăng nhập</a>
+            </p>
+          </div>
         </div>
-
-        <div class="footer-link">
-            <p><a href="{{ route('login') }}">← Quay lại đăng nhập</a></p>
-        </div>
+      </div>
     </div>
+  </div>
+</div>
 </body>
 </html>

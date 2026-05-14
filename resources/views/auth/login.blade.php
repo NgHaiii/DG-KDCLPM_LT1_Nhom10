@@ -256,7 +256,7 @@
             </div>
 
             <div class="flex justify-between items-center animate-fade-in-up delay-300">
-              <a href="#" class="text-sm font-medium text-primary hover:underline">Quên mật khẩu?</a>
+            <a href="{{ route('password.request') }}" class="text-sm font-medium text-primary hover:underline">Quên mật khẩu?</a>
             </div>
 
             <button

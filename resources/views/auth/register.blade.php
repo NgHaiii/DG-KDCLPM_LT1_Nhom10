@@ -3,289 +3,340 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng ký - Quản lý Phòng khám Nha khoa</title>
+    <title>Đăng ký — DentalCare</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      /* Floating animated shapes */
+      .floating-shape {
+        position: absolute;
+        border-radius: 50%;
+        opacity: 0.25;
+        animation: float-shape 20s ease-in-out infinite;
+        pointer-events: none;
+        filter: blur(2px);
+      }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-        }
+      .shape-1 {
+        width: 300px;
+        height: 300px;
+        background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+        top: 10%;
+        left: 5%;
+        animation-delay: 0s;
+      }
 
-        .container {
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            padding: 50px 40px;
-            max-width: 450px;
-            width: 100%;
-        }
+      .shape-2 {
+        width: 200px;
+        height: 200px;
+        background: linear-gradient(135deg, #06b6d4, #14b8a6);
+        bottom: 15%;
+        right: 10%;
+        animation-delay: 5s;
+      }
 
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
+      .shape-3 {
+        width: 250px;
+        height: 250px;
+        background: linear-gradient(135deg, #14b8a6, #0ea5e9);
+        top: 50%;
+        right: 5%;
+        animation-delay: 10s;
+      }
 
-        .header h1 {
-            color: #333;
-            font-size: 28px;
-            margin-bottom: 10px;
+      @keyframes float-shape {
+        0%, 100% {
+          transform: translate(0, 0) rotate(0deg);
         }
-
-        .header p {
-            color: #999;
-            font-size: 14px;
+        25% {
+          transform: translate(30px, -30px) rotate(90deg);
         }
-
-        .info-box {
-            background: #f0f4ff;
-            border-left: 4px solid #667eea;
-            padding: 12px 15px;
-            border-radius: 6px;
-            margin-bottom: 25px;
-            font-size: 13px;
-            color: #555;
+        50% {
+          transform: translate(-20px, 30px) rotate(180deg);
         }
-
-        .form-group {
-            margin-bottom: 20px;
+        75% {
+          transform: translate(40px, 20px) rotate(270deg);
         }
+      }
 
-        label {
-            display: block;
-            color: #444;
-            font-weight: 500;
-            margin-bottom: 8px;
-            font-size: 14px;
+      /* Floating icons */
+      .floating-icon {
+        position: absolute;
+        opacity: 0.2;
+        pointer-events: none;
+        animation: float-icon 15s ease-in-out infinite;
+        filter: drop-shadow(0 0 8px rgba(14, 165, 233, 0.3));
+      }
+
+      .icon-1 {
+        width: 80px;
+        height: 80px;
+        top: 20%;
+        left: 15%;
+        animation-delay: 0s;
+      }
+
+      .icon-2 {
+        width: 100px;
+        height: 100px;
+        bottom: 25%;
+        right: 20%;
+        animation-delay: 3s;
+      }
+
+      .icon-3 {
+        width: 70px;
+        height: 70px;
+        top: 60%;
+        left: 10%;
+        animation-delay: 6s;
+      }
+
+      @keyframes float-icon {
+        0%, 100% {
+          transform: translateY(0) scale(1);
         }
-
-        input[type="text"],
-        input[type="email"],
-        input[type="password"] {
-            width: 100%;
-            padding: 12px 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s ease;
-            font-family: Arial, sans-serif;
+        50% {
+          transform: translateY(-30px) scale(1.1);
         }
-
-        input[type="text"]:focus,
-        input[type="email"]:focus,
-        input[type="password"]:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-
-        .btn-register {
-            width: 100%;
-            padding: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            margin-top: 20px;
-        }
-
-        .btn-register:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-register:active {
-            transform: translateY(0);
-        }
-
-        .alert {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            font-size: 14px;
-            animation: slideDown 0.3s ease;
-        }
-
-        .alert-error {
-            background-color: #fee;
-            color: #c33;
-            border-left: 4px solid #f44;
-        }
-
-        .alert-error ul {
-            margin-left: 20px;
-            margin-top: 5px;
-        }
-
-        .alert-error li {
-            margin-bottom: 5px;
-        }
-
-        .divider {
-            text-align: center;
-            margin: 30px 0 20px;
-            position: relative;
-            color: #999;
-            font-size: 14px;
-        }
-
-        .divider::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            width: 100%;
-            height: 1px;
-            background: #e0e0e0;
-            transform: translateY(-50%);
-        }
-
-        .divider span {
-            background: #fff;
-            padding: 0 10px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .footer-link {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .footer-link a {
-            color: #667eea;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: color 0.3s ease;
-        }
-
-        .footer-link a:hover {
-            color: #764ba2;
-            text-decoration: underline;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @media (max-width: 480px) {
-            .container {
-                padding: 30px 20px;
-            }
-
-            .header h1 {
-                font-size: 24px;
-            }
-        }
+      }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🦷 Đăng Ký</h1>
-            <p>Tạo tài khoản bệnh nhân</p>
+<div class="aurora-bg relative min-h-screen flex items-center justify-center overflow-hidden">
+  <!-- Floating shapes -->
+  <div class="floating-shape shape-1"></div>
+  <div class="floating-shape shape-2"></div>
+  <div class="floating-shape shape-3"></div>
+
+  <!-- Floating icons -->
+  <svg class="floating-icon icon-1" fill="currentColor" viewBox="0 0 24 24" style="color: #0ea5e9;">
+    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+  </svg>
+
+  <svg class="floating-icon icon-2" fill="currentColor" viewBox="0 0 24 24" style="color: #06b6d4;">
+    <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"></path>
+  </svg>
+
+  <svg class="floating-icon icon-3" fill="currentColor" viewBox="0 0 24 24" style="color: #14b8a6;">
+    <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+  </svg>
+
+  <!-- Floating particles -->
+  <div class="aurora-particles">
+    @for ($i = 0; $i < 18; $i++)
+      <span
+        style="
+          left: {{ (($i * 53) % 100) }}%;
+          width: {{ (6 + ($i % 5) * 4) }}px;
+          height: {{ (6 + ($i % 5) * 4) }}px;
+          animation-duration: {{ (12 + ($i % 7) * 3) }}s;
+          animation-delay: {{ (($i % 8) * 1.2) }}s;
+        "
+      ></span>
+    @endfor
+  </div>
+
+  <div class="relative z-10 w-full max-w-6xl px-6 py-12">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+      
+      <!-- Left brand panel -->
+      <div class="flex flex-col justify-center animate-fade-in">
+        <div class="flex items-center gap-2 mb-6">
+          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-blue-600 text-white shadow-lg animate-float">
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <span class="text-2xl font-bold text-foreground">DentalCare</span>
         </div>
 
-        <div class="info-box">
-            ℹ️ <strong>Chỉ bệnh nhân mới có thể tự đăng ký.</strong> Bác sĩ và nhân viên vui lòng liên hệ quản trị viên.
+        <div class="mb-6 inline-flex items-center gap-2 rounded-full glass px-4 py-2 text-sm font-medium text-primary w-fit">
+          <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+          </svg>
+          Hệ thống thế hệ mới 2026
         </div>
 
-        @if ($errors->any())
-            <div class="alert alert-error">
-                <strong>❌ Lỗi:</strong>
-                <ul>
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
+        <h1 class="text-5xl lg:text-6xl font-bold leading-tight tracking-tight mb-4">
+          Quản lý <span class="text-gradient">Phòng khám</span><br />
+          Nha khoa hiện đại
+        </h1>
+
+        <p class="text-lg text-muted-foreground mb-8 max-w-md">
+          Giải pháp toàn diện cho lịch khám, hồ sơ bệnh nhân, dịch vụ, doanh thu — phân quyền theo vai trò chuẩn y tế.
+        </p>
+
+        <div class="grid grid-cols-3 gap-4 max-w-md">
+          @php
+            $features = [
+              ['icon' => 'shield', 'label' => 'Bảo mật'],
+              ['icon' => 'activity', 'label' => 'Realtime'],
+              ['icon' => 'heart', 'label' => 'Y tế'],
+            ];
+          @endphp
+          @foreach ($features as $feature)
+            <div class="glass card-lift rounded-2xl p-4 text-center animate-fade-in-up delay-{{ ($loop->index + 1) * 100 }}">
+              <svg class="mx-auto h-6 w-6 text-primary mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                @if ($feature['icon'] === 'shield')
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m7.784-4.817a.75.75 0 00-1.052-.855L12 5.696v5.696a.75.75 0 001.5 0V5.696l5.232 5.228a.75.75 0 10.061-1.06z"></path>
+                @elseif ($feature['icon'] === 'activity')
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                @else
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                @endif
+              </svg>
+              <div class="text-sm font-semibold text-foreground">{{ $feature['label'] }}</div>
             </div>
-        @endif
+          @endforeach
+        </div>
 
-        <form method="POST" action="{{ route('register') }}">
+        <div class="mt-12 text-sm text-muted-foreground animate-fade-in delay-500">
+          © 2026 DentalCare Clinic
+        </div>
+      </div>
+
+      <!-- Right form -->
+      <div class="flex items-center justify-center">
+        <div class="glass w-full rounded-3xl p-8 shadow-2xl animate-scale-in border border-border backdrop-blur-xl max-h-[90vh] overflow-y-auto">
+          <div class="mb-8">
+            <h2 class="text-3xl font-bold tracking-tight text-foreground">Đăng ký tài khoản</h2>
+            <p class="mt-2 text-muted-foreground">Tạo tài khoản bệnh nhân để bắt đầu</p>
+          </div>
+
+          @if ($errors->any())
+            <div class="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700 animate-fade-in-up">
+              <strong>Lỗi:</strong>
+              @if ($errors->count() > 1)
+                <ul class="mt-2 list-disc list-inside">
+                  @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                  @endforeach
+                </ul>
+              @else
+                <p>{{ $errors->first() }}</p>
+              @endif
+            </div>
+          @endif
+
+          <form method="POST" action="{{ route('register') }}" class="space-y-4">
             @csrf
 
             <!-- Role ẩn, mặc định = patient -->
             <input type="hidden" name="role" value="patient">
 
-            <div class="form-group">
-                <label for="name">👤 Họ Tên</label>
-                <input 
-                    type="text" 
-                    id="name" 
-                    name="name" 
-                    value="{{ old('name') }}" 
-                    placeholder="Nhập họ tên của bạn"
-                    required
-                    autofocus
-                >
+            <div class="space-y-2 animate-fade-in-up delay-100">
+              <label for="name" class="block text-sm font-semibold text-foreground">Họ và Tên</label>
+              <input
+                id="name"
+                type="text"
+                name="name"
+                value="{{ old('name') }}"
+                placeholder="Nhập họ tên của bạn"
+                required
+                autofocus
+                class="input-field h-11"
+              />
+              @error('name')
+                <span class="text-xs text-red-600">{{ $message }}</span>
+              @enderror
             </div>
 
-            <div class="form-group">
-                <label for="email">📧 Email</label>
-                <input 
-                    type="email" 
-                    id="email" 
-                    name="email" 
-                    value="{{ old('email') }}" 
-                    placeholder="Nhập email của bạn"
-                    required
-                >
+            <div class="space-y-2 animate-fade-in-up delay-150">
+              <label for="email" class="block text-sm font-semibold text-foreground">Email</label>
+              <input
+                id="email"
+                type="email"
+                name="email"
+                value="{{ old('email') }}"
+                placeholder="your.email@example.com"
+                required
+                class="input-field h-11"
+              />
+              @error('email')
+                <span class="text-xs text-red-600">{{ $message }}</span>
+              @enderror
             </div>
 
-            <div class="form-group">
-                <label for="password">🔒 Mật khẩu</label>
-                <input 
-                    type="password" 
-                    id="password" 
-                    name="password" 
-                    placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
-                    required
+            <div class="space-y-2 animate-fade-in-up delay-200">
+              <label for="password" class="block text-sm font-semibold text-foreground">Mật khẩu</label>
+              <div class="relative">
+                <input
+                  id="password"
+                  type="password"
+                  name="password"
+                  placeholder="••••••"
+                  required
+                  class="input-field h-11 pr-11"
+                />
+                <button
+                  type="button"
+                  onclick="togglePassword()"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
                 >
+                  <svg id="eye-icon" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                  </svg>
+                </button>
+              </div>
+              @error('password')
+                <span class="text-xs text-red-600">{{ $message }}</span>
+              @enderror
             </div>
 
-            <div class="form-group">
-                <label for="password_confirmation">✓ Xác nhận Mật khẩu</label>
-                <input 
-                    type="password" 
-                    id="password_confirmation" 
-                    name="password_confirmation" 
-                    placeholder="Nhập lại mật khẩu"
-                    required
-                >
+            <div class="space-y-2 animate-fade-in-up delay-250">
+              <label for="password_confirmation" class="block text-sm font-semibold text-foreground">Xác nhận Mật khẩu</label>
+              <input
+                id="password_confirmation"
+                type="password"
+                name="password_confirmation"
+                placeholder="••••••"
+                required
+                class="input-field h-11"
+              />
+              @error('password_confirmation')
+                <span class="text-xs text-red-600">{{ $message }}</span>
+              @enderror
             </div>
 
-            <button type="submit" class="btn-register">Đăng Ký</button>
-        </form>
+            <button
+              type="submit"
+              class="btn-primary h-11 w-full text-base font-semibold animate-fade-in-up delay-300 mt-6"
+            >
+              Đăng ký
+            </button>
+          </form>
 
-        <div class="divider">
-            <span>hoặc</span>
+          <div class="mt-6 pt-6 border-t border-border animate-fade-in-up delay-350">
+            <p class="text-center text-sm text-muted-foreground">
+              Đã có tài khoản? 
+              <a href="{{ route('login') }}" class="font-semibold text-primary hover:underline">Đăng nhập</a>
+            </p>
+          </div>
+
+          <div class="mt-4 p-4 rounded-lg bg-blue-50/50 border border-blue-200/50 animate-fade-in-up delay-400">
+            <p class="text-xs text-muted-foreground">
+              <strong>ℹ️ Lưu ý:</strong> Chỉ bệnh nhân mới có thể tự đăng ký. Bác sĩ và nhân viên vui lòng liên hệ quản trị viên.
+            </p>
+          </div>
         </div>
-
-                <div class="footer-link">
-            <p>Đã có tài khoản? <a href="{{ route('login') }}">Đăng nhập ngay</a></p>
-            <p><a href="{{ route('password.request') }}">Quên mật khẩu?</a></p>
-        </div>
+      </div>
     </div>
+  </div>
+</div>
+
+<script>
+  function togglePassword() {
+    const input = document.getElementById('password');
+    const icon = document.getElementById('eye-icon');
+    if (input.type === 'password') {
+      input.type = 'text';
+      icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>';
+    } else {
+      input.type = 'password';
+      icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>';
+    }
+  }
+</script>
 </body>
 </html>
