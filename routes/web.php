@@ -43,15 +43,11 @@ Route::middleware('auth')->group(function () {
         return view('doctor.dashboard');
     })->name('doctor.dashboard');
 
-    Route::get('employee/dashboard', function () {
-        return view('employees.dashboard');
-    })->name('employee.dashboard');
-
     Route::get('patient/dashboard', function () {
         return view('patient.dashboard');
     })->name('patient.dashboard');
 
-    // ========== ADMIN PANEL - QUẢN LÝ BÁC SĨ VÀ NHÂN VIÊN ==========
+    // ========== ADMIN PANEL - QUẢN LÝ BÁC SĨ, NHÂN VIÊN, DỊCH VỤ, GIÁ ==========
     Route::prefix('admin')->name('admin.')->group(function () {
         
         // Danh sách bác sĩ
@@ -71,15 +67,55 @@ Route::middleware('auth')->group(function () {
         Route::delete('employee/{employee}', [EmployeeController::class, 'destroy'])->name('employee.destroy');
 
         // ========== QUẢN LÝ DỊCH VỤ ==========
-        Route::get('services', [ServiceController::class, 'index'])->name('services');
+        Route::get('services', [ServiceController::class, 'index'])->name('services.index');
         Route::post('services', [ServiceController::class, 'store'])->name('services.store');
         Route::patch('services/{service}', [ServiceController::class, 'update'])->name('services.update');
         Route::delete('services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
 
         // ========== QUẢN LÝ GIÁ DỊCH VỤ ==========
-        Route::get('prices', [PriceController::class, 'index'])->name('prices');
+        Route::get('prices', [PriceController::class, 'index'])->name('prices.index');
         Route::post('prices', [PriceController::class, 'store'])->name('prices.store');
         Route::patch('prices/{price}', [PriceController::class, 'update'])->name('prices.update');
         Route::delete('prices/{price}', [PriceController::class, 'destroy'])->name('prices.destroy');
+    });
+
+    // ========== EMPLOYEE PANEL - NHÂN VIÊN TIẾP NHẬN BỆNH NHÂN ==========
+    Route::prefix('employee')->name('employee.')->group(function () {
+        
+        // Dashboard
+        Route::get('dashboard', function () {
+            return view('employees.dashboard');
+        })->name('dashboard');
+
+        // Tiếp nhận bệnh nhân
+        Route::get('reception', function () {
+            return view('employees.reception');
+        })->name('reception');
+
+        // Đặt lịch khám
+        Route::get('schedule', function () {
+            return view('employees.schedule');
+        })->name('schedule');
+
+        // Thanh toán
+        Route::get('payment', function () {
+            return view('employees.payment');
+        })->name('payment');
+
+        // Hóa đơn
+        Route::get('invoice', function () {
+            return view('employees.invoice');
+        })->name('invoice');
+
+        // Bảng giá dịch vụ
+        Route::get('services', function () {
+            $services = \App\Models\Service::with('currentPrice')->get();
+            return view('employees.services', compact('services'));
+        })->name('services');
+
+        // Cài đặt cá nhân
+        Route::get('settings', function () {
+            return view('employees.settings');
+        })->name('settings');
     });
 });
