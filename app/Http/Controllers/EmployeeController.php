@@ -37,6 +37,12 @@ class EmployeeController extends Controller
             'specialization' => 'nullable',
             'phone' => 'nullable',
             'address' => 'nullable',
+            'dob' => 'nullable|date',
+            'gender' => 'nullable',
+            'workplace' => 'nullable',
+            'degree' => 'nullable',
+            'status' => 'nullable',
+            'linkedUser' => 'nullable',
         ]);
         $validated['is_doctor'] = $request->boolean('is_doctor');
 
@@ -63,6 +69,12 @@ class EmployeeController extends Controller
             'position' => 'required',
             'is_doctor' => 'boolean',
             'specialization' => 'nullable',
+            'dob' => 'nullable|date',
+            'gender' => 'nullable',
+            'workplace' => 'nullable',
+            'degree' => 'nullable',
+            'status' => 'nullable',
+            'linkedUser' => 'nullable',
         ]);
         $validated['is_doctor'] = $request->boolean('is_doctor');
         $this->employeeService->updateEmployee($employee, $validated);

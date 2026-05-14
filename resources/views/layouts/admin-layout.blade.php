@@ -237,6 +237,18 @@
                     <span>Quản lý nhân viên</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.services') }}" class="nav-link @if(request()->routeIs('admin.services')) active @endif">
+                    <span class="nav-icon">🏥</span>
+                    <span>Quản lý dịch vụ</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.prices') }}" class="nav-link @if(request()->routeIs('admin.prices')) active @endif">
+                    <span class="nav-icon">💰</span>
+                    <span>Quản lý giá</span>
+                </a>
+            </li>
         </ul>
     </aside>
 

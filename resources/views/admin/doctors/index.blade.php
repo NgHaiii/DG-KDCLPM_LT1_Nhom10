@@ -576,9 +576,17 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Chuyên môn</label>
-                        <input type="text" name="specialization" id="specialization" placeholder="VD: Cấy ghép implant">
-                    </div>
+    <label>Chuyên môn</label>
+    <select name="specialization" id="specialization">
+        <option value="">-- Chọn chuyên môn --</option>
+        <option value="Niềng răng">Niềng răng</option>
+        <option value="Implant">Implant</option>
+        <option value="Tổng quát">Tổng quát</option>
+        <option value="Nội nha">Nội nha</option>
+        <option value="Phẫu thuật hàm mặt">Phẫu thuật hàm mặt</option>
+        <option value="Chỉnh nha">Chỉnh nha</option>
+    </select>
+</div>
                 </div>
 
                 <div class="form-row">

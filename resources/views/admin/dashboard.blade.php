@@ -332,4 +332,5 @@
                 </tr>
             </tbody>
         </table>
-    </div>@endsection
+    </div>
+@endsection

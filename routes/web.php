@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\PriceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EmployeeController;
 
@@ -42,7 +44,7 @@ Route::middleware('auth')->group(function () {
     })->name('doctor.dashboard');
 
     Route::get('employee/dashboard', function () {
-        return view('employee.dashboard');
+        return view('employees.dashboard');
     })->name('employee.dashboard');
 
     Route::get('patient/dashboard', function () {
@@ -63,8 +65,21 @@ Route::middleware('auth')->group(function () {
         
         // Cập nhật bác sĩ/nhân viên
         Route::put('employee/{employee}', [EmployeeController::class, 'update'])->name('employee.update');
+        Route::patch('employee/{employee}', [EmployeeController::class, 'update']);
         
         // Xóa bác sĩ/nhân viên
         Route::delete('employee/{employee}', [EmployeeController::class, 'destroy'])->name('employee.destroy');
+
+        // ========== QUẢN LÝ DỊCH VỤ ==========
+        Route::get('services', [ServiceController::class, 'index'])->name('services');
+        Route::post('services', [ServiceController::class, 'store'])->name('services.store');
+        Route::patch('services/{service}', [ServiceController::class, 'update'])->name('services.update');
+        Route::delete('services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
+
+        // ========== QUẢN LÝ GIÁ DỊCH VỤ ==========
+        Route::get('prices', [PriceController::class, 'index'])->name('prices');
+        Route::post('prices', [PriceController::class, 'store'])->name('prices.store');
+        Route::patch('prices/{price}', [PriceController::class, 'update'])->name('prices.update');
+        Route::delete('prices/{price}', [PriceController::class, 'destroy'])->name('prices.destroy');
     });
 });
