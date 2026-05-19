@@ -54,9 +54,11 @@ class EmployeeService
             'phone' => $validated['phone'] ?? null,
         ]);
 
-        $validated['email'] = $email;
-        $validated['code'] = $code;
-        Employee::create($validated);
+      
+$validated['email'] = $email;
+$validated['code'] = $code;
+$validated['user_id'] = $user->id;  // ✅ Thêm dòng này
+Employee::create($validated);
 
         return [
             'email' => $email,

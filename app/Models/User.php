@@ -19,8 +19,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',    // Thêm trường role để phân quyền
-        'phone',   // Thêm trường phone để lưu số điện thoại
+        'role',
+        'phone',
     ];
 
     /**
@@ -42,4 +42,50 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    /**
+     * ✅ Relationship: User → Employee (1-to-1)
+     */
+    public function employee()
+    {
+        return $this->hasOne(Employee::class, 'user_id', 'id');
+    }
+
+    /**
+     * ✅ Kiểm tra user có phải admin không
+     */
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    /**
+     * ✅ Kiểm tra user có phải doctor không
+     */
+    public function isDoctor(): bool
+    {
+        return $this->employee && $this->employee->is_doctor;
+    }
+
+    /**
+     * ✅ Kiểm tra user có phải employee/nhân viên không
+     */
+    public function isEmployee(): bool
+    {
+        return $this->employee && !$this->employee->is_doctor;
+    }
+
+    /**
+     * ✅ Lấy tên role dễ hiểu
+     */
+    public function getRoleLabel(): string
+    {
+        return match($this->role) {
+            'admin' => 'Quản trị viên',
+            'doctor' => 'Bác sĩ',
+            'employee' => 'Nhân viên',
+            'patient' => 'Bệnh nhân',
+            default => 'Người dùng',
+        };
+    }
 }

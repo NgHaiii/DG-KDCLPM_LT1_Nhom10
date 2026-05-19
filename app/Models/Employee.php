@@ -10,19 +10,25 @@ class Employee extends Model
     use HasFactory;
 
     protected $fillable = [
-        'code',           // Mã bác sĩ/nhân viên
+        'user_id',        // ✅ Thêm dòng này
+        'code',
         'name',
-        'dob',            // Ngày sinh
-        'gender',         // Giới tính
+        'dob',
+        'gender',
         'phone',
         'email',
         'address',
-        'workplace',      // Nơi công tác chính thức
-        'degree',         // Bằng cấp
-        'specialization', // Chuyên môn
+        'workplace',
+        'degree',
+        'specialization',
         'position',
         'is_doctor',
-        'status',         // Trạng thái (Hoạt động/Tạm nghỉ)
-        'linkedUser',     // Tài khoản liên kết
+        'status',
     ];
+
+    // ✅ Thêm relationship
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

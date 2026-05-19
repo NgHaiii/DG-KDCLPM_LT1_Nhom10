@@ -73,6 +73,17 @@
             font-size: 18px;
         }
 
+        .nav-group-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 20px;
+            margin-bottom: 10px;
+            padding: 0 15px;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
         /* Main Content */
         .main-content {
             flex: 1;
@@ -206,6 +217,10 @@
             .nav-icon {
                 font-size: 16px;
             }
+
+            .nav-group-title {
+                font-size: 10px;
+            }
         }
     </style>
     @yield('styles')
@@ -219,12 +234,16 @@
         </div>
 
         <ul class="nav-menu">
+            <!-- Dashboard -->
             <li class="nav-item">
                 <a href="{{ route('admin.dashboard') }}" class="nav-link @if(request()->routeIs('admin.dashboard')) active @endif">
                     <span class="nav-icon">📊</span>
                     <span>Dashboard</span>
                 </a>
             </li>
+
+            <!-- Quản lý nhân sự -->
+            <div class="nav-group-title">👥 Quản lý nhân sự</div>
             <li class="nav-item">
                 <a href="{{ route('admin.doctors') }}" class="nav-link @if(request()->routeIs('admin.doctors')) active @endif">
                     <span class="nav-icon">🩺</span>
@@ -237,14 +256,32 @@
                     <span>Quản lý nhân viên</span>
                 </a>
             </li>
+
+            <!-- Quản lý lịch trình & ca trực -->
+            <div class="nav-group-title">📅 Lịch trình & Ca trực</div>
             <li class="nav-item">
-                <a href="{{ route('admin.services') }}" class="nav-link @if(request()->routeIs('admin.services')) active @endif">
+                <a href="{{ route('admin.schedule-approval.index') }}" class="nav-link @if(request()->routeIs('admin.schedule-approval.*')) active @endif">
+                    <span class="nav-icon">📋</span>
+                    <span>Phê duyệt lịch trình</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="{{ route('admin.duty.index') }}" class="nav-link @if(request()->routeIs('admin.duty.*')) active @endif">
+                    <span class="nav-icon">🔔</span>
+                    <span>Giao ca trực</span>
+                </a>
+            </li>
+
+            <!-- Quản lý dịch vụ & giá -->
+            <div class="nav-group-title">💼 Dịch vụ & Giá</div>
+            <li class="nav-item">
+                <a href="{{ route('admin.services.index') }}" class="nav-link @if(request()->routeIs('admin.services.index')) active @endif">
                     <span class="nav-icon">🏥</span>
                     <span>Quản lý dịch vụ</span>
                 </a>
             </li>
             <li class="nav-item">
-                <a href="{{ route('admin.prices') }}" class="nav-link @if(request()->routeIs('admin.prices')) active @endif">
+                <a href="{{ route('admin.prices.index') }}" class="nav-link @if(request()->routeIs('admin.prices.index')) active @endif">
                     <span class="nav-icon">💰</span>
                     <span>Quản lý giá</span>
                 </a>

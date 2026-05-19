@@ -4,6 +4,10 @@ use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\DoctorScheduleController;
+use App\Http\Controllers\EmployeeScheduleController;
+use App\Http\Controllers\ScheduleApprovalController;
+use App\Http\Controllers\AdminDutyController;
 
 // ==================== ROUTE CHÍNH ====================
 Route::get('/', function () {
@@ -77,9 +81,88 @@ Route::middleware('auth')->group(function () {
         Route::post('prices', [PriceController::class, 'store'])->name('prices.store');
         Route::patch('prices/{price}', [PriceController::class, 'update'])->name('prices.update');
         Route::delete('prices/{price}', [PriceController::class, 'destroy'])->name('prices.destroy');
+
+        // ========== UC2.1 + UC2.2: QUẢN LÝ LỊCH TRÌNH BÁC SĨ & NHÂN VIÊN ==========
+        Route::prefix('schedule-approval')->name('schedule-approval.')->group(function () {
+            // Danh sách đơn đăng ký (UC2.1 & UC2.2)
+            Route::get('/', [ScheduleApprovalController::class, 'index'])->name('index');
+            
+            // Chi tiết đơn
+            Route::get('request/{scheduleRequest}', [ScheduleApprovalController::class, 'show'])->name('show');
+            
+            // Phê duyệt ca làm việc (UC2.2)
+            Route::post('request/{scheduleRequest}/approve', [ScheduleApprovalController::class, 'approve'])->name('approve');
+            Route::post('request/{scheduleRequest}/reject', [ScheduleApprovalController::class, 'reject'])->name('reject');
+            
+            // Phê duyệt ngày nghỉ (UC2.1)
+            Route::post('off-day/{offDay}/approve', [ScheduleApprovalController::class, 'approveOffDay'])->name('off-day.approve');
+            Route::post('off-day/{offDay}/reject', [ScheduleApprovalController::class, 'rejectOffDay'])->name('off-day.reject');
+            
+            // Xem lịch chi tiết của nhân viên/bác sĩ
+            Route::get('employee/{employee}', [ScheduleApprovalController::class, 'employeeSchedules'])->name('employee-schedules');
+            
+            // Danh sách bác sĩ
+            Route::get('doctors', [ScheduleApprovalController::class, 'doctors'])->name('doctors');
+            
+            // Danh sách nhân viên
+            Route::get('employees', [ScheduleApprovalController::class, 'employees'])->name('employees');
+        });
+
+        // ========== UC2.3: QUẢN LÝ CA TRỰC BÁC SĨ ==========
+        Route::prefix('duty')->name('duty.')->group(function () {
+            // Danh sách ca trực
+            Route::get('/', [AdminDutyController::class, 'index'])->name('index');
+            
+            // Form thêm ca trực
+            Route::get('create', [AdminDutyController::class, 'create'])->name('create');
+            
+            // Thêm ca trực
+            Route::post('/', [AdminDutyController::class, 'store'])->name('store');
+            
+            // Cập nhật ca trực
+            Route::put('{shiftAssignment}', [AdminDutyController::class, 'update'])->name('update');
+            
+            // Xóa ca trực
+            Route::delete('{shiftAssignment}', [AdminDutyController::class, 'destroy'])->name('destroy');
+            
+            // AJAX: Lấy danh sách bác sĩ có sẵn theo ngày
+            Route::get('available-doctors', [AdminDutyController::class, 'getAvailableDoctors'])->name('available-doctors');
+        });
     });
 
-    // ========== EMPLOYEE PANEL - NHÂN VIÊN TIẾP NHẬN BỆNH NHÂN ==========
+    // ========== DOCTOR PANEL - BÁC SĨ ==========
+    Route::prefix('doctor')->name('doctor.')->group(function () {
+        
+        // ========== UC2.1: ĐƠN XIN NGHỈ ==========
+        Route::prefix('schedule')->name('schedule.')->group(function () {
+            // Trang đăng ký ca làm việc + ngày nghỉ
+            Route::get('/', [DoctorScheduleController::class, 'create'])->name('create');
+            
+            // Đăng ký ca làm việc (UC2.2)
+            Route::post('/', [DoctorScheduleController::class, 'store'])->name('store');
+            
+            // Hủy đơn đăng ký ca làm việc (UC2.2)
+            Route::delete('{scheduleRequest}', [DoctorScheduleController::class, 'cancel'])->name('cancel');
+            
+            // Xem lịch đã duyệt (UC2.2)
+            Route::get('approved', [DoctorScheduleController::class, 'myApprovedSchedules'])->name('approved');
+            
+            // ========== UC2.1: NGÀY NGHỈ ==========
+            // Đăng ký ngày nghỉ
+            Route::post('off-day', [DoctorScheduleController::class, 'requestOffDay'])->name('off-day.store');
+            
+            // Xem danh sách ngày nghỉ
+            Route::get('off-days', [DoctorScheduleController::class, 'myOffDays'])->name('off-days');
+            
+            // Hủy đơn xin nghỉ
+            Route::delete('off-day/{offDay}', [DoctorScheduleController::class, 'cancelOffDay'])->name('off-day.cancel');
+        });
+
+        // ========== UC2.3: CA TRỰC BÁC SĨ (READONLY) ==========
+        Route::get('duties', [DoctorScheduleController::class, 'myDuties'])->name('duties');
+    });
+
+    // ========== EMPLOYEE PANEL - NHÂN VIÊN ==========
     Route::prefix('employee')->name('employee.')->group(function () {
         
         // Dashboard
@@ -92,10 +175,35 @@ Route::middleware('auth')->group(function () {
             return view('employees.reception');
         })->name('reception');
 
+        // ========== UC2.1 + UC2.2: LỊCH LÀM VIỆC & NGÀY NGHỈ ==========
+        Route::prefix('schedule')->name('schedule.')->group(function () {
+            // Trang đăng ký ca làm việc + ngày nghỉ
+            Route::get('/', [EmployeeScheduleController::class, 'create'])->name('create');
+            
+            // Đăng ký ca làm việc (UC2.2) - Nhân viên chỉ có Sáng/Chiều
+            Route::post('/', [EmployeeScheduleController::class, 'store'])->name('store');
+            
+            // Hủy đơn đăng ký ca làm việc (UC2.2)
+            Route::delete('{scheduleRequest}', [EmployeeScheduleController::class, 'cancel'])->name('cancel');
+            
+            // Xem lịch đã duyệt (UC2.2)
+            Route::get('approved', [EmployeeScheduleController::class, 'myApprovedSchedules'])->name('approved');
+            
+            // ========== UC2.1: NGÀY NGHỈ ==========
+            // Đăng ký ngày nghỉ
+            Route::post('off-day', [EmployeeScheduleController::class, 'requestOffDay'])->name('off-day.store');
+            
+            // Xem danh sách ngày nghỉ
+            Route::get('off-days', [EmployeeScheduleController::class, 'myOffDays'])->name('off-days');
+            
+            // Hủy đơn xin nghỉ
+            Route::delete('off-day/{offDay}', [EmployeeScheduleController::class, 'cancelOffDay'])->name('off-day.cancel');
+        });
+
         // Đặt lịch khám
-        Route::get('schedule', function () {
-            return view('employees.schedule');
-        })->name('schedule');
+        Route::get('appointment', function () {
+            return view('employees.appointment');
+        })->name('appointment');
 
         // Thanh toán
         Route::get('payment', function () {

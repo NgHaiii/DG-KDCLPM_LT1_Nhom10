@@ -73,10 +73,34 @@
             font-size: 18px;
         }
 
+        /* Menu group header */
+        .menu-group-title {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 20px;
+            margin-bottom: 10px;
+            padding-left: 15px;
+            letter-spacing: 0.5px;
+        }
+
         .divider {
             height: 1px;
             background: rgba(255, 255, 255, 0.1);
             margin: 15px 0;
+        }
+
+        /* Badge */
+        .badge {
+            display: inline-block;
+            background: #ff6b6b;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: auto;
         }
 
         /* Main Content */
@@ -137,6 +161,15 @@
             box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
         }
 
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #d1d5db;
+        }
+
         .btn-danger {
             background: #ef4444;
             color: white;
@@ -144,6 +177,11 @@
 
         .btn-danger:hover {
             background: #dc2626;
+        }
+
+        .btn-sm {
+            padding: 8px 15px;
+            font-size: 13px;
         }
 
         /* Alert */
@@ -184,6 +222,41 @@
             margin-bottom: 30px;
         }
 
+        /* User Profile */
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 15px;
+            margin-top: auto;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .user-info h4 {
+            font-size: 13px;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .user-info p {
+            font-size: 11px;
+            margin: 2px 0 0 0;
+            opacity: 0.8;
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .sidebar {
@@ -210,6 +283,10 @@
             .header h1 {
                 font-size: 22px;
             }
+
+            .badge {
+                display: none;
+            }
         }
 
         @media (max-width: 600px) {
@@ -228,6 +305,10 @@
             .nav-icon {
                 font-size: 16px;
             }
+
+            .menu-group-title {
+                display: none;
+            }
         }
     </style>
     @yield('styles')
@@ -241,13 +322,43 @@
         </div>
 
         <ul class="nav-menu">
+            <!-- Dashboard -->
             <li class="nav-item">
                 <a href="{{ route('employee.dashboard') }}" class="nav-link @if(request()->routeIs('employee.dashboard')) active @endif">
                     <span class="nav-icon">📊</span>
                     <span>Dashboard</span>
                 </a>
             </li>
-            
+
+            <!-- ========== QUẢN LÝ CA LÀM VIỆC & NGÀY NGHỈ ========== -->
+            <div class="menu-group-title">📅 Lịch làm việc</div>
+
+            <li class="nav-item">
+                <a href="{{ route('employee.schedule.create') }}" class="nav-link @if(request()->routeIs('employee.schedule.create')) active @endif">
+                    <span class="nav-icon">✏️</span>
+                    <span>Đăng ký ca & Nghỉ</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a href="{{ route('employee.schedule.approved') }}" class="nav-link @if(request()->routeIs('employee.schedule.approved')) active @endif">
+                    <span class="nav-icon">✅</span>
+                    <span>Lịch duyệt</span>
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a href="{{ route('employee.schedule.off-days') }}" class="nav-link @if(request()->routeIs('employee.schedule.off-days')) active @endif">
+                    <span class="nav-icon">🏖️</span>
+                    <span>Ngày nghỉ</span>
+                </a>
+            </li>
+
+            <div class="divider"></div>
+
+            <!-- ========== QUẢN LÝ BỆNH NHÂN VÀ THANH TOÁN ========== -->
+            <div class="menu-group-title">👥 Quản lý bệnh nhân</div>
+
             <li class="nav-item">
                 <a href="{{ route('employee.reception') }}" class="nav-link @if(request()->routeIs('employee.reception')) active @endif">
                     <span class="nav-icon">➕</span>
@@ -256,15 +367,20 @@
             </li>
 
             <li class="nav-item">
-                <a href="{{ route('employee.schedule') }}" class="nav-link @if(request()->routeIs('employee.schedule')) active @endif">
-                    <span class="nav-icon">📅</span>
-                    <span>Đặt lịch khám</span>
+                <a href="{{ route('employee.appointment') }}" class="nav-link @if(request()->routeIs('employee.appointment')) active @endif">
+                    <span class="nav-icon">📋</span>
+                    <span>Danh sách khám</span>
                 </a>
             </li>
 
+            <div class="divider"></div>
+
+            <!-- ========== THANH TOÁN VÀ HÓA ĐƠN ========== -->
+            <div class="menu-group-title">💰 Thanh toán</div>
+
             <li class="nav-item">
                 <a href="{{ route('employee.payment') }}" class="nav-link @if(request()->routeIs('employee.payment')) active @endif">
-                    <span class="nav-icon">💰</span>
+                    <span class="nav-icon">💳</span>
                     <span>Thanh toán</span>
                 </a>
             </li>
@@ -285,9 +401,12 @@
 
             <div class="divider"></div>
 
+            <!-- ========== CÀI ĐẶT ========== -->
+            <div class="menu-group-title">⚙️ Cài đặt</div>
+
             <li class="nav-item">
                 <a href="{{ route('employee.settings') }}" class="nav-link @if(request()->routeIs('employee.settings')) active @endif">
-                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-icon">👤</span>
                     <span>Cài đặt cá nhân</span>
                 </a>
             </li>
@@ -302,6 +421,19 @@
                 </form>
             </li>
         </ul>
+
+        <!-- User Profile -->
+        @auth
+        <div class="user-profile">
+            <div class="user-avatar">
+                {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+            </div>
+            <div class="user-info">
+                <h4>{{ Auth::user()->name }}</h4>
+                <p>Nhân viên</p>
+            </div>
+        </div>
+        @endauth
     </aside>
 
     <!-- Main Content -->
