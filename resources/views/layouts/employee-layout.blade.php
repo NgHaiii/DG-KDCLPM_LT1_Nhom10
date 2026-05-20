@@ -25,6 +25,7 @@
             top: 0;
             height: 100vh;
             box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
         }
 
         .sidebar-logo {
@@ -262,6 +263,7 @@
             .sidebar {
                 width: 200px;
                 padding: 20px 15px;
+                z-index: 1000;
             }
 
             .sidebar-logo {
@@ -292,6 +294,7 @@
         @media (max-width: 600px) {
             .sidebar {
                 width: 150px;
+                z-index: 1000;
             }
 
             .main-content {
@@ -324,7 +327,7 @@
         <ul class="nav-menu">
             <!-- Dashboard -->
             <li class="nav-item">
-                <a href="{{ route('employee.dashboard') }}" class="nav-link @if(request()->routeIs('employee.dashboard')) active @endif">
+                <a href="{{ route('employees.dashboard') }}" class="nav-link @if(request()->routeIs('employees.dashboard')) active @endif">
                     <span class="nav-icon">📊</span>
                     <span>Dashboard</span>
                 </a>
@@ -334,21 +337,21 @@
             <div class="menu-group-title">📅 Lịch làm việc</div>
 
             <li class="nav-item">
-                <a href="{{ route('employee.schedule.create') }}" class="nav-link @if(request()->routeIs('employee.schedule.create')) active @endif">
+                <a href="{{ route('employees.schedule.create') }}" class="nav-link @if(request()->routeIs('employees.schedule.create')) active @endif">
                     <span class="nav-icon">✏️</span>
                     <span>Đăng ký ca & Nghỉ</span>
                 </a>
             </li>
 
             <li class="nav-item">
-                <a href="{{ route('employee.schedule.approved') }}" class="nav-link @if(request()->routeIs('employee.schedule.approved')) active @endif">
+                <a href="{{ route('employees.schedule.approved') }}" class="nav-link @if(request()->routeIs('employees.schedule.approved')) active @endif">
                     <span class="nav-icon">✅</span>
                     <span>Lịch duyệt</span>
                 </a>
             </li>
 
             <li class="nav-item">
-                <a href="{{ route('employee.schedule.off-days') }}" class="nav-link @if(request()->routeIs('employee.schedule.off-days')) active @endif">
+                <a href="{{ route('employees.schedule.off-days') }}" class="nav-link @if(request()->routeIs('employees.schedule.off-days')) active @endif">
                     <span class="nav-icon">🏖️</span>
                     <span>Ngày nghỉ</span>
                 </a>
@@ -360,14 +363,14 @@
             <div class="menu-group-title">👥 Quản lý bệnh nhân</div>
 
             <li class="nav-item">
-                <a href="{{ route('employee.reception') }}" class="nav-link @if(request()->routeIs('employee.reception')) active @endif">
+                <a href="{{ route('employees.reception') }}" class="nav-link @if(request()->routeIs('employees.reception')) active @endif">
                     <span class="nav-icon">➕</span>
                     <span>Tiếp nhận bệnh nhân</span>
                 </a>
             </li>
 
             <li class="nav-item">
-                <a href="{{ route('employee.appointment') }}" class="nav-link @if(request()->routeIs('employee.appointment')) active @endif">
+                <a href="{{ route('employees.appointment') }}" class="nav-link @if(request()->routeIs('employees.appointment')) active @endif">
                     <span class="nav-icon">📋</span>
                     <span>Danh sách khám</span>
                 </a>
@@ -379,21 +382,21 @@
             <div class="menu-group-title">💰 Thanh toán</div>
 
             <li class="nav-item">
-                <a href="{{ route('employee.payment') }}" class="nav-link @if(request()->routeIs('employee.payment')) active @endif">
+                <a href="{{ route('employees.payment') }}" class="nav-link @if(request()->routeIs('employees.payment')) active @endif">
                     <span class="nav-icon">💳</span>
                     <span>Thanh toán</span>
                 </a>
             </li>
 
             <li class="nav-item">
-                <a href="{{ route('employee.invoice') }}" class="nav-link @if(request()->routeIs('employee.invoice')) active @endif">
+                <a href="{{ route('employees.invoice') }}" class="nav-link @if(request()->routeIs('employees.invoice')) active @endif">
                     <span class="nav-icon">🧾</span>
                     <span>Hóa đơn</span>
                 </a>
             </li>
 
             <li class="nav-item">
-                <a href="{{ route('employee.services') }}" class="nav-link @if(request()->routeIs('employee.services')) active @endif">
+                <a href="{{ route('employees.services') }}" class="nav-link @if(request()->routeIs('employees.services')) active @endif">
                     <span class="nav-icon">💊</span>
                     <span>Bảng giá dịch vụ</span>
                 </a>
@@ -405,7 +408,7 @@
             <div class="menu-group-title">⚙️ Cài đặt</div>
 
             <li class="nav-item">
-                <a href="{{ route('employee.settings') }}" class="nav-link @if(request()->routeIs('employee.settings')) active @endif">
+                <a href="{{ route('employees.settings') }}" class="nav-link @if(request()->routeIs('employees.settings')) active @endif">
                     <span class="nav-icon">👤</span>
                     <span>Cài đặt cá nhân</span>
                 </a>
@@ -469,8 +472,24 @@
                 </div>
             @endif
 
-            <!-- Content -->
-            @yield('content')
+           <!-- Errors & Messages Display -->
+@if ($errors->any())
+    <div style="background: #fee2e2; border: 2px solid #dc2626; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+        <h4 style="color: #991b1b; margin: 0 0 0.5rem 0;">❌ Lỗi:</h4>
+        @foreach ($errors->all() as $error)
+            <p style="color: #991b1b; margin: 0.25rem 0;">{{ $error }}</p>
+        @endforeach
+    </div>
+@endif
+
+@if (session('success'))
+    <div style="background: #dcfce7; border: 2px solid #16a34a; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+        <p style="color: #15803d; margin: 0;">✅ {{ session('success') }}</p>
+    </div>
+@endif
+
+<!-- Content -->
+@yield('content')
         </div>
     </main>
 

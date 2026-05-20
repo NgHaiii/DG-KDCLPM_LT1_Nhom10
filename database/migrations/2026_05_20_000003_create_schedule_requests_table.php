@@ -22,7 +22,7 @@ class CreateScheduleRequestsTable extends Migration
             $table->timestamps();
             
             $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
-            $table->foreign('shift_id')->references('id')->on('shifts')->onDelete('cascade');
+$table->foreign('shift_id')->references('id')->on('custom_shifts')->onDelete('cascade');
             $table->foreign('approved_by')->references('id')->on('users')->onDelete('set null');
             
             $table->unique(['employee_id', 'work_date', 'shift_id']);

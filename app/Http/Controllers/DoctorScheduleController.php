@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CustomShift;
 use App\Models\OffDay;
 use App\Models\ScheduleRequest;
 use App\Services\ScheduleRequestService;
@@ -26,12 +27,23 @@ class DoctorScheduleController extends Controller
      */
     public function create()
     {
-        $employee = auth()->user()->employee;
-        $shifts = $this->scheduleRequestService->getAvailableShifts(true); // true = doctor, có Sáng/Chiều/Tối
-        $pendingRequests = $this->scheduleRequestService->getPendingRequests($employee->id);
-        $approvedOffDays = $this->scheduleRequestService->getApprovedOffDays($employee->id);
+        try {
+            $employee = auth()->user()->employee;
+            
+            // Lấy tất cả ca làm việc áp dụng cho bác sĩ từ CustomShift
+            $shifts = CustomShift::where('is_for_doctor', 1)
+                ->where('is_active', 1)
+                ->orderBy('start_hour', 'asc')
+                ->get();
+            
+            $pendingRequests = $this->scheduleRequestService->getPendingRequests($employee->id);
+            $approvedSchedules = $this->scheduleRequestService->getApprovedRequests($employee->id);
+            $approvedOffDays = $this->scheduleRequestService->getApprovedOffDays($employee->id);
 
-        return view('doctor.schedule.request-form', compact('shifts', 'pendingRequests', 'approvedOffDays', 'employee'));
+            return view('doctor.schedule.request-form', compact('shifts', 'pendingRequests', 'approvedSchedules', 'approvedOffDays', 'employee'));
+        } catch (\Exception $e) {
+            return back()->with('error', '❌ ' . $e->getMessage());
+        }
     }
 
     /**
@@ -44,13 +56,24 @@ class DoctorScheduleController extends Controller
             
             $validated = $request->validate([
                 'work_date' => 'required|date|after_or_equal:today',
-                'shift_id' => 'required|exists:shifts,id',
+                'shift_id' => 'required|exists:custom_shifts,id',
+                'start_hour' => 'nullable|integer|between:0,23',
+                'start_minute' => 'nullable|integer|between:0,59',
+                'end_hour' => 'nullable|integer|between:0,23',
+                'end_minute' => 'nullable|integer|between:0,59',
             ]);
+
+            // Kiểm tra shift tồn tại và áp dụng cho bác sĩ
+            $shift = CustomShift::findOrFail($validated['shift_id']);
+            if (!$shift->is_for_doctor) {
+                return back()->with('error', '❌ Ca này không áp dụng cho bác sĩ');
+            }
 
             $this->scheduleRequestService->createScheduleRequest(
                 $employee->id,
                 $validated['work_date'],
-                $validated['shift_id']
+                $validated['shift_id'],
+                $validated
             );
 
             return back()->with('success', '✅ Đã gửi đơn đăng ký ca làm việc!');

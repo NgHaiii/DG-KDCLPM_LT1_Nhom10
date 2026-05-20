@@ -214,7 +214,7 @@ class AuthController extends Controller
     return match ($role) {
         'admin' => redirect()->route('admin.dashboard'),
         'doctor' => redirect()->route('doctor.dashboard'),
-        'employee' => redirect()->route('employee.dashboard'),
+        'employee' => redirect()->route('employees.dashboard'),
         default => redirect()->route('patient.dashboard'),
     };
 }

@@ -9,79 +9,108 @@ class ScheduleRequest extends Model
 {
     use HasFactory;
 
-    protected $table = 'schedule_requests';
+    protected $table = 'shift_assignments';
+
     protected $fillable = [
         'employee_id',
         'work_date',
         'shift_id',
-        'duty_type',
+        'assignment_type',
+        'notes',
+        'assigned_by',
         'status',
-        'reason',
-        'admin_notes',
-        'approved_by',
-        'approved_at',
     ];
 
     protected $casts = [
         'work_date' => 'date',
-        'approved_at' => 'datetime',
+        'notes' => 'array',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
-    // Quan hệ với Employee
+    /**
+     * ✅ Quan hệ với Employee
+     */
     public function employee()
     {
         return $this->belongsTo(Employee::class);
     }
 
-    // Quan hệ với Shift
+    /**
+     * ✅ Quan hệ với CustomShift
+     */
     public function shift()
     {
-        return $this->belongsTo(Shift::class);
+        return $this->belongsTo(CustomShift::class, 'shift_id');
     }
 
-    // Quan hệ với User (admin xác nhận)
-    public function approvedBy()
+    /**
+     * ✅ Quan hệ với User (người assign)
+     */
+    public function assignedBy()
     {
-        return $this->belongsTo(User::class, 'approved_by');
+        return $this->belongsTo(User::class, 'assigned_by');
     }
 
-    // Kiểm tra trạng thái
-    public function isPending()
-    {
-        return $this->status === 'pending';
-    }
-
-    public function isApproved()
-    {
-        return $this->status === 'approved';
-    }
-
-    public function isRejected()
-    {
-        return $this->status === 'rejected';
-    }
-
-    // Scope: Chỉ lấy request pending
+    /**
+     * ✅ Scope: Lấy đơn pending
+     */
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
     }
 
-    // Scope: Chỉ lấy request approved
+    /**
+     * ✅ Scope: Lấy đơn approved
+     */
     public function scopeApproved($query)
     {
         return $query->where('status', 'approved');
     }
 
-    // Scope: Chỉ lấy request của một nhân viên
-    public function scopeForEmployee($query, $employeeId)
+    /**
+     * ✅ Scope: Lấy đơn rejected
+     */
+    public function scopeRejected($query)
     {
-        return $query->where('employee_id', $employeeId);
+        return $query->where('status', 'rejected');
     }
 
-    // Scope: Lấy các request trong khoảng ngày
-    public function scopeDateRange($query, $startDate, $endDate)
+    /**
+     * ✅ Scope: Lấy theo ngày
+     */
+    public function scopeByDate($query, $date)
     {
-        return $query->whereBetween('work_date', [$startDate, $endDate]);
+        return $query->whereDate('work_date', $date);
+    }
+
+    /**
+     * ✅ Accessor: Format ngày làm
+     */
+    public function getFormattedDateAttribute()
+    {
+        return $this->work_date->format('d/m/Y');
+    }
+
+    /**
+     * ✅ Accessor: Lấy thông tin ca (bao gồm custom hours nếu có)
+     */
+    public function getShiftDetailsAttribute()
+    {
+        if ($this->notes && is_array($this->notes)) {
+            return [
+                'shift_name' => $this->shift?->name ?? 'Ca không xác định',
+                'start_time' => sprintf('%02d:%02d', $this->notes['start_hour'] ?? 0, $this->notes['start_minute'] ?? 0),
+                'end_time' => sprintf('%02d:%02d', $this->notes['end_hour'] ?? 0, $this->notes['end_minute'] ?? 0),
+                'is_custom' => true,
+            ];
+        }
+
+        return [
+            'shift_name' => $this->shift?->name ?? 'Ca không xác định',
+            'start_time' => sprintf('%02d:%02d', $this->shift?->start_hour ?? 0, $this->shift?->start_minute ?? 0),
+            'end_time' => sprintf('%02d:%02d', $this->shift?->end_hour ?? 0, $this->shift?->end_minute ?? 0),
+            'is_custom' => false,
+        ];
     }
 }

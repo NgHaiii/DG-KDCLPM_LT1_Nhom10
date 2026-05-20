@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CustomShift;
+use App\Models\Employee;
 use App\Models\OffDay;
 use App\Models\ScheduleRequest;
 use App\Services\ScheduleRequestService;
@@ -17,7 +19,7 @@ class EmployeeScheduleController extends Controller
     }
 
     /**
-     * Kiểm tra employee tồn tại
+     * ✅ Lấy nhân viên hiện tại (tạo mới nếu chưa có)
      */
     private function getEmployee()
     {
@@ -26,149 +28,185 @@ class EmployeeScheduleController extends Controller
             abort(401, 'Vui lòng đăng nhập');
         }
 
+        // Kiểm tra employee tồn tại
         $employee = $user->employee;
+        
+        // Nếu chưa có employee record, tạo mới
         if (!$employee) {
-            abort(403, 'Bạn không phải nhân viên hoặc chưa được thiết lập.');
+            $employee = Employee::create([
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ]);
         }
 
         return $employee;
     }
 
     /**
-     * Trang đăng ký ca làm việc & ngày nghỉ
+     * ✅ GET /employees/schedule - Hiển thị trang chính với 3 tabs
+     * Tab 1: Calendar để đăng ký ca
+     * Tab 2: Xin ngày nghỉ
+     * Tab 3: Xem ca & ngày nghỉ đã duyệt
      */
+    public function create()
+    {
+        try {
+            $employee = $this->getEmployee();
+            
+            // Lấy tất cả ca làm việc áp dụng cho nhân viên
+            $shifts = CustomShift::where('is_for_employee', 1)
+                ->where('is_active', 1)
+                ->orderBy('start_hour', 'asc')
+                ->get();
+            
+            // Lấy data để hiển thị trên các tabs
+            $pendingRequests = $this->scheduleRequestService->getPendingRequests($employee->id);
+            $approvedSchedules = $this->scheduleRequestService->getApprovedRequests($employee->id);
+            $approvedOffDays = $this->scheduleRequestService->getApprovedOffDays($employee->id);
 
-public function create()
-{
-    $employee = $this->getEmployee();
-    $availableShifts = $this->scheduleRequestService->getAvailableShifts(false);
-    $pendingRequests = $this->scheduleRequestService->getPendingRequests($employee->id);
-    $approvedSchedules = $this->scheduleRequestService->getApprovedRequests($employee->id);
-    $approvedOffDays = $this->scheduleRequestService->getApprovedOffDays($employee->id);
-
-    return view('employees.schedule.request-form', compact('availableShifts', 'pendingRequests', 'approvedSchedules', 'approvedOffDays', 'employee'));
-}
+            return view('employees.schedule.request-form', compact(
+                'shifts',
+                'pendingRequests',
+                'approvedSchedules',
+                'approvedOffDays',
+                'employee'
+            ));
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => '❌ Lỗi: ' . $e->getMessage()]);
+        }
+    }
 
     /**
-     * Đăng ký ca làm việc (POST)
+     * ✅ POST /employees/schedule - Nhân viên đăng ký ca làm việc
+     * Form submit từ modal trong tab "Lịch đăng ký ca"
      */
     public function store(Request $request)
     {
         try {
             $employee = $this->getEmployee();
             
+            // Validate dữ liệu
             $validated = $request->validate([
                 'work_date' => 'required|date|after_or_equal:today',
-                'shift_id' => 'required|exists:shifts,id',
+                'shift_id' => 'required|integer|exists:custom_shifts,id',
+                'start_hour' => 'nullable|integer|between:0,23',
+                'start_minute' => 'nullable|integer|between:0,59',
+                'end_hour' => 'nullable|integer|between:0,23',
+                'end_minute' => 'nullable|integer|between:0,59',
             ]);
 
+            // Tạo schedule request qua service
             $this->scheduleRequestService->createScheduleRequest(
                 $employee->id,
                 $validated['work_date'],
-                $validated['shift_id']
+                (int)$validated['shift_id'],
+                $validated
             );
 
-            return back()->with('success', '✅ Đã gửi đơn đăng ký ca làm việc!');
+            // Redirect về trang chính với success message
+            return redirect(route('employees.schedule.create'))
+                ->with('success', '✅ Đã gửi đơn đăng ký ca làm việc!');
         } catch (\Exception $e) {
-            return back()->with('error', '❌ ' . $e->getMessage());
+            // Redirect về trang chính với error message
+            return redirect(route('employees.schedule.create'))
+                ->withErrors(['error' => '❌ ' . $e->getMessage()]);
         }
     }
 
     /**
-     * Hủy đơn đăng ký (DELETE)
+     * ✅ DELETE /employees/schedule/{scheduleRequest} - Hủy đơn đăng ký ca
+     * Nhân viên chỉ có thể hủy đơn của chính mình
      */
     public function cancel(ScheduleRequest $scheduleRequest)
     {
         try {
             $employee = $this->getEmployee();
             
-            if ($scheduleRequest->employee_id != $employee->id) {
-                return back()->with('error', '❌ Không có quyền hủy đơn này');
+            // Kiểm tra quyền - chỉ nhân viên của chính họ mới có thể hủy
+            if ($scheduleRequest->employee_id !== $employee->id) {
+                return back()->withErrors(['error' => '❌ Không có quyền hủy đơn này']);
             }
 
+            // Hủy đơn qua service
             $this->scheduleRequestService->cancelScheduleRequest($scheduleRequest->id);
 
             return back()->with('success', '✅ Đã hủy đơn đăng ký');
         } catch (\Exception $e) {
-            return back()->with('error', '❌ ' . $e->getMessage());
+            return back()->withErrors(['error' => '❌ ' . $e->getMessage()]);
         }
     }
 
     /**
-     * Xem lịch đã duyệt
-     */
-    public function myApprovedSchedules()
-    {
-        $employee = $this->getEmployee();
-        $approvedSchedules = $this->scheduleRequestService->getApprovedRequests($employee->id);
-
-        return view('employee.schedule.my-approved-schedules', compact('approvedSchedules'));
-    }
-
-    /**
-     * Đăng ký ngày nghỉ (POST)
+     * ✅ POST /employees/schedule/off-day - Nhân viên xin ngày nghỉ
+     * Form submit từ tab "Xin ngày nghỉ"
      */
     public function requestOffDay(Request $request)
     {
         try {
             $employee = $this->getEmployee();
 
+            // Validate dữ liệu
             $validated = $request->validate([
                 'start_date' => 'required|date|after_or_equal:today',
                 'end_date' => 'required|date|after_or_equal:start_date',
                 'reason' => 'nullable|string|max:500',
             ]);
 
-            for ($date = strtotime($validated['start_date']); $date <= strtotime($validated['end_date']); $date += 86400) {
+            // Tạo record OffDay cho mỗi ngày trong khoảng
+            $startDate = strtotime($validated['start_date']);
+            $endDate = strtotime($validated['end_date']);
+
+            for ($date = $startDate; $date <= $endDate; $date += 86400) {
                 $dayStr = date('Y-m-d', $date);
                 
-                OffDay::firstOrCreate([
-                    'employee_id' => $employee->id,
-                    'off_date' => $dayStr,
-                ], [
-                    'reason' => $validated['reason'] ?? '',
-                    'status' => 'pending',
-                ]);
+                OffDay::firstOrCreate(
+                    [
+                        'employee_id' => $employee->id,
+                        'date' => $dayStr,
+                    ],
+                    [
+                        'reason' => $validated['reason'] ?? '',
+                        'status' => 'pending',
+                    ]
+                );
             }
 
-            return back()->with('success', '✅ Đã gửi đơn xin nghỉ!');
+            // Redirect về trang chính với success message
+            return redirect(route('employees.schedule.create'))
+                ->with('success', '✅ Đã gửi đơn xin nghỉ!');
         } catch (\Exception $e) {
-            return back()->with('error', '❌ ' . $e->getMessage());
+            // Redirect về trang chính với error message
+            return redirect(route('employees.schedule.create'))
+                ->withErrors(['error' => '❌ ' . $e->getMessage()]);
         }
     }
 
     /**
-     * Xem danh sách ngày nghỉ
-     */
-    public function myOffDays()
-    {
-        $employee = $this->getEmployee();
-        $offDays = $this->scheduleRequestService->getAllOffDays($employee->id);
-
-        return view('employee.schedule.my-off-days', compact('offDays'));
-    }
-
-    /**
-     * Hủy đơn xin nghỉ (DELETE)
+     * ✅ DELETE /employees/schedule/off-day/{offDay} - Hủy đơn xin nghỉ
+     * Nhân viên chỉ có thể hủy đơn của chính mình và đơn chưa được duyệt
      */
     public function cancelOffDay(OffDay $offDay)
     {
         try {
             $employee = $this->getEmployee();
 
-            if ($offDay->employee_id != $employee->id) {
-                return back()->with('error', '❌ Không có quyền hủy');
+            // Kiểm tra quyền - chỉ nhân viên của chính họ mới có thể hủy
+            if ($offDay->employee_id !== $employee->id) {
+                return back()->withErrors(['error' => '❌ Không có quyền hủy']);
             }
 
-            if ($offDay->status != 'pending') {
-                return back()->with('error', '❌ Chỉ có thể hủy đơn đang chờ duyệt');
+            // Kiểm tra trạng thái - chỉ hủy được đơn đang chờ duyệt
+            if ($offDay->status !== 'pending') {
+                return back()->withErrors(['error' => '❌ Chỉ có thể hủy đơn đang chờ duyệt']);
             }
 
+            // Xóa đơn xin nghỉ
             $offDay->delete();
 
             return back()->with('success', '✅ Đã hủy đơn xin nghỉ');
         } catch (\Exception $e) {
-            return back()->with('error', '❌ ' . $e->getMessage());
+            return back()->withErrors(['error' => '❌ ' . $e->getMessage()]);
         }
     }
 }

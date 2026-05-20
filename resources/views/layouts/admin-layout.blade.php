@@ -257,6 +257,15 @@
                 </a>
             </li>
 
+            <!-- Quản lý ca làm việc -->
+            <div class="nav-group-title">⏰ Ca làm việc</div>
+            <li class="nav-item">
+                <a href="{{ route('admin.shifts.index') }}" class="nav-link @if(request()->routeIs('admin.shifts.*')) active @endif">
+                    <span class="nav-icon">⚙️</span>
+                    <span>Quản lý ca làm việc</span>
+                </a>
+            </li>
+
             <!-- Quản lý lịch trình & ca trực -->
             <div class="nav-group-title">📅 Lịch trình & Ca trực</div>
             <li class="nav-item">

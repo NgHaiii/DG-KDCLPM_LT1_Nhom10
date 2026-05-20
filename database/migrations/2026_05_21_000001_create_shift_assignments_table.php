@@ -13,17 +13,26 @@ class CreateShiftAssignmentsTable extends Migration
             $table->unsignedBigInteger('employee_id');
             $table->date('work_date');
             $table->unsignedBigInteger('shift_id');
+            
+            // ✅ Thêm các cột giờ
+            $table->integer('start_hour')->nullable();
+            $table->integer('start_minute')->default(0);
+            $table->integer('end_hour')->nullable();
+            $table->integer('end_minute')->default(0);
+            
             $table->enum('assignment_type', ['work', 'duty'])->default('work');
+            $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->text('notes')->nullable();
             $table->unsignedBigInteger('assigned_by')->nullable();
             $table->timestamps();
             
             $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
-            $table->foreign('shift_id')->references('id')->on('shifts')->onDelete('cascade');
+            $table->foreign('shift_id')->references('id')->on('custom_shifts')->onDelete('cascade');
             $table->foreign('assigned_by')->references('id')->on('users')->onDelete('set null');
             $table->unique(['employee_id', 'work_date', 'assignment_type']);
             $table->index(['work_date']);
             $table->index(['employee_id', 'work_date']);
+            $table->index('status');
         });
     }
 
