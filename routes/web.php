@@ -1,4 +1,4 @@
-`<?php
+<?php
 
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\PriceController;
@@ -151,6 +151,7 @@ Route::get('employees/dashboard', function () {
         Route::prefix('schedule')->name('schedule.')->group(function () {
             Route::get('/', [EmployeeScheduleController::class, 'create'])->name('create');
             Route::post('/', [EmployeeScheduleController::class, 'store'])->name('store');
+            Route::put('{scheduleRequest}', [EmployeeScheduleController::class, 'updateSchedule'])->name('update');
             Route::delete('{scheduleRequest}', [EmployeeScheduleController::class, 'cancel'])->name('cancel');
             Route::post('off-day', [EmployeeScheduleController::class, 'requestOffDay'])->name('off-day.store');
             Route::delete('off-day/{offDay}', [EmployeeScheduleController::class, 'cancelOffDay'])->name('off-day.cancel');

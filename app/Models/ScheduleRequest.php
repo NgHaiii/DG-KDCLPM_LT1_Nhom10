@@ -19,6 +19,10 @@ class ScheduleRequest extends Model
         'notes',
         'assigned_by',
         'status',
+        'start_hour',
+        'start_minute',
+        'end_hour',
+        'end_minute',
     ];
 
     protected $casts = [
@@ -93,15 +97,33 @@ class ScheduleRequest extends Model
     }
 
     /**
-     * ✅ Accessor: Lấy thông tin ca (bao gồm custom hours nếu có)
+     * ✅ Accessor: Lấy time_range từ các cột start_hour, start_minute, end_hour, end_minute
+     */
+    public function getTimeRangeAttribute()
+    {
+        // Nếu có custom hours (cột không NULL)
+        if (!is_null($this->start_hour) && !is_null($this->end_hour)) {
+            $start_h = str_pad($this->start_hour, 2, '0', STR_PAD_LEFT);
+            $start_m = str_pad($this->start_minute ?? 0, 2, '0', STR_PAD_LEFT);
+            $end_h = str_pad($this->end_hour, 2, '0', STR_PAD_LEFT);
+            $end_m = str_pad($this->end_minute ?? 0, 2, '0', STR_PAD_LEFT);
+            return "{$start_h}:{$start_m} - {$end_h}:{$end_m}";
+        }
+        
+        // Nếu không có, lấy từ shift
+        return $this->shift?->time_range ?? 'Tùy chỉnh';
+    }
+
+    /**
+     * ✅ Accessor: Lấy thông tin ca
      */
     public function getShiftDetailsAttribute()
     {
-        if ($this->notes && is_array($this->notes)) {
+        if (!is_null($this->start_hour) && !is_null($this->end_hour)) {
             return [
                 'shift_name' => $this->shift?->name ?? 'Ca không xác định',
-                'start_time' => sprintf('%02d:%02d', $this->notes['start_hour'] ?? 0, $this->notes['start_minute'] ?? 0),
-                'end_time' => sprintf('%02d:%02d', $this->notes['end_hour'] ?? 0, $this->notes['end_minute'] ?? 0),
+                'start_time' => sprintf('%02d:%02d', $this->start_hour, $this->start_minute ?? 0),
+                'end_time' => sprintf('%02d:%02d', $this->end_hour, $this->end_minute ?? 0),
                 'is_custom' => true,
             ];
         }

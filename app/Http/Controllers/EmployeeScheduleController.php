@@ -80,15 +80,16 @@ class EmployeeScheduleController extends Controller
     /**
      * ✅ POST /employees/schedule - Nhân viên đăng ký ca làm việc
      * Form submit từ modal trong tab "Lịch đăng ký ca"
+     * Cho phép đăng ký bất kỳ ngày nào (kể cả quá khứ)
      */
     public function store(Request $request)
     {
         try {
             $employee = $this->getEmployee();
             
-            // Validate dữ liệu
+            // Validate dữ liệu - cho phép đăng ký bất kỳ ngày nào (kể cả quá khứ)
             $validated = $request->validate([
-                'work_date' => 'required|date|after_or_equal:today',
+                'work_date' => 'required|date',
                 'shift_id' => 'required|integer|exists:custom_shifts,id',
                 'start_hour' => 'nullable|integer|between:0,23',
                 'start_minute' => 'nullable|integer|between:0,59',
@@ -107,6 +108,45 @@ class EmployeeScheduleController extends Controller
             // Redirect về trang chính với success message
             return redirect(route('employees.schedule.create'))
                 ->with('success', '✅ Đã gửi đơn đăng ký ca làm việc!');
+        } catch (\Exception $e) {
+            // Redirect về trang chính với error message
+            return redirect(route('employees.schedule.create'))
+                ->withErrors(['error' => '❌ ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * ✅ PUT /employees/schedule/{scheduleRequest} - Cập nhật đơn đăng ký ca
+     * Nhân viên chỉ có thể cập nhật đơn của chính mình và chỉ khi đang pending
+     * Có thể cập nhật cả những ngày đã qua
+     */
+    public function updateSchedule(Request $request, ScheduleRequest $scheduleRequest)
+    {
+        try {
+            $employee = $this->getEmployee();
+            
+            // Validate dữ liệu - cho phép cập nhật bất kỳ ngày nào (kể cả quá khứ)
+            $validated = $request->validate([
+                'work_date' => 'required|date',
+                'shift_id' => 'required|integer|exists:custom_shifts,id',
+                'start_hour' => 'nullable|integer|between:0,23',
+                'start_minute' => 'nullable|integer|between:0,59',
+                'end_hour' => 'nullable|integer|between:0,23',
+                'end_minute' => 'nullable|integer|between:0,59',
+            ]);
+
+            // Cập nhật schedule request qua service
+            $this->scheduleRequestService->updateScheduleRequest(
+                $scheduleRequest->id,
+                $employee->id,
+                $validated['work_date'],
+                (int)$validated['shift_id'],
+                $validated
+            );
+
+            // Redirect về trang chính với success message
+            return redirect(route('employees.schedule.create'))
+                ->with('success', '✅ Đã cập nhật ca làm việc! Đơn này sẽ được duyệt lại.');
         } catch (\Exception $e) {
             // Redirect về trang chính với error message
             return redirect(route('employees.schedule.create'))

@@ -56,11 +56,7 @@ class ScheduleRequestService
     }
 
     /**
-     * ✅ Tạo đơn đăng ký ca làm việc (HỆ THỐNG CUSTOM SHIFT)
-     * @param int $empId - ID nhân viên
-     * @param string $workDate - Ngày làm (YYYY-MM-DD)
-     * @param int $shiftId - ID ca làm việc từ custom_shifts table
-     * @param array $data - Dữ liệu từ form (custom hours nếu có)
+     * ✅ Tạo đơn đăng ký ca làm việc
      */
     public function createScheduleRequest($empId, $workDate, $shiftId, $data = [])
     {
@@ -97,23 +93,101 @@ class ScheduleRequestService
             'work_date' => $workDate,
             'shift_id' => $shiftId,
             'status' => 'pending',
+            'assignment_type' => 'work',
         ];
 
-        // 7️⃣ Nếu nhân viên tùy chỉnh giờ, lưu vào notes dưới dạng JSON
+        // 7️⃣ Nếu nhân viên tùy chỉnh giờ, lưu vào các cột riêng
         $hasCustomHours = !empty($data['start_hour']) || !empty($data['start_minute']) || 
                          !empty($data['end_hour']) || !empty($data['end_minute']);
         
         if ($hasCustomHours) {
-            $customHours = [
-                'start_hour' => (int)($data['start_hour'] ?? $shift->start_hour),
-                'start_minute' => (int)($data['start_minute'] ?? $shift->start_minute),
-                'end_hour' => (int)($data['end_hour'] ?? $shift->end_hour),
-                'end_minute' => (int)($data['end_minute'] ?? $shift->end_minute),
-            ];
-            $scheduleData['notes'] = json_encode($customHours);
+            $scheduleData['start_hour'] = (int)($data['start_hour'] ?? $shift->start_hour);
+            $scheduleData['start_minute'] = (int)($data['start_minute'] ?? $shift->start_minute);
+            $scheduleData['end_hour'] = (int)($data['end_hour'] ?? $shift->end_hour);
+            $scheduleData['end_minute'] = (int)($data['end_minute'] ?? $shift->end_minute);
+        } else {
+            // Nếu không tùy chỉnh, lấy từ shift cố định
+            $scheduleData['start_hour'] = $shift->start_hour;
+            $scheduleData['start_minute'] = $shift->start_minute;
+            $scheduleData['end_hour'] = $shift->end_hour;
+            $scheduleData['end_minute'] = $shift->end_minute;
         }
 
         return ScheduleRequest::create($scheduleData);
+    }
+
+    /**
+     * ✅ CẬP NHẬT đơn đăng ký ca làm việc
+     */
+    public function updateScheduleRequest($requestId, $empId, $workDate, $shiftId, $data = [])
+    {
+        // 1️⃣ Tìm đơn đăng ký
+        $request = ScheduleRequest::find($requestId);
+        
+        if (!$request) {
+            throw new \Exception('❌ Không tìm thấy đơn đăng ký');
+        }
+
+        // 2️⃣ Kiểm tra quyền - chỉ chủ sở hữu mới được sửa
+        if ($request->employee_id !== $empId) {
+            throw new \Exception('❌ Bạn không có quyền cập nhật đơn này');
+        }
+
+        // 3️⃣ Kiểm tra trạng thái - chỉ sửa được đơn pending
+        if ($request->status !== 'pending') {
+            throw new \Exception('❌ Chỉ có thể cập nhật các đơn đang chờ duyệt');
+        }
+
+        // 4️⃣ Kiểm tra: nhân viên có đã xin nghỉ vào ngày mới không?
+        if ($workDate !== $request->work_date && $this->hasApprovedOffDay($empId, $workDate)) {
+            throw new \Exception('❌ Bạn đã xin nghỉ vào ngày này. Không thể cập nhật.');
+        }
+
+        // 5️⃣ Kiểm tra: shift_id có tồn tại không?
+        $shift = CustomShift::find($shiftId);
+        
+        if (!$shift) {
+            throw new \Exception('❌ Ca làm việc không tồn tại. Vui lòng chọn ca khác.');
+        }
+
+        // 6️⃣ Kiểm tra: ca có còn hoạt động không?
+        if (!$shift->is_active) {
+            throw new \Exception('❌ Ca làm việc này không còn hoạt động.');
+        }
+
+        // 7️⃣ Kiểm tra: ca có áp dụng cho nhân viên không?
+        if (!$shift->is_for_employee) {
+            throw new \Exception('❌ Ca này không áp dụng cho nhân viên.');
+        }
+
+        // 8️⃣ Chuẩn bị dữ liệu để cập nhật
+        $updateData = [
+            'work_date' => $workDate,
+            'shift_id' => $shiftId,
+            'status' => 'pending', // Reset lại pending khi cập nhật
+        ];
+
+        // 9️⃣ Nếu nhân viên tùy chỉnh giờ, lưu vào các cột riêng
+        $hasCustomHours = !empty($data['start_hour']) || !empty($data['start_minute']) || 
+                         !empty($data['end_hour']) || !empty($data['end_minute']);
+        
+        if ($hasCustomHours) {
+            $updateData['start_hour'] = (int)($data['start_hour'] ?? $shift->start_hour);
+            $updateData['start_minute'] = (int)($data['start_minute'] ?? $shift->start_minute);
+            $updateData['end_hour'] = (int)($data['end_hour'] ?? $shift->end_hour);
+            $updateData['end_minute'] = (int)($data['end_minute'] ?? $shift->end_minute);
+        } else {
+            // Nếu không tùy chỉnh, lấy từ shift cố định
+            $updateData['start_hour'] = $shift->start_hour;
+            $updateData['start_minute'] = $shift->start_minute;
+            $updateData['end_hour'] = $shift->end_hour;
+            $updateData['end_minute'] = $shift->end_minute;
+        }
+
+        // 🔟 Cập nhật vào database
+        $request->update($updateData);
+        
+        return $request;
     }
 
     /**
