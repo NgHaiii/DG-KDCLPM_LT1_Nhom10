@@ -77,9 +77,9 @@ class ScheduleRequestService
             throw new \Exception('❌ Ca làm việc này không còn hoạt động.');
         }
 
-        // 4️⃣ Kiểm tra: ca có áp dụng cho nhân viên không?
-        if (!$shift->is_for_employee) {
-            throw new \Exception('❌ Ca này không áp dụng cho nhân viên.');
+        // 4️⃣ Kiểm tra: ca có áp dụng cho bác sĩ hoặc nhân viên không?
+        if (!$shift->is_for_employee && !$shift->is_for_doctor) {
+            throw new \Exception('❌ Ca này không áp dụng.');
         }
 
         // 5️⃣ Kiểm tra: đã có đơn pending cùng ngày cùng ca không?
@@ -155,9 +155,9 @@ class ScheduleRequestService
             throw new \Exception('❌ Ca làm việc này không còn hoạt động.');
         }
 
-        // 7️⃣ Kiểm tra: ca có áp dụng cho nhân viên không?
-        if (!$shift->is_for_employee) {
-            throw new \Exception('❌ Ca này không áp dụng cho nhân viên.');
+        // 7️⃣ Kiểm tra: ca có áp dụng cho bác sĩ hoặc nhân viên không?
+        if (!$shift->is_for_employee && !$shift->is_for_doctor) {
+            throw new \Exception('❌ Ca này không áp dụng.');
         }
 
         // 8️⃣ Chuẩn bị dữ liệu để cập nhật

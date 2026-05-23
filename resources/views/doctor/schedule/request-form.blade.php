@@ -1,374 +1,1044 @@
-@extends('layouts.app')
+@extends('layouts.doctor-layout')
 
-@section('title', 'Đăng ký lịch trực & ca làm việc')
+@section('title', 'Đăng ký ca làm việc & ngày nghỉ')
+
+@section('page-title', 'Quản lý lịch trình')
+@section('page-subtitle', 'Đăng ký ca làm việc hoặc xin ngày nghỉ')
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    <!-- Header -->
-    <div class="mb-8">
-        <h1 class="text-3xl font-bold text-blue-900 mb-2">
-            🩺 Đăng ký lịch trực & ca làm việc
-        </h1>
-        <p class="text-gray-600">
-            Bác sĩ {{ $employee->name }} - Đăng ký ca sáng, chiều, tối + ca trực
-        </p>
+
+<style>
+    /* Stats */
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-left: 5px solid;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-card.pending { border-left-color: #f59e0b; }
+    .stat-card.approved { border-left-color: #10b981; }
+    .stat-card.offday { border-left-color: #0ea5e9; }
+
+    .stat-card p:first-child {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-card p:last-child {
+        font-size: 2.25rem;
+        font-weight: 700;
+    }
+
+    .stat-card.pending p:last-child { color: #f59e0b; }
+    .stat-card.approved p:last-child { color: #10b981; }
+    .stat-card.offday p:last-child { color: #0ea5e9; }
+
+    /* Tabs */
+    .tabs-nav {
+        display: flex;
+        gap: 1rem;
+        border-bottom: 2px solid #e5e7eb;
+        margin-bottom: 2rem;
+        background: white;
+        padding: 0 1rem;
+        border-radius: 12px 12px 0 0;
+    }
+
+    .tab-btn {
+        padding: 1rem 1.5rem;
+        border: none;
+        background: none;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #6b7280;
+        border-bottom: 3px solid transparent;
+        transition: all 0.3s ease;
+    }
+
+    .tab-btn:hover {
+        color: #3b82f6;
+    }
+
+    .tab-btn.active {
+        color: #3b82f6;
+        border-bottom-color: #3b82f6;
+    }
+
+    /* Tab Content */
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    /* Calendar */
+    .calendar-container {
+        background: white;
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        margin-bottom: 2rem;
+    }
+
+    .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .calendar-header h3 {
+        font-size: 1.1rem;
+        margin: 0;
+        color: #111827;
+    }
+
+    .calendar-nav {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .calendar-nav button {
+        background: #3b82f6;
+        color: white;
+        border: none;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        font-size: 0.75rem;
+    }
+
+    .calendar-nav button:hover {
+        background: #1e40af;
+    }
+
+    /* Calendar Grid */
+    .calendar-weekdays {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 0.2rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .weekday {
+        padding: 0.3rem;
+        text-align: center;
+        font-weight: 700;
+        color: #6b7280;
+        background: #f3f4f6;
+        border-radius: 4px;
+        font-size: 0.65rem;
+    }
+
+    .calendar-days {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 0.2rem;
+    }
+
+    .calendar-day {
+        aspect-ratio: 1;
+        padding: 0.3rem;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 4px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        font-size: 0.7rem;
+    }
+
+    .calendar-day:hover {
+        border-color: #3b82f6;
+        background: #f0f9ff;
+        transform: scale(1.05);
+    }
+
+    .calendar-day.other-month {
+        color: #d1d5db;
+        background: #f9fafb;
+        cursor: not-allowed;
+    }
+
+    .calendar-day.today {
+        background: #dbeafe;
+        border-color: #3b82f6;
+        font-weight: 700;
+        color: #1e40af;
+    }
+
+    .calendar-day.registered {
+        background: linear-gradient(135deg, #fef08a 0%, #fef3c7 100%);
+        border-color: #f59e0b;
+        font-weight: 600;
+    }
+
+    .calendar-day.registered-approved {
+        background: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%);
+        border-color: #10b981;
+        font-weight: 600;
+    }
+
+    .calendar-day-number {
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+
+    .calendar-day-badge {
+        position: absolute;
+        top: 1px;
+        right: 1px;
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: #f59e0b;
+    }
+
+    .calendar-day.registered-approved .calendar-day-badge {
+        background: #10b981;
+    }
+
+    /* Modal */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal.active {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-content {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 12px;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        animation: slideIn 0.3s ease;
+        position: relative;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .detail-modal-content {
+        background-color: white;
+        padding: 1.5rem;
+        border-radius: 12px;
+        max-width: 400px;
+        width: 90%;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        animation: slideIn 0.3s ease;
+        position: relative;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    .modal-header {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        color: #111827;
+    }
+
+    .modal-close {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #6b7280;
+    }
+
+    /* Detail Item */
+    .detail-item {
+        padding: 0.75rem;
+        background: #f0f9ff;
+        border-left: 4px solid #0ea5e9;
+        margin-bottom: 0.75rem;
+        border-radius: 4px;
+    }
+
+    .detail-item label {
+        font-weight: 600;
+        color: #0c4a6e;
+        font-size: 0.85rem;
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+
+    .detail-item p {
+        margin: 0;
+        color: #0c4a6e;
+        font-size: 0.8rem;
+    }
+
+    /* Form */
+    .form-group {
+        margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-family: inherit;
+        transition: all 0.3s ease;
+        box-sizing: border-box;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    .form-group input[type="date"],
+    .form-group textarea {
+        cursor: text;
+    }
+
+    .hour-inputs {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr 1fr;
+        gap: 0.75rem;
+    }
+
+    .hour-inputs .form-group {
+        margin-bottom: 0;
+    }
+
+    .custom-hours-header {
+        background: #f0f4ff;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        border-left: 4px solid #3b82f6;
+    }
+
+    .custom-hours-header p {
+        font-size: 0.875rem;
+        color: #3b82f6;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    .btn-submit {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: white;
+        background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+    }
+
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-submit:active {
+        transform: scale(0.98);
+    }
+
+    .btn-edit {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        color: white;
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        margin-top: 0.5rem;
+    }
+
+    .btn-edit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-cancel {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        background: white;
+        color: #6b7280;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-top: 0.5rem;
+    }
+
+    .btn-cancel:hover {
+        border-color: #6b7280;
+        color: #374151;
+    }
+
+    /* Off-Day Form */
+    .offday-form {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        margin-bottom: 2rem;
+    }
+
+    .approved-list-container {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        border: 1px solid #e5e7eb;
+        margin-bottom: 2rem;
+    }
+
+    .approved-list-header {
+        padding: 1.25rem 1.5rem;
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: white;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    }
+
+    .approved-list-body {
+        padding: 1.5rem;
+    }
+
+    .approved-item {
+        padding: 1rem 1.25rem;
+        background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+        border: 2px solid #0ea5e9;
+        border-radius: 8px;
+        margin-bottom: 0.75rem;
+        transition: all 0.3s ease;
+    }
+
+    .approved-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .approved-item:hover {
+        border-color: #0284c7;
+        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+    }
+
+    .approved-item p:first-child {
+        font-weight: 600;
+        color: #0c4a6e;
+        margin: 0 0 0.25rem 0;
+    }
+
+    .approved-item p {
+        font-size: 0.875rem;
+        color: #0c4a6e;
+        margin: 0.25rem 0;
+    }
+
+    @media (max-width: 768px) {
+        .calendar-day {
+            padding: 0.2rem;
+            font-size: 0.6rem;
+        }
+
+        .calendar-day-number {
+            font-size: 0.6rem;
+        }
+
+        .modal-content {
+            max-width: 90vw;
+        }
+
+        .hour-inputs {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+</style>
+
+<!-- Stats -->
+<div class="stats-container">
+    <div class="stat-card pending">
+        <p>⏳ Đơn ca chờ duyệt</p>
+        <p>{{ $pendingRequests->count() }}</p>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <!-- Left: Form đăng ký -->
-        <div class="lg:col-span-2">
-            <!-- Tab Navigation -->
-            <div class="mb-6">
-                <div class="flex gap-2 border-b border-gray-200">
-                    <button class="tab-btn active px-4 py-2 font-semibold text-blue-600 border-b-2 border-blue-600" data-tab="schedule">
-                        📋 Đăng ký ca làm việc
-                    </button>
-                    <button class="tab-btn px-4 py-2 font-semibold text-gray-600 border-b-2 border-transparent hover:text-blue-600" data-tab="duty">
-                        🩺 Đăng ký ca trực
-                    </button>
-                    <button class="tab-btn px-4 py-2 font-semibold text-gray-600 border-b-2 border-transparent hover:text-blue-600" data-tab="offday">
-                        🏖️ Xin nghỉ
-                    </button>
-                </div>
-            </div>
+    <div class="stat-card approved">
+        <p>✅ Ca được duyệt</p>
+        <p>{{ $approvedRequests->count() }}</p>
+    </div>
 
-            <!-- Tab 1: Ca làm việc thường -->
-            <div id="schedule-tab" class="tab-content card p-6 mb-6">
-                <h3 class="text-lg font-bold mb-4 text-blue-900">📋 Đăng ký ca làm việc thường</h3>
-                <form id="scheduleForm">
-                    @csrf
-                    <input type="hidden" name="duty_type" value="shift">
-                    
-                    <div class="mb-4">
-                        <label for="schedule_date" class="block text-sm font-semibold text-gray-700 mb-2">
-                            📆 Ngày làm việc
-                        </label>
-                        <input 
-                            type="date" 
-                            id="schedule_date" 
-                            name="work_date"
-                            class="input-field w-full"
-                            required
-                            min="{{ date('Y-m-d') }}"
-                        >
-                    </div>
+    <div class="stat-card offday">
+        <p>🏖️ Ngày nghỉ được duyệt</p>
+        <p>{{ $approvedOffDays->count() }}</p>
+    </div>
+</div>
 
-                    <div class="mb-4">
-                        <label for="schedule_shift" class="block text-sm font-semibold text-gray-700 mb-2">
-                            ⏰ Ca làm việc (Sáng, Chiều, Tối)
-                        </label>
-                        <select id="schedule_shift" name="shift_id" class="input-field w-full" required>
-                            <option value="">-- Chọn ca --</option>
-                            @foreach($shifts as $shift)
-                                <option value="{{ $shift->id }}">
-                                    {{ $shift->name }} ({{ $shift->start_time }} - {{ $shift->end_time }})
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+<!-- Tabs -->
+<div class="tabs-nav">
+    <button class="tab-btn active" data-tab="tab-shift">📅 Lịch đăng ký ca</button>
+    <button class="tab-btn" data-tab="tab-offday">🏖️ Xin ngày nghỉ</button>
+    <button class="tab-btn" data-tab="tab-approved">✅ Ca đã duyệt</button>
+</div>
 
-                    <div class="mb-6">
-                        <label for="schedule_reason" class="block text-sm font-semibold text-gray-700 mb-2">
-                            📝 Ghi chú (tùy chọn)
-                        </label>
-                        <textarea id="schedule_reason" name="reason" class="input-field w-full" rows="3"></textarea>
-                    </div>
-
-                    <button type="submit" class="btn-primary w-full">✅ Gửi đơn đăng ký ca</button>
-                </form>
-            </div>
-
-            <!-- Tab 2: Ca trực (Riêng bác sĩ) -->
-            <div id="duty-tab" class="tab-content hidden card p-6 mb-6 border-l-4 border-purple-500">
-                <h3 class="text-lg font-bold mb-4 text-purple-900">🩺 Đăng ký ca trực</h3>
-                <p class="text-sm text-gray-600 mb-6">
-                    Ca trực là ca khác biệt với ca làm việc thường. Bác sĩ trực sẽ có trách nhiệm cấp cứu 24h.
-                </p>
-                <form id="dutyForm">
-                    @csrf
-                    <input type="hidden" name="duty_type" value="duty">
-                    
-                    <div class="mb-4">
-                        <label for="duty_date" class="block text-sm font-semibold text-gray-700 mb-2">
-                            📆 Ngày trực
-                        </label>
-                        <input 
-                            type="date" 
-                            id="duty_date" 
-                            name="work_date"
-                            class="input-field w-full"
-                            required
-                            min="{{ date('Y-m-d') }}"
-                        >
-                    </div>
-
-                    <div class="mb-4">
-                        <label for="duty_shift" class="block text-sm font-semibold text-gray-700 mb-2">
-                            ⏰ Khung giờ trực
-                        </label>
-                        <select id="duty_shift" name="shift_id" class="input-field w-full" required>
-                            <option value="">-- Chọn khung giờ --</option>
-                            @foreach($shifts as $shift)
-                                <option value="{{ $shift->id }}">
-                                    {{ $shift->name }} ({{ $shift->start_time }} - {{ $shift->end_time }})
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="mb-6">
-                        <label for="duty_reason" class="block text-sm font-semibold text-gray-700 mb-2">
-                            📝 Ghi chú (tùy chọn)
-                        </label>
-                        <textarea id="duty_reason" name="reason" class="input-field w-full" rows="3"></textarea>
-                    </div>
-
-                    <button type="submit" class="btn-primary w-full bg-purple-600 hover:bg-purple-700">✅ Gửi đơn ca trực</button>
-                </form>
-            </div>
-
-            <!-- Tab 3: Xin nghỉ -->
-            <div id="offday-tab" class="tab-content hidden card p-6 mb-6">
-                <h3 class="text-lg font-bold mb-4 text-gray-900">🏖️ Đơn xin nghỉ</h3>
-                <form id="offdayForm">
-                    @csrf
-                    
-                    <div class="mb-4">
-                        <label for="offday_date" class="block text-sm font-semibold text-gray-700 mb-2">
-                            📆 Ngày xin nghỉ
-                        </label>
-                        <input 
-                            type="date" 
-                            id="offday_date" 
-                            name="date"
-                            class="input-field w-full"
-                            required
-                            min="{{ date('Y-m-d') }}"
-                        >
-                    </div>
-
-                    <div class="mb-6">
-                        <label for="offday_reason" class="block text-sm font-semibold text-gray-700 mb-2">
-                            📝 Lý do xin nghỉ
-                        </label>
-                        <textarea id="offday_reason" name="reason" class="input-field w-full" rows="3" required></textarea>
-                    </div>
-
-                    <button type="submit" class="btn-primary w-full">✅ Gửi đơn xin nghỉ</button>
-                </form>
+<!-- Tab 1: Shift Calendar -->
+<div id="tab-shift" class="tab-content active">
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <h3 id="monthYear">Tháng 5 - 2026</h3>
+            <div class="calendar-nav">
+                <button type="button" id="prevMonth">← Tháng trước</button>
+                <button type="button" id="nextMonth">Tháng sau →</button>
             </div>
         </div>
 
-        <!-- Right: Sidebar -->
-        <div class="lg:col-span-1">
-            <!-- Thông tin bác sĩ -->
-            <div class="card p-6 mb-6 bg-blue-50 border-l-4 border-blue-600">
-                <h3 class="text-lg font-bold text-blue-900 mb-4">👨‍⚕️ Thông tin của bạn</h3>
-                <div class="space-y-2 text-sm">
-                    <p><strong>Tên:</strong> {{ $employee->name }}</p>
-                    <p><strong>Mã:</strong> {{ $employee->code }}</p>
-                    <p><strong>Chuyên khoa:</strong> {{ $employee->specialization ?? 'Tổng hợp' }}</p>
-                    <p><strong>Trạng thái:</strong> 
-                        <span class="badge badge-success">{{ $employee->status ?? 'Hoạt động' }}</span>
-                    </p>
-                </div>
+        <!-- Weekdays -->
+        <div class="calendar-weekdays">
+            <div class="weekday">T2</div>
+            <div class="weekday">T3</div>
+            <div class="weekday">T4</div>
+            <div class="weekday">T5</div>
+            <div class="weekday">T6</div>
+            <div class="weekday">T7</div>
+            <div class="weekday">CN</div>
+        </div>
+
+        <!-- Days -->
+        <div class="calendar-days" id="calendarDays"></div>
+    </div>
+</div>
+
+<!-- Tab 2: Off-Day -->
+<div id="tab-offday" class="tab-content">
+    <div class="offday-form">
+        <h3 style="margin-top: 0; color: #111827;">🏖️ Xin ngày nghỉ</h3>
+        <form action="{{ route('doctor.schedule.request-off-day') }}" method="POST">
+            @csrf
+
+            <div class="form-group">
+                <label>📅 Ngày xin nghỉ</label>
+                <input type="date" name="start_date" required>
             </div>
 
-            <!-- Ngày nghỉ đã duyệt -->
-            <div class="card p-6">
-                <h3 class="text-lg font-bold text-gray-900 mb-4">🏖️ Ngày nghỉ sắp tới</h3>
-                @if($approvedOffDays->count() > 0)
-                    <div class="space-y-2 max-h-64 overflow-y-auto">
-                        @foreach($approvedOffDays as $offDay)
-                        <div class="p-2 bg-green-50 border-l-2 border-green-500 rounded">
-                            <p class="font-semibold text-green-800 text-sm">
-                                {{ $offDay->date->format('d/m/Y') }}
-                            </p>
-                        </div>
-                        @endforeach
+            <div class="form-group">
+                <label>📝 Lý do</label>
+                <textarea name="reason" rows="4" placeholder="Nhập lý do xin nghỉ..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn-submit">✅ Gửi đơn xin nghỉ</button>
+        </form>
+    </div>
+
+    @if($approvedOffDays->count() > 0)
+        <div class="approved-list-container">
+            <div class="approved-list-header">
+                ✅ Ngày nghỉ đã duyệt ({{ $approvedOffDays->count() }})
+            </div>
+            
+            <div class="approved-list-body">
+                @foreach($approvedOffDays as $offday)
+                    <div class="approved-item">
+                        <p>{{ $offday->reason ?? 'Không có lý do' }}</p>
+                        <p>📅 {{ $offday->date->format('d/m/Y') }} • ✅ Đã duyệt</p>
                     </div>
-                @else
-                    <p class="text-gray-500 text-sm">Không có ngày nghỉ</p>
-                @endif
-                <a href="{{ route('doctor.schedule.my-off-days') }}" class="text-blue-600 text-sm mt-3 inline-block hover:underline">
-                    Xem tất cả →
-                </a>
+                @endforeach
             </div>
         </div>
-    </div>
-
-    <!-- Pending Requests -->
-    @if($pendingRequests->count() > 0)
-    <div class="mt-8 card p-6 bg-yellow-50 border border-yellow-200">
-        <h3 class="text-lg font-bold text-yellow-900 mb-4">⏳ Đơn chờ xác nhận ({{ $pendingRequests->count() }})</h3>
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-yellow-100">
-                    <tr>
-                        <th class="px-4 py-2 text-left">Ngày</th>
-                        <th class="px-4 py-2 text-left">Ca</th>
-                        <th class="px-4 py-2 text-left">Loại</th>
-                        <th class="px-4 py-2 text-left">Hành động</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($pendingRequests as $req)
-                    <tr class="border-b border-yellow-200 hover:bg-yellow-100">
-                        <td class="px-4 py-2">{{ $req->work_date->format('d/m/Y') }}</td>
-                        <td class="px-4 py-2 font-semibold">{{ $req->shift->name }}</td>
-                        <td class="px-4 py-2">
-                            <span class="badge {{ $req->duty_type === 'duty' ? 'badge-warning' : 'badge-primary' }}">
-                                {{ $req->duty_type === 'duty' ? '🩺 Ca trực' : '📋 Ca thường' }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-2">
-                            <button class="text-red-600 hover:text-red-800 cancel-request text-sm" data-id="{{ $req->id }}">
-                                Hủy
-                            </button>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
     @endif
+</div>
 
-    <!-- Approved Requests -->
-    @if($approvedRequests->count() > 0)
-    <div class="mt-8 card p-6 bg-green-50 border border-green-200">
-        <h3 class="text-lg font-bold text-green-900 mb-4">✅ Lịch đã duyệt ({{ $approvedRequests->count() }})</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            @foreach($approvedRequests as $req)
-            <div class="p-4 bg-white border-l-4 {{ $req->duty_type === 'duty' ? 'border-purple-500' : 'border-blue-500' }} rounded">
-                <p class="font-bold {{ $req->duty_type === 'duty' ? 'text-purple-700' : 'text-blue-700' }}">
-                    {{ $req->work_date->format('d/m') }}
-                </p>
-                <p class="text-sm font-semibold text-gray-900">{{ $req->shift->name }}</p>
-                <p class="text-xs text-gray-600">{{ $req->shift->start_time }} - {{ $req->shift->end_time }}</p>
-                <p class="text-xs text-gray-500 mt-1">
-                    {{ $req->duty_type === 'duty' ? '🩺 Ca trực' : '📋 Ca thường' }}
-                </p>
-            </div>
+<!-- Tab 3: Approved Schedules -->
+<div id="tab-approved" class="tab-content">
+    <div class="offday-form">
+        @if($approvedRequests->count() > 0)
+            <h3 style="margin-top: 0; color: #111827;">📅 Danh sách ca đã duyệt</h3>
+            
+            @foreach($approvedRequests as $schedule)
+                <div class="approved-item">
+                    <p>{{ optional($schedule->shift)->name ?? 'Ca làm việc' }}</p>
+                    <p>📅 Ngày: {{ $schedule->work_date->format('d/m/Y') }}</p>
+                    <p>⏰ Giờ: {{ sprintf('%02d:%02d', $schedule->start_hour ?? 0, $schedule->start_minute ?? 0) }} - {{ sprintf('%02d:%02d', $schedule->end_hour ?? 0, $schedule->end_minute ?? 0) }}</p>
+                </div>
             @endforeach
-        </div>
-        <a href="{{ route('doctor.schedule.my-approved-schedules') }}" class="text-green-600 text-sm mt-4 inline-block hover:underline">
-            Xem tất cả →
-        </a>
-    </div>
-    @endif
-</div>
-
-<!-- Modal Thành công -->
-<div id="successModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg p-8 max-w-md">
-        <h3 class="text-2xl font-bold text-green-600 mb-4">✅ Thành công!</h3>
-        <p id="successMessage" class="text-gray-700 mb-6"></p>
-        <button onclick="closeModal()" class="btn-primary w-full">Đóng</button>
+        @else
+            <div style="text-align: center; padding: 3rem; color: #9ca3af;">
+                <p>📭 Chưa có ca làm việc nào được duyệt</p>
+            </div>
+        @endif
     </div>
 </div>
 
-@endsection
+<!-- Modal Đăng ký/Cập nhật -->
+<div id="shiftModal" class="modal">
+    <div class="modal-content">
+        <button type="button" class="modal-close" onclick="closeModal()">✕</button>
+        <div class="modal-header" id="modalTitle">📋 Đăng ký ca làm việc</div>
 
-@section('scripts')
+        <form action="{{ route('doctor.schedule.store') }}" method="POST" id="shiftForm">
+            @csrf
+            <input type="hidden" id="methodInput" name="_method" value="POST">
+
+            <div class="form-group">
+                <label>📅 Ngày làm việc</label>
+                <input type="date" id="workDate" name="work_date" required readonly style="background: #f3f4f6; cursor: not-allowed;">
+            </div>
+
+            <div class="form-group">
+                <label>⏰ Chọn ca làm việc <span style="color: red;">*</span></label>
+                <select id="shiftId" name="shift_id" required>
+                    <option value="">-- Chọn ca --</option>
+                    @foreach($shifts as $shift)
+                        <option value="{{ $shift->id }}" 
+                                data-start-hour="{{ $shift->start_hour ?? 0 }}" 
+                                data-start-minute="{{ $shift->start_minute ?? 0 }}" 
+                                data-end-hour="{{ $shift->end_hour ?? 0 }}" 
+                                data-end-minute="{{ $shift->end_minute ?? 0 }}">
+                            {{ $shift->name }} ({{ sprintf('%02d:%02d', $shift->start_hour ?? 0, $shift->start_minute ?? 0) }} - {{ sprintf('%02d:%02d', $shift->end_hour ?? 0, $shift->end_minute ?? 0) }})
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <!-- Custom Hours Section -->
+            <div id="customHours" style="display: none;">
+                <div class="custom-hours-header">
+                    <p>✏️ Tùy chỉnh giờ làm việc</p>
+                </div>
+                
+                <div class="hour-inputs">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Từ giờ</label>
+                        <select id="startHour" name="start_hour">
+                            <option value="">Chọn giờ</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Từ phút</label>
+                        <select id="startMinute" name="start_minute">
+                            <option value="">Chọn phút</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Đến giờ</label>
+                        <select id="endHour" name="end_hour">
+                            <option value="">Chọn giờ</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Đến phút</label>
+                        <select id="endMinute" name="end_minute">
+                            <option value="">Chọn phút</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit" id="submitBtn">✅ Đăng ký ca</button>
+            <button type="button" class="btn-cancel" onclick="closeModal()">❌ Hủy</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Chi tiết ca đã đăng ký -->
+<div id="detailModal" class="modal">
+    <div class="detail-modal-content">
+        <button type="button" class="modal-close" onclick="closeDetailModal()">✕</button>
+        <div class="modal-header" style="color: #111827; font-size: 1.25rem;">📋 Thông tin ca làm việc</div>
+        <div id="detailContent"></div>
+        <button type="button" class="btn-edit" onclick="openEditModal()">✏️ Cập nhật ca làm việc</button>
+        <button type="button" class="btn-cancel" onclick="closeDetailModal()">Đóng</button>
+    </div>
+</div>
+
 <script>
-// Tab switching
-document.querySelectorAll('.tab-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-        const tabName = this.dataset.tab;
-        
-        document.querySelectorAll('.tab-content').forEach(tab => {
-            tab.classList.add('hidden');
-        });
-        
-        document.getElementById(tabName + '-tab').classList.remove('hidden');
-        
-        document.querySelectorAll('.tab-btn').forEach(b => {
-            b.classList.remove('active', 'text-blue-600', 'border-b-blue-600');
-            b.classList.add('text-gray-600', 'border-b-transparent');
-        });
-        this.classList.add('active', 'text-blue-600', 'border-b-blue-600');
-        this.classList.remove('text-gray-600', 'border-b-transparent');
-    });
-});
+    let currentMonth = new Date().getMonth();
+    let currentYear = new Date().getFullYear();
+    let selectedDate = null;
+    let editingSchedule = null;
 
-// Submit schedule form
-document.getElementById('scheduleForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await submitForm('{{ route("doctor.schedule.store") }}', this, 'Đăng ký ca làm việc thành công');
-});
+    // Dữ liệu ngày đã đăng ký
+    const registeredDates = {
+        pending: [
+            @foreach($pendingRequests as $req)
+                '{{ $req->work_date->format("Y-m-d") }}',
+            @endforeach
+        ],
+        approved: [
+            @foreach($approvedRequests as $sch)
+                '{{ $sch->work_date->format("Y-m-d") }}',
+            @endforeach
+        ]
+    };
 
-// Submit duty form
-document.getElementById('dutyForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await submitForm('{{ route("doctor.schedule.store") }}', this, 'Đơn ca trực đã được gửi');
-});
+    const allSchedulesData = {
+        pending: {!! json_encode($pendingRequests->map(function($r) {
+            return [
+                'id' => $r->id,
+                'date' => $r->work_date->format('Y-m-d'),
+                'name' => optional($r->shift)->name ?? 'Ca làm việc',
+                'time' => sprintf('%02d:%02d', $r->start_hour ?? 0, $r->start_minute ?? 0) . ' - ' . sprintf('%02d:%02d', $r->end_hour ?? 0, $r->end_minute ?? 0),
+                'shift_id' => $r->shift_id,
+                'status' => 'pending',
+                'start_hour' => $r->start_hour,
+                'start_minute' => $r->start_minute,
+                'end_hour' => $r->end_hour,
+                'end_minute' => $r->end_minute,
+            ];
+        })) !!},
+        approved: {!! json_encode($approvedRequests->map(function($s) {
+            return [
+                'id' => $s->id,
+                'date' => $s->work_date->format('Y-m-d'),
+                'name' => optional($s->shift)->name ?? 'Ca làm việc',
+                'time' => sprintf('%02d:%02d', $s->start_hour ?? 0, $s->start_minute ?? 0) . ' - ' . sprintf('%02d:%02d', $s->end_hour ?? 0, $s->end_minute ?? 0),
+                'shift_id' => $s->shift_id,
+                'status' => 'approved',
+                'start_hour' => $s->start_hour,
+                'start_minute' => $s->start_minute,
+                'end_hour' => $s->end_hour,
+                'end_minute' => $s->end_minute,
+            ];
+        })) !!}
+    };
 
-// Submit offday form
-document.getElementById('offdayForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    await submitForm('{{ route("doctor.schedule.request-off-day") }}', this, 'Đơn xin nghỉ đã được gửi');
-});
+    function formatDate(year, month, day) {
+        const m = String(month + 1).padStart(2, '0');
+        const d = String(day).padStart(2, '0');
+        return `${year}-${m}-${d}`;
+    }
 
-// Cancel request
-document.querySelectorAll('.cancel-request').forEach(btn => {
-    btn.addEventListener('click', async function() {
-        if (!confirm('Bạn có chắc muốn hủy?')) return;
+    function populateHours() {
+        const startHour = document.getElementById('startHour');
+        const startMinute = document.getElementById('startMinute');
+        const endHour = document.getElementById('endHour');
+        const endMinute = document.getElementById('endMinute');
         
-        const id = this.dataset.id;
-        try {
-            const response = await fetch(`{{ route('doctor.schedule.cancel', ':id') }}`.replace(':id', id), {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        startHour.innerHTML = '<option value="">Chọn giờ</option>';
+        endHour.innerHTML = '<option value="">Chọn giờ</option>';
+        startMinute.innerHTML = '<option value="">Chọn phút</option>';
+        endMinute.innerHTML = '<option value="">Chọn phút</option>';
+
+        for (let i = 0; i <= 23; i++) {
+            const option1 = document.createElement('option');
+            option1.value = i;
+            option1.textContent = `${String(i).padStart(2, '0')}h`;
+            startHour.appendChild(option1);
+
+            const option2 = document.createElement('option');
+            option2.value = i;
+            option2.textContent = `${String(i).padStart(2, '0')}h`;
+            endHour.appendChild(option2);
+        }
+        
+        for (let i = 0; i < 60; i++) {
+            const option1 = document.createElement('option');
+            option1.value = i;
+            option1.textContent = `${String(i).padStart(2, '0')} phút`;
+            startMinute.appendChild(option1);
+
+            const option2 = document.createElement('option');
+            option2.value = i;
+            option2.textContent = `${String(i).padStart(2, '0')} phút`;
+            endMinute.appendChild(option2);
+        }
+    }
+
+    function renderCalendar() {
+        const firstDay = new Date(currentYear, currentMonth, 1);
+        const lastDay = new Date(currentYear, currentMonth + 1, 0);
+        const today = new Date();
+        const todayDate = formatDate(today.getFullYear(), today.getMonth(), today.getDate());
+        
+        const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 
+                           'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+        
+        document.getElementById('monthYear').textContent = `${monthNames[currentMonth]} - ${currentYear}`;
+
+        const calendarDays = document.getElementById('calendarDays');
+        calendarDays.innerHTML = '';
+
+        const prevLastDay = new Date(currentYear, currentMonth, 0).getDate();
+        const firstDayOfWeek = firstDay.getDay() || 7;
+        
+        for (let i = prevLastDay - firstDayOfWeek + 2; i <= prevLastDay; i++) {
+            const day = document.createElement('div');
+            day.className = 'calendar-day other-month';
+            day.innerHTML = `<div class="calendar-day-number">${i}</div>`;
+            calendarDays.appendChild(day);
+        }
+
+        for (let i = 1; i <= lastDay.getDate(); i++) {
+            const day = document.createElement('div');
+            const dateStr = formatDate(currentYear, currentMonth, i);
+            
+            day.className = 'calendar-day';
+            
+            if (dateStr === todayDate) {
+                day.classList.add('today');
+            }
+
+            const isApproved = registeredDates.approved.includes(dateStr);
+            const isPending = registeredDates.pending.includes(dateStr);
+
+            if (isApproved) {
+                day.classList.add('registered-approved');
+                day.innerHTML = `<div class="calendar-day-number">${i}</div><div class="calendar-day-badge"></div>`;
+            } else if (isPending) {
+                day.classList.add('registered');
+                day.innerHTML = `<div class="calendar-day-number">${i}</div><div class="calendar-day-badge"></div>`;
+            } else {
+                day.innerHTML = `<div class="calendar-day-number">${i}</div>`;
+            }
+            
+            day.style.cursor = 'pointer';
+            day.onclick = () => {
+                if (isApproved || isPending) {
+                    showDetailModal(dateStr);
+                } else {
+                    openModal(dateStr, false);
+                }
+            };
+            
+            calendarDays.appendChild(day);
+        }
+
+        const totalCells = calendarDays.children.length;
+        const nextDaysCount = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+        
+        for (let i = 1; i <= nextDaysCount; i++) {
+            const day = document.createElement('div');
+            day.className = 'calendar-day other-month';
+            day.innerHTML = `<div class="calendar-day-number">${i}</div>`;
+            calendarDays.appendChild(day);
+        }
+    }
+
+    function openModal(dateStr, isEdit = false) {
+        selectedDate = dateStr;
+        document.getElementById('workDate').value = dateStr;
+        document.getElementById('shiftId').value = '';
+        document.getElementById('startHour').value = '';
+        document.getElementById('startMinute').value = '';
+        document.getElementById('endHour').value = '';
+        document.getElementById('endMinute').value = '';
+        document.getElementById('customHours').style.display = 'none';
+        document.getElementById('methodInput').value = 'POST';
+        document.getElementById('shiftForm').action = "{{ route('doctor.schedule.store') }}";
+        
+        if (isEdit && editingSchedule) {
+            document.getElementById('modalTitle').textContent = '✏️ Cập nhật ca làm việc';
+            document.getElementById('submitBtn').textContent = '✅ Cập nhật ca';
+            document.getElementById('workDate').value = editingSchedule.date;
+            document.getElementById('shiftId').value = editingSchedule.shift_id;
+            document.getElementById('methodInput').value = 'PUT';
+            
+            const actionUrl = "{{ url('doctor/schedule') }}/" + editingSchedule.id;
+            document.getElementById('shiftForm').action = actionUrl;
+            
+            setTimeout(() => {
+                document.getElementById('startHour').value = editingSchedule.start_hour || '';
+                document.getElementById('startMinute').value = editingSchedule.start_minute || '';
+                document.getElementById('endHour').value = editingSchedule.end_hour || '';
+                document.getElementById('endMinute').value = editingSchedule.end_minute || '';
+                
+                document.getElementById('customHours').style.display = 'block';
+                document.getElementById('shiftId').dispatchEvent(new Event('change'));
+            }, 100);
+        } else {
+            document.getElementById('modalTitle').textContent = '📋 Đăng ký ca làm việc';
+            document.getElementById('submitBtn').textContent = '✅ Đăng ký ca';
+        }
+        
+        document.getElementById('shiftModal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('shiftModal').classList.remove('active');
+    }
+
+    function showDetailModal(dateStr) {
+        const allSchedules = [...allSchedulesData.approved, ...allSchedulesData.pending];
+        const schedule = allSchedules.find(s => s.date === dateStr);
+
+        if (!schedule) return;
+
+        editingSchedule = schedule;
+
+        const statusText = schedule.status === 'approved' ? '✅ Đã duyệt' : '⏳ Chờ duyệt';
+        const statusColor = schedule.status === 'approved' ? '#10b981' : '#f59e0b';
+        const date = new Date(dateStr + 'T00:00:00').toLocaleDateString('vi-VN');
+
+        const html = `
+            <div class="detail-item">
+                <label>📅 Ngày làm việc</label>
+                <p>${date}</p>
+            </div>
+            <div class="detail-item">
+                <label>⏰ Ca làm việc</label>
+                <p>${schedule.name}</p>
+            </div>
+            <div class="detail-item">
+                <label>🕐 Thời gian</label>
+                <p>${schedule.time}</p>
+            </div>
+            <div class="detail-item" style="border-left-color: ${statusColor}; background: ${statusColor}20;">
+                <label style="color: ${statusColor};">Trạng thái</label>
+                <p style="color: ${statusColor};">${statusText}</p>
+            </div>
+        `;
+
+        document.getElementById('detailContent').innerHTML = html;
+        document.getElementById('detailModal').classList.add('active');
+    }
+
+    function closeDetailModal() {
+        document.getElementById('detailModal').classList.remove('active');
+    }
+
+    function openEditModal() {
+        if (!editingSchedule) {
+            alert('Không tìm thấy thông tin ca làm việc');
+            return;
+        }
+        
+        closeDetailModal();
+        
+        setTimeout(() => {
+            openModal(editingSchedule.date, true);
+        }, 100);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const shiftId = document.getElementById('shiftId');
+        const customHours = document.getElementById('customHours');
+
+        if (shiftId) {
+            shiftId.addEventListener('change', function() {
+                const option = this.options[this.selectedIndex];
+                
+                if (option.value && option.dataset.startHour) {
+                    document.getElementById('startHour').value = option.dataset.startHour;
+                    document.getElementById('startMinute').value = option.dataset.startMinute;
+                    document.getElementById('endHour').value = option.dataset.endHour;
+                    document.getElementById('endMinute').value = option.dataset.endMinute;
+                    customHours.style.display = 'block';
+                } else if (!option.value) {
+                    customHours.style.display = 'none';
                 }
             });
-            
-            const data = await response.json();
-            if (data.success) {
-                showSuccess(data.message);
-                setTimeout(() => location.reload(), 1500);
-            } else {
-                alert('❌ ' + data.message);
-            }
-        } catch (error) {
-            alert('❌ ' + error.message);
         }
+
+        populateHours();
     });
-});
 
-async function submitForm(url, form, message) {
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: new FormData(form)
-        });
-        
-        const data = await response.json();
-        
-        if (data.success) {
-            showSuccess(data.message);
-            form.reset();
-            setTimeout(() => location.reload(), 2000);
-        } else {
-            alert('❌ ' + data.message);
+    document.getElementById('prevMonth').addEventListener('click', () => {
+        currentMonth--;
+        if (currentMonth < 0) {
+            currentMonth = 11;
+            currentYear--;
         }
-    } catch (error) {
-        alert('❌ ' + error.message);
-    }
-}
+        renderCalendar();
+    });
 
-function showSuccess(message) {
-    document.getElementById('successMessage').textContent = message;
-    document.getElementById('successModal').classList.remove('hidden');
-}
+    document.getElementById('nextMonth').addEventListener('click', () => {
+        currentMonth++;
+        if (currentMonth > 11) {
+            currentMonth = 0;
+            currentYear++;
+        }
+        renderCalendar();
+    });
 
-function closeModal() {
-    document.getElementById('successModal').classList.add('hidden');
-}
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const tabId = this.getAttribute('data-tab');
+            
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.tab-btn').forEach(b => {
+                b.classList.remove('active');
+            });
+            
+            document.getElementById(tabId).classList.add('active');
+            this.classList.add('active');
+        });
+    });
+
+    window.addEventListener('click', (e) => {
+        const modal = document.getElementById('shiftModal');
+        const detailModal = document.getElementById('detailModal');
+        if (e.target === modal) closeModal();
+        if (e.target === detailModal) closeDetailModal();
+    });
+
+    renderCalendar();
 </script>
+
 @endsection

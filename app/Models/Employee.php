@@ -26,9 +26,15 @@ class Employee extends Model
         'status',
     ];
 
-    // ✅ Thêm relationship
+    // ✅ Quan hệ với User
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    // ✅ Quan hệ với ScheduleRequest (Đơn đăng ký lịch làm)
+    public function scheduleRequests()
+    {
+        return $this->hasMany(ScheduleRequest::class, 'employee_id');
     }
 }

@@ -35,7 +35,6 @@ Route::post('forgot-password/verify-otp', [AuthController::class, 'verifyOtp'])-
 
 // ==================== PROTECTED ROUTES ====================
 Route::middleware('auth')->group(function () {
-    
     // ========== DASHBOARD ==========
     Route::get('admin/dashboard', function () {
         return view('admin.dashboard');
@@ -49,14 +48,12 @@ Route::middleware('auth')->group(function () {
         return view('patient.dashboard');
     })->name('patient.dashboard');
 
-  
-Route::get('employees/dashboard', function () {
-    return view('employees.dashboard');
-})->name('employees.dashboard');
+    Route::get('employees/dashboard', function () {
+        return view('employees.dashboard');
+    })->name('employees.dashboard');
 
     // ========== ADMIN PANEL ==========
     Route::prefix('admin')->name('admin.')->group(function () {
-        
         // Quản lý bác sĩ & nhân viên
         Route::get('doctors', [EmployeeController::class, 'listDoctors'])->name('doctors');
         Route::get('employees', [EmployeeController::class, 'listEmployees'])->name('employees');
@@ -83,6 +80,8 @@ Route::get('employees/dashboard', function () {
         // Quản lý lịch trình
         Route::prefix('schedule-approval')->name('schedule-approval.')->group(function () {
             Route::get('/', [ScheduleApprovalController::class, 'index'])->name('index');
+            Route::get('employee/{employeeId}/requests', [ScheduleApprovalController::class, 'getEmployeeRequests'])->name('employee.requests');
+            Route::get('employee/{employeeId}/approved', [ScheduleApprovalController::class, 'getApprovedRequests'])->name('employee.approved');
             Route::get('request/{scheduleRequest}', [ScheduleApprovalController::class, 'show'])->name('show');
             Route::post('request/{scheduleRequest}/approve', [ScheduleApprovalController::class, 'approve'])->name('approve');
             Route::post('request/{scheduleRequest}/reject', [ScheduleApprovalController::class, 'reject'])->name('reject');
@@ -106,43 +105,69 @@ Route::get('employees/dashboard', function () {
 
     // ========== DOCTOR PANEL ==========
     Route::prefix('doctor')->name('doctor.')->group(function () {
-        
         Route::get('dashboard', function () {
             return view('doctor.dashboard');
         })->name('dashboard');
 
-        // LỊCH LÀM VIỆC & NGÀY NGHỈ
+        // LỊCH KHÁM (APPOINTMENTS)
+        Route::get('appointments', function () {
+            return view('doctor.appointments');
+        })->name('appointments');
+        Route::get('appointments/create', function () {
+            return view('doctor.appointments-create');
+        })->name('appointments.create');
+        Route::get('appointments/{id}', function ($id) {
+            return view('doctor.appointments-view');
+        })->name('appointments.view');
+
+        // BỆNH NHÂN (PATIENTS)
+        Route::get('patients', function () {
+            return view('doctor.patients');
+        })->name('patients');
+        Route::get('patients/create', function () {
+            return view('doctor.patients-create');
+        })->name('patients.create');
+        Route::get('patients/{id}', function ($id) {
+            return view('doctor.patients-view');
+        })->name('patients.view');
+
+        // HỒ SƠ KHÁM (MEDICAL RECORDS)
+        Route::get('medical-records', function () {
+            return view('doctor.medical-records');
+        })->name('medical-records');
+
+        // CÀI ĐẶT CÁ NHÂN (SETTINGS)
+        Route::get('settings', function () {
+            return view('doctor.settings');
+        })->name('settings');
+
+        // ✅ LỊCH LÀM VIỆC & NGÀY NGHỈ
         Route::prefix('schedule')->name('schedule.')->group(function () {
             Route::get('/', [DoctorScheduleController::class, 'create'])->name('create');
             Route::post('/', [DoctorScheduleController::class, 'store'])->name('store');
+            Route::put('{scheduleRequest}', [DoctorScheduleController::class, 'updateSchedule'])->name('update');
             Route::delete('{scheduleRequest}', [DoctorScheduleController::class, 'cancel'])->name('cancel');
-            Route::post('off-day', [DoctorScheduleController::class, 'requestOffDay'])->name('off-day.store');
+            Route::post('request-off-day', [DoctorScheduleController::class, 'requestOffDay'])->name('request-off-day');
             Route::delete('off-day/{offDay}', [DoctorScheduleController::class, 'cancelOffDay'])->name('off-day.cancel');
-            
-            // Redirect routes (để layout có thể gọi mà không bị lỗi)
             Route::get('approved', function () {
                 return redirect(route('doctor.schedule.create'));
             })->name('approved');
-            
             Route::get('off-days', function () {
                 return redirect(route('doctor.schedule.create'));
             })->name('off-days');
         });
-
-        Route::get('duties', [DoctorScheduleController::class, 'myDuties'])->name('duties');
-
-        Route::get('settings', function () {
-            return view('doctor.settings');
-        })->name('settings');
     });
+
+    // ========== PROFILE SETTINGS (CÀI ĐẶT HỒ SƠ) ==========
+    Route::get('profile/edit', function () {
+        return view('profile.edit');
+    })->name('profile.edit');
 
     // ========== EMPLOYEE PANEL ==========
     Route::prefix('employees')->name('employees.')->group(function () {
-        
         Route::get('dashboard', function () {
             return view('employees.dashboard');
         })->name('dashboard');
-
         Route::get('reception', function () {
             return view('employees.reception');
         })->name('reception');
@@ -155,12 +180,9 @@ Route::get('employees/dashboard', function () {
             Route::delete('{scheduleRequest}', [EmployeeScheduleController::class, 'cancel'])->name('cancel');
             Route::post('off-day', [EmployeeScheduleController::class, 'requestOffDay'])->name('off-day.store');
             Route::delete('off-day/{offDay}', [EmployeeScheduleController::class, 'cancelOffDay'])->name('off-day.cancel');
-            
-            // Redirect routes (để layout có thể gọi mà không bị lỗi)
             Route::get('approved', function () {
                 return redirect(route('employees.schedule.create'));
             })->name('approved');
-            
             Route::get('off-days', function () {
                 return redirect(route('employees.schedule.create'));
             })->name('off-days');
@@ -169,20 +191,16 @@ Route::get('employees/dashboard', function () {
         Route::get('appointment', function () {
             return view('employees.appointment');
         })->name('appointment');
-
         Route::get('payment', function () {
             return view('employees.payment');
         })->name('payment');
-
         Route::get('invoice', function () {
             return view('employees.invoice');
         })->name('invoice');
-
         Route::get('services', function () {
             $services = \App\Models\Service::with('currentPrice')->get();
             return view('employees.services', compact('services'));
         })->name('services');
-
         Route::get('settings', function () {
             return view('employees.settings');
         })->name('settings');
