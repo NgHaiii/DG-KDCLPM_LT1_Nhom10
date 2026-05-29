@@ -16,17 +16,15 @@ class Service extends Model
         'is_active',
     ];
 
-    /**
-     * Relationship: Service có nhiều Price
-     */
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
     public function prices()
     {
         return $this->hasMany(Price::class);
     }
 
-    /**
-     * Relationship: Lấy giá hiện tại (mới nhất)
-     */
     public function currentPrice()
     {
         return $this->hasOne(Price::class)
@@ -37,9 +35,6 @@ class Service extends Model
             ->latest('applied_date');
     }
 
-    /**
-     * Helper method: Lấy giá hiện tại (sử dụng khi cần gọi hàm)
-     */
     public function getCurrentPrice()
     {
         return $this->prices()
@@ -51,28 +46,20 @@ class Service extends Model
             ->first();
     }
 
-    /**
-     * Accessor: Format price (nếu cần)
-     */
     public function getFormattedPriceAttribute()
     {
-        if ($this->currentPrice) {
-            return number_format($this->currentPrice->price, 0, ',', '.');
+        $price = $this->currentPrice;
+        if ($price) {
+            return number_format($price->price, 0, ',', '.');
         }
         return 'Chưa có giá';
     }
 
-    /**
-     * Scope: Chỉ lấy dịch vụ active
-     */
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
-    /**
-     * Scope: Lấy dịch vụ có giá
-     */
     public function scopeWithPrice($query)
     {
         return $query->has('prices');

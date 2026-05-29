@@ -343,12 +343,12 @@
                 </a>
             </li>
 
-            <li class="nav-item">
-                <a href="{{ route('doctor.schedule.approved') }}" class="nav-link @if(request()->routeIs('doctor.schedule.approved')) active @endif">
-                    <span class="nav-icon">✅</span>
-                    <span>Lịch duyệt</span>
-                </a>
-            </li>
+<li class="nav-item">
+    <a href="{{ route('doctor.schedule.official') }}" class="nav-link @if(request()->routeIs('doctor.schedule.official')) active @endif">
+        <span class="nav-icon">📋</span>
+        <span>Lịch chính thức</span>
+    </a>
+</li>
 
             <li class="nav-item">
                 <a href="{{ route('doctor.schedule.off-days') }}" class="nav-link @if(request()->routeIs('doctor.schedule.off-days')) active @endif">

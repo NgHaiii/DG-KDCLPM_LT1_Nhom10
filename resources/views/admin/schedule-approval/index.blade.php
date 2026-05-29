@@ -197,12 +197,18 @@
         background: white;
         color: #6b7280;
         transition: all 0.3s ease;
+        position: relative;
     }
 
     .calendar-day:hover { border-color: #3b82f6; background: #f0f9ff; }
     .calendar-day.other-month { color: #d1d5db; background: #fafbfc; cursor: not-allowed; }
-    .calendar-day.registered { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+    
+    /* 🔴 Ngày chờ duyệt - màu vàng */
+    .calendar-day.pending { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
+    
+    /* 🟢 Ngày đã duyệt - màu xanh */
     .calendar-day.approved { background: #d1fae5; border-color: #10b981; color: #047857; }
+    
     .calendar-day.selected { background: #3b82f6; border-color: #3b82f6; color: white; }
 
     .schedule-info { display: none; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 1rem; margin-top: 1rem; }
@@ -256,6 +262,29 @@
 
     .status-pending { background: #fef3c7; color: #92400e; }
     .status-approved { background: #d1fae5; color: #047857; }
+
+    .legend {
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 1rem;
+        padding: 1rem;
+        background: #f9fafb;
+        border-radius: 6px;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .legend-color {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        border: 2px solid;
+    }
 </style>
 
 <!-- Stats -->
@@ -278,16 +307,13 @@
     </div>
 </div>
 
-<!-- Tabs -->
+<!-- Tabs - BỎ TAB "Lịch đã duyệt" -->
 <div class="tabs-container">
     <button class="tab-btn active" onclick="switchTab('pending-doctors')">
         👨‍⚕️ Bác sĩ chờ duyệt <span class="badge">{{ $pendingDoctorsCount ?? 0 }}</span>
     </button>
     <button class="tab-btn" onclick="switchTab('pending-employees')">
         👨‍💼 Nhân viên chờ duyệt <span class="badge">{{ $pendingEmployeesCount ?? 0 }}</span>
-    </button>
-    <button class="tab-btn" onclick="switchTab('approved-schedules')">
-        ✅ Lịch đã duyệt <span class="badge badge-green">{{ $approvedSchedulesCount ?? 0 }}</span>
     </button>
     <button class="tab-btn" onclick="switchTab('offdays')">
         🏖️ Xin nghỉ <span class="badge">{{ $pendingOffDays->count() ?? 0 }}</span>
@@ -305,7 +331,7 @@
                     <p class="employee-meta">Mã: {{ $doctor->code ?? 'N/A' }}</p>
                     <div class="request-count"><span class="status-badge status-pending">Chờ duyệt</span> {{ $doctor->pending_requests_count ?? 0 }} đơn</div>
                 </div>
-                <button class="btn btn-primary" onclick="openScheduleModal({{ $doctor->id }}, '{{ $doctor->name }}', 'pending')">Xem & Duyệt</button>
+                <button class="btn btn-primary" onclick="openScheduleModal({{ $doctor->id }}, '{{ $doctor->name }}')">Xem & Duyệt</button>
             </div>
             @endforeach
         </div>
@@ -325,7 +351,7 @@
                     <p class="employee-meta">Mã: {{ $employee->code ?? 'N/A' }}</p>
                     <div class="request-count"><span class="status-badge status-pending">Chờ duyệt</span> {{ $employee->pending_requests_count ?? 0 }} đơn</div>
                 </div>
-                <button class="btn btn-primary" onclick="openScheduleModal({{ $employee->id }}, '{{ $employee->name }}', 'pending')">Xem & Duyệt</button>
+                <button class="btn btn-primary" onclick="openScheduleModal({{ $employee->id }}, '{{ $employee->name }}')">Xem & Duyệt</button>
             </div>
             @endforeach
         </div>
@@ -334,50 +360,7 @@
     @endif
 </div>
 
-<!-- Tab 3: Approved Schedules (Lịch đã duyệt) -->
-<div id="approved-schedules-tab" class="tab-content">
-    @if(isset($approvedDoctorsList) && $approvedDoctorsList->count() > 0)
-        <div style="margin-bottom: 2rem;">
-            <h3 style="color: #1f2937; font-weight: 700; margin-bottom: 1rem;">👨‍⚕️ Bác sĩ</h3>
-            <div class="employee-list">
-                @foreach($approvedDoctorsList as $doctor)
-                <div class="employee-card">
-                    <div class="employee-info">
-                        <p class="employee-name">{{ $doctor->name }}</p>
-                        <p class="employee-meta">Mã: {{ $doctor->code ?? 'N/A' }}</p>
-                        <div class="request-count approved"><span class="status-badge status-approved">Đã duyệt</span> {{ $doctor->approved_requests_count ?? 0 }} đơn</div>
-                    </div>
-                    <button class="btn btn-warning" onclick="openScheduleModal({{ $doctor->id }}, '{{ $doctor->name }}', 'approved')">Chỉnh sửa</button>
-                </div>
-                @endforeach
-            </div>
-        </div>
-    @endif
-
-    @if(isset($approvedEmployeesList) && $approvedEmployeesList->count() > 0)
-        <div>
-            <h3 style="color: #1f2937; font-weight: 700; margin-bottom: 1rem;">👨‍💼 Nhân viên</h3>
-            <div class="employee-list">
-                @foreach($approvedEmployeesList as $employee)
-                <div class="employee-card">
-                    <div class="employee-info">
-                        <p class="employee-name">{{ $employee->name }}</p>
-                        <p class="employee-meta">Mã: {{ $employee->code ?? 'N/A' }}</p>
-                        <div class="request-count approved"><span class="status-badge status-approved">Đã duyệt</span> {{ $employee->approved_requests_count ?? 0 }} đơn</div>
-                    </div>
-                    <button class="btn btn-warning" onclick="openScheduleModal({{ $employee->id }}, '{{ $employee->name }}', 'approved')">Chỉnh sửa</button>
-                </div>
-                @endforeach
-            </div>
-        </div>
-    @endif
-
-    @if((!isset($approvedDoctorsList) || $approvedDoctorsList->count() == 0) && (!isset($approvedEmployeesList) || $approvedEmployeesList->count() == 0))
-        <div class="empty-state"><div style="font-size: 2.5rem; margin-bottom: 1rem;">📭</div><p>Chưa có lịch đã duyệt</p></div>
-    @endif
-</div>
-
-<!-- Tab 4: Off Days -->
+<!-- Tab 3: Off Days -->
 <div id="offdays-tab" class="tab-content">
     @if($pendingOffDays->count() > 0)
         <div class="employee-list">
@@ -412,6 +395,18 @@
         </div>
 
         <div class="modal-body">
+            <!-- Legend -->
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #fef3c7; border-color: #f59e0b;"></div>
+                    <span>Chờ duyệt</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #d1fae5; border-color: #10b981;"></div>
+                    <span>Đã duyệt</span>
+                </div>
+            </div>
+
             <!-- Calendar -->
             <div class="calendar-section">
                 <div class="calendar-header">
@@ -450,6 +445,10 @@
                     <div class="info-item">
                         <p class="info-label">🕐 Giờ</p>
                         <p class="info-value" id="infoTime"></p>
+                    </div>
+                    <div class="info-item">
+                        <p class="info-label">📌 Trạng thái</p>
+                        <p class="info-value" id="infoStatus"></p>
                     </div>
                 </div>
 
@@ -518,10 +517,11 @@
 <script>
     let currentScheduleId = null;
     let currentEmployeeId = null;
-    let currentScheduleStatus = null;
     let currentMonth = new Date().getMonth();
     let currentYear = new Date().getFullYear();
     let schedulesByDate = {};
+    let scheduleCache = {};
+    let isLoadingSchedules = false;
 
     // ===== TAB SWITCHING =====
     function switchTab(tabName) {
@@ -532,23 +532,17 @@
         event.target.classList.add('active');
     }
 
-    function openScheduleModal(employeeId, employeeName, status) {
+    // 🔴 TỐI ƯU: Open modal nhanh hơn
+    function openScheduleModal(employeeId, employeeName) {
         currentEmployeeId = employeeId;
-        currentScheduleStatus = status;
         document.getElementById('modalEmployeeName').textContent = employeeName;
         document.getElementById('scheduleModal').classList.add('active');
-        document.getElementById('scheduleStatus').value = status;
-        
-        // Show/hide buttons based on status
-        document.getElementById('approveBtn').style.display = status === 'pending' ? 'block' : 'none';
-        document.getElementById('rejectBtn').style.display = status === 'pending' ? 'block' : 'none';
-        document.getElementById('updateBtn').style.display = status === 'approved' ? 'block' : 'none';
         
         currentMonth = new Date().getMonth();
         currentYear = new Date().getFullYear();
         
         populateHours();
-        loadEmployeeSchedules();
+        loadEmployeeSchedulesOptimized();
     }
 
     function closeModal() {
@@ -556,24 +550,80 @@
         document.getElementById('scheduleInfo').classList.remove('show');
     }
 
-    function loadEmployeeSchedules() {
-        const endpoint = currentScheduleStatus === 'pending' 
-            ? `/admin/schedule-approval/employee/${currentEmployeeId}/requests`
-            : `/admin/schedule-approval/employee/${currentEmployeeId}/approved`;
+    // 🔴 TỐI ƯU: Load dữ liệu nhanh hơn + cache
+    async function loadEmployeeSchedulesOptimized() {
+        const cacheKey = `${currentEmployeeId}-all`;
         
-        fetch(endpoint)
-            .then(r => r.json())
-            .then(data => {
-                schedulesByDate = {};
-                data.forEach(req => {
-                    schedulesByDate[req.work_date] = req;
-                });
-                renderCalendar();
-            })
-            .catch(e => console.error('Lỗi:', e));
+        // Nếu đã cache và < 5 phút, dùng cache
+        if (scheduleCache[cacheKey] && 
+            Date.now() - scheduleCache[cacheKey].timestamp < 5 * 60 * 1000) {
+            schedulesByDate = scheduleCache[cacheKey].data;
+            renderCalendarOptimized();
+            return;
+        }
+
+        // Prevent duplicate requests
+        if (isLoadingSchedules) return;
+        isLoadingSchedules = true;
+
+        // Show loading state
+        document.getElementById('calendarDays').innerHTML = 
+            '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #6b7280;">⏳ Đang tải dữ liệu...</div>';
+
+        try {
+            // 🔴 Load cả pending và approved schedules
+            const [pendingRes, approvedRes] = await Promise.all([
+                fetch(`/admin/schedule-approval/employee/${currentEmployeeId}/requests`, {
+                    signal: AbortSignal.timeout(10000)
+                }),
+                fetch(`/admin/schedule-approval/employee/${currentEmployeeId}/approved`, {
+                    signal: AbortSignal.timeout(10000)
+                })
+            ]);
+            
+            if (!pendingRes.ok || !approvedRes.ok) {
+                throw new Error('HTTP error');
+            }
+            
+            const pendingData = await pendingRes.json();
+            const approvedData = await approvedRes.json();
+            
+            schedulesByDate = {};
+            
+            // 🔴 Thêm pending schedules (status = 'pending')
+            pendingData.forEach(req => {
+                schedulesByDate[req.work_date] = {
+                    ...req,
+                    approval_status: 'pending'
+                };
+            });
+
+            // 🔴 Thêm approved schedules (status = 'approved')
+            approvedData.forEach(req => {
+                schedulesByDate[req.work_date] = {
+                    ...req,
+                    approval_status: 'approved'
+                };
+            });
+
+            // Cache kết quả
+            scheduleCache[cacheKey] = {
+                data: schedulesByDate,
+                timestamp: Date.now()
+            };
+
+            renderCalendarOptimized();
+        } catch (error) {
+            console.error('Lỗi load dữ liệu:', error);
+            document.getElementById('calendarDays').innerHTML = 
+                '<div style="grid-column: 1/-1; text-align: center; padding: 2rem; color: #ef4444;">❌ Lỗi tải dữ liệu. Thử lại.</div>';
+        } finally {
+            isLoadingSchedules = false;
+        }
     }
 
-    function renderCalendar() {
+    // 🔴 TỐI ƯU: Render calendar nhanh hơn
+    function renderCalendarOptimized() {
         const firstDay = new Date(currentYear, currentMonth, 1);
         const lastDay = new Date(currentYear, currentMonth + 1, 0);
         const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 
@@ -582,46 +632,62 @@
         document.getElementById('monthYear').textContent = monthNames[currentMonth] + ' - ' + currentYear;
         
         const calendarDays = document.getElementById('calendarDays');
-        calendarDays.innerHTML = '';
+        const fragment = document.createDocumentFragment();
 
         const prevLastDay = new Date(currentYear, currentMonth, 0).getDate();
         const firstDayOfWeek = firstDay.getDay() || 7;
         
+        // Ngày tháng trước
         for (let i = prevLastDay - firstDayOfWeek + 2; i <= prevLastDay; i++) {
             const day = document.createElement('div');
             day.className = 'calendar-day other-month';
             day.textContent = i;
-            calendarDays.appendChild(day);
+            fragment.appendChild(day);
         }
 
+        // Ngày tháng này
         for (let i = 1; i <= lastDay.getDate(); i++) {
             const day = document.createElement('div');
             const dateStr = formatDate(currentYear, currentMonth, i);
             day.className = 'calendar-day';
-            day.textContent = i;
-
-            if (schedulesByDate[dateStr]) {
-                day.classList.add(currentScheduleStatus === 'pending' ? 'registered' : 'approved');
+            
+            const schedule = schedulesByDate[dateStr];
+            if (schedule) {
+                // 🔴 Highlight dựa trên approval_status
+                if (schedule.approval_status === 'approved') {
+                    day.classList.add('approved');
+                } else if (schedule.approval_status === 'pending') {
+                    day.classList.add('pending');
+                }
             }
-
-            day.onclick = () => selectDay(dateStr, day);
-            calendarDays.appendChild(day);
+            
+            day.textContent = i;
+            day.dataset.date = dateStr;
+            day.addEventListener('click', () => selectDayOptimized(dateStr, day));
+            
+            fragment.appendChild(day);
         }
 
-        const nextDaysCount = (calendarDays.children.length % 7) ? 7 - (calendarDays.children.length % 7) : 0;
+        // Ngày tháng sau
+        const nextDaysCount = 42 - (prevLastDay - firstDayOfWeek + 2 + lastDay.getDate());
         for (let i = 1; i <= nextDaysCount; i++) {
             const day = document.createElement('div');
             day.className = 'calendar-day other-month';
             day.textContent = i;
-            calendarDays.appendChild(day);
+            fragment.appendChild(day);
         }
+
+        // 🔴 Một lần update DOM
+        calendarDays.innerHTML = '';
+        calendarDays.appendChild(fragment);
     }
 
     function formatDate(y, m, d) {
         return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
     }
 
-    function selectDay(dateStr, el) {
+    // 🔴 TỐI ƯU: Select day
+    function selectDayOptimized(dateStr, el) {
         const schedule = schedulesByDate[dateStr];
         if (!schedule) return;
 
@@ -630,17 +696,32 @@
 
         currentScheduleId = schedule.id;
         
-        document.getElementById('infoDate').textContent = new Date(dateStr).toLocaleDateString('vi-VN');
-        document.getElementById('infoShift').textContent = schedule.shift_name;
-        document.getElementById('infoTime').textContent = schedule.time_range;
+        const date = new Date(dateStr);
+        document.getElementById('infoDate').textContent = date.toLocaleDateString('vi-VN');
+        document.getElementById('infoShift').textContent = schedule.shift_name || 'N/A';
+        document.getElementById('infoTime').textContent = schedule.time_range || 'N/A';
         
-        document.getElementById('editShiftId').value = schedule.shift_id;
+        // 🔴 Hiển thị trạng thái: Chờ duyệt hoặc Đã duyệt
+        const statusText = schedule.approval_status === 'approved' ? '✅ Đã duyệt' : '⏳ Chờ duyệt';
+        const statusColor = schedule.approval_status === 'approved' ? '#047857' : '#92400e';
+        document.getElementById('infoStatus').textContent = statusText;
+        document.getElementById('infoStatus').style.color = statusColor;
+        
+        // Update form fields
+        document.getElementById('editShiftId').value = schedule.shift_id || '';
         document.getElementById('editNotes').value = schedule.notes || '';
-        document.getElementById('editStartHour').value = schedule.start_hour;
-        document.getElementById('editStartMinute').value = schedule.start_minute;
-        document.getElementById('editEndHour').value = schedule.end_hour;
-        document.getElementById('editEndMinute').value = schedule.end_minute;
+        document.getElementById('editStartHour').value = schedule.start_hour || 0;
+        document.getElementById('editStartMinute').value = schedule.start_minute || 0;
+        document.getElementById('editEndHour').value = schedule.end_hour || 0;
+        document.getElementById('editEndMinute').value = schedule.end_minute || 0;
         document.getElementById('employeeId').value = currentEmployeeId;
+        document.getElementById('scheduleStatus').value = schedule.approval_status;
+
+        // 🔴 Show/hide buttons dựa trên approval_status
+        const isPending = schedule.approval_status === 'pending';
+        document.getElementById('approveBtn').style.display = isPending ? 'block' : 'none';
+        document.getElementById('rejectBtn').style.display = isPending ? 'block' : 'none';
+        document.getElementById('updateBtn').style.display = isPending ? 'none' : 'block';
 
         document.getElementById('scheduleInfo').classList.add('show');
     }
@@ -648,13 +729,13 @@
     function prevMonth() {
         currentMonth = currentMonth === 0 ? 11 : currentMonth - 1;
         if (currentMonth === 11) currentYear--;
-        renderCalendar();
+        renderCalendarOptimized();
     }
 
     function nextMonth() {
         currentMonth = currentMonth === 11 ? 0 : currentMonth + 1;
         if (currentMonth === 0) currentYear++;
-        renderCalendar();
+        renderCalendarOptimized();
     }
 
     function populateHours() {
@@ -685,14 +766,19 @@
     document.getElementById('editShiftId')?.addEventListener('change', function() {
         const opt = this.options[this.selectedIndex];
         if (opt.value) {
-            document.getElementById('editStartHour').value = opt.dataset.startHour;
-            document.getElementById('editStartMinute').value = opt.dataset.startMinute;
-            document.getElementById('editEndHour').value = opt.dataset.endHour;
-            document.getElementById('editEndMinute').value = opt.dataset.endMinute;
+            document.getElementById('editStartHour').value = opt.dataset.startHour || 0;
+            document.getElementById('editStartMinute').value = opt.dataset.startMinute || 0;
+            document.getElementById('editEndHour').value = opt.dataset.endHour || 0;
+            document.getElementById('editEndMinute').value = opt.dataset.endMinute || 0;
         }
     });
 
     async function approveSchedule() {
+        if (!currentScheduleId) {
+            alert('❌ Chưa chọn ca làm');
+            return;
+        }
+
         try {
             const response = await fetch(`{{ route('admin.schedule-approval.approve', ':id') }}`.replace(':id', currentScheduleId), {
                 method: 'POST',
@@ -711,7 +797,11 @@
             });
             const data = await response.json();
             alert(data.success ? '✅ ' + data.message : '❌ ' + data.message);
-            if (data.success) location.reload();
+            if (data.success) {
+                scheduleCache = {};
+                loadEmployeeSchedulesOptimized();
+                document.getElementById('scheduleInfo').classList.remove('show');
+            }
         } catch (error) {
             alert('❌ Lỗi: ' + error.message);
         }
@@ -737,7 +827,8 @@
             const data = await response.json();
             alert(data.success ? '✅ Cập nhật thành công!' : '❌ ' + data.message);
             if (data.success) {
-                loadEmployeeSchedules();
+                scheduleCache = {};
+                loadEmployeeSchedulesOptimized();
                 document.getElementById('scheduleInfo').classList.remove('show');
             }
         } catch (error) {
@@ -759,7 +850,11 @@
             });
             const data = await response.json();
             alert(data.success ? '✅ ' + data.message : '❌ ' + data.message);
-            if (data.success) location.reload();
+            if (data.success) {
+                scheduleCache = {};
+                loadEmployeeSchedulesOptimized();
+                document.getElementById('scheduleInfo').classList.remove('show');
+            }
         } catch (error) {
             alert('❌ Lỗi: ' + error.message);
         }

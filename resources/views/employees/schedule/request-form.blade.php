@@ -58,6 +58,7 @@
         background: white;
         padding: 0 1rem;
         border-radius: 12px 12px 0 0;
+        overflow-x: auto;
     }
 
     .tab-btn {
@@ -70,6 +71,7 @@
         color: #6b7280;
         border-bottom: 3px solid transparent;
         transition: all 0.3s ease;
+        white-space: nowrap;
     }
 
     .tab-btn:hover {
@@ -79,6 +81,22 @@
     .tab-btn.active {
         color: #3b82f6;
         border-bottom-color: #3b82f6;
+    }
+
+    .tab-btn.link-btn {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border-radius: 6px;
+        padding: 0.75rem 1.25rem;
+        margin-left: auto;
+        text-decoration: none;
+        border-bottom: none;
+    }
+
+    .tab-btn.link-btn:hover {
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
     }
 
     /* Tab Content */
@@ -133,7 +151,6 @@
         background: #1e40af;
     }
 
-    /* Calendar Grid */
     .calendar-weekdays {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
@@ -295,7 +312,6 @@
         color: #6b7280;
     }
 
-    /* Detail Item */
     .detail-item {
         padding: 0.75rem;
         background: #f0f9ff;
@@ -350,11 +366,6 @@
         outline: none;
         border-color: #3b82f6;
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
-    .form-group input[type="date"],
-    .form-group textarea {
-        cursor: text;
     }
 
     .hour-inputs {
@@ -441,64 +452,164 @@
         color: #374151;
     }
 
-    /* Off-Day Form */
+    /* Off-Day Form & Requests */
     .offday-form {
         background: white;
         border-radius: 12px;
         padding: 2rem;
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
         margin-bottom: 2rem;
+        border-top: 4px solid #ec4899;
     }
 
-    .approved-list-container {
+    .offday-requests-container {
         background: white;
         border-radius: 12px;
-        overflow: hidden;
+        padding: 2rem;
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-        border: 1px solid #e5e7eb;
+        border-top: 4px solid #3b82f6;
         margin-bottom: 2rem;
     }
 
-    .approved-list-header {
-        padding: 1.25rem 1.5rem;
-        font-size: 1.125rem;
-        font-weight: 700;
-        color: white;
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    }
-
-    .approved-list-body {
-        padding: 1.5rem;
-    }
-
-    .approved-item {
-        padding: 1rem 1.25rem;
-        background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
-        border: 2px solid #0ea5e9;
-        border-radius: 8px;
-        margin-bottom: 0.75rem;
+    .offday-request-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.25rem;
+        border-left: 5px solid;
         transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
-    .approved-item:last-child {
-        margin-bottom: 0;
+    .offday-request-card.pending {
+        border-left-color: #f59e0b;
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
     }
 
-    .approved-item:hover {
-        border-color: #0284c7;
-        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+    .offday-request-card.pending:hover {
+        box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
+        transform: translateY(-2px);
     }
 
-    .approved-item p:first-child {
+    .offday-request-card.approved {
+        border-left-color: #10b981;
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    }
+
+    .offday-request-card.approved:hover {
+        box-shadow: 0 4px 16px rgba(16, 185, 129, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .offday-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .offday-card-date {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .date-badge {
+        background: white;
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        border: 2px solid #e5e7eb;
+    }
+
+    .offday-request-card.pending .date-badge {
+        color: #f59e0b;
+        border-color: #f59e0b;
+    }
+
+    .offday-request-card.approved .date-badge {
+        color: #10b981;
+        border-color: #10b981;
+    }
+
+    .status-badge {
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .status-badge.pending-badge {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-badge.approved-badge {
+        background: #dcfce7;
+        color: #065f46;
+    }
+
+    .offday-card-body {
+        margin: 0.75rem 0;
+    }
+
+    .offday-card-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .btn-action {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.85rem;
         font-weight: 600;
-        color: #0c4a6e;
-        margin: 0 0 0.25rem 0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid;
     }
 
-    .approved-item p {
-        font-size: 0.875rem;
-        color: #0c4a6e;
-        margin: 0.25rem 0;
+    .btn-action.edit {
+        background: white;
+        color: #f59e0b;
+        border-color: #f59e0b;
+    }
+
+    .btn-action.edit:hover {
+        background: #f59e0b;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-action.delete {
+        background: white;
+        color: #ef4444;
+        border-color: #ef4444;
+    }
+
+    .btn-action.delete:hover {
+        background: #ef4444;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+
+    textarea#reason,
+    textarea#editReason {
+        font-family: inherit;
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .char-counter {
+        font-size: 0.8rem;
+        color: #9ca3af;
+        margin-top: 0.5rem;
     }
 
     @media (max-width: 768px) {
@@ -517,6 +628,20 @@
 
         .hour-inputs {
             grid-template-columns: 1fr 1fr;
+        }
+
+        .tabs-nav {
+            flex-wrap: wrap;
+        }
+
+        .tab-btn.link-btn {
+            margin-left: 0;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        .offday-card-actions {
+            grid-template-columns: 1fr;
         }
     }
 </style>
@@ -539,11 +664,11 @@
     </div>
 </div>
 
-<!-- Tabs -->
+<!-- Tabs với Link Button -->
 <div class="tabs-nav">
     <button class="tab-btn active" data-tab="tab-shift">📅 Lịch đăng ký ca</button>
     <button class="tab-btn" data-tab="tab-offday">🏖️ Xin ngày nghỉ</button>
-    <button class="tab-btn" data-tab="tab-approved">✅ Ca đã duyệt</button>
+    <a href="{{ route('employees.schedule.official') }}" class="tab-btn link-btn">📋 Lịch chính thức</a>
 </div>
 
 <!-- Tab 1: Shift Calendar -->
@@ -557,7 +682,6 @@
             </div>
         </div>
 
-        <!-- Weekdays -->
         <div class="calendar-weekdays">
             <div class="weekday">T2</div>
             <div class="weekday">T3</div>
@@ -568,74 +692,123 @@
             <div class="weekday">CN</div>
         </div>
 
-        <!-- Days -->
         <div class="calendar-days" id="calendarDays"></div>
     </div>
 </div>
 
 <!-- Tab 2: Off-Day -->
 <div id="tab-offday" class="tab-content">
+    <!-- Off-Day Form -->
     <div class="offday-form">
-        <h3 style="margin-top: 0; color: #111827;">🏖️ Xin ngày nghỉ</h3>
-        <form action="{{ route('employees.schedule.off-day.store') }}" method="POST">
+        <div style="margin-bottom: 1.5rem;">
+            <h3 style="margin: 0 0 0.5rem 0; color: #111827;">🏖️ Đơn Xin Ngày Nghỉ</h3>
+            <p style="margin: 0; color: #6b7280; font-size: 0.9rem;">Gửi đơn xin phép nghỉ và chờ quản lý phê duyệt</p>
+        </div>
+
+        <form action="{{ route('employees.schedule.off-day.store') }}" method="POST" id="offdayForm">
             @csrf
 
-            <div class="form-group">
-                <label>📅 Từ ngày</label>
-                <input type="date" name="start_date" required>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div class="form-group">
+                    <label>📅 Từ ngày <span style="color: #ef4444;">*</span></label>
+                    <input type="date" name="start_date" id="startDate" required style="font-weight: 500;">
+                </div>
+
+                <div class="form-group">
+                    <label>📅 Đến ngày <span style="color: #ef4444;">*</span></label>
+                    <input type="date" name="end_date" id="endDate" required style="font-weight: 500;">
+                </div>
             </div>
 
             <div class="form-group">
-                <label>📅 Đến ngày</label>
-                <input type="date" name="end_date" required>
+                <label>📝 Lý do xin nghỉ <span style="color: #ef4444;">*</span></label>
+                <textarea name="reason" id="reason" rows="4" placeholder="Nhập lý do xin nghỉ (tối thiểu 10 ký tự)..." required style="resize: vertical;"></textarea>
+                <p class="char-counter">0 / 200 ký tự</p>
             </div>
 
-            <div class="form-group">
-                <label>📝 Lý do</label>
-                <textarea name="reason" rows="4" placeholder="Nhập lý do xin nghỉ..." required></textarea>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <button type="submit" class="btn-submit">✅ Gửi đơn xin nghỉ</button>
+                <button type="reset" class="btn-cancel">🔄 Xóa</button>
             </div>
-
-            <button type="submit" class="btn-submit">✅ Gửi đơn xin nghỉ</button>
         </form>
     </div>
 
-    @if($approvedOffDays->count() > 0)
-        <div class="approved-list-container">
-            <div class="approved-list-header">
-                ✅ Ngày nghỉ đã duyệt ({{ $approvedOffDays->count() }})
+    <!-- Pending Off-Day Requests -->
+    @if($pendingOffDays && $pendingOffDays->count() > 0)
+        <div class="offday-requests-container">
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="margin: 0 0 0.5rem 0; color: #f59e0b; display: flex; align-items: center; gap: 0.5rem;">
+                    ⏳ Đơn xin nghỉ chờ duyệt ({{ $pendingOffDays->count() }})
+                </h3>
+                <p style="margin: 0; color: #6b7280; font-size: 0.9rem;">Nhấn để chỉnh sửa hoặc hủy đơn xin nghỉ</p>
             </div>
-            
-            <div class="approved-list-body">
-                @foreach($approvedOffDays as $offday)
-                    <div class="approved-item">
-                        <p>{{ $offday->reason ?? 'Không có lý do' }}</p>
-                        <p>📅 {{ optional($offday->off_date)->format('d/m/Y') ?? $offday->off_date }} • Đã duyệt</p>
+
+            <div style="display: grid; gap: 1rem;">
+                @foreach($pendingOffDays as $offday)
+                    <div class="offday-request-card pending">
+                        <div class="offday-card-header">
+                            <div class="offday-card-date">
+                                <span class="date-badge">{{ optional($offday->start_date)->format('d/m') }}</span>
+                                <span style="color: #9ca3af; margin: 0 0.5rem;">→</span>
+                                <span class="date-badge">{{ optional($offday->end_date)->format('d/m') }}</span>
+                            </div>
+                            <span class="status-badge pending-badge">⏳ Chờ duyệt</span>
+                        </div>
+
+                        <div class="offday-card-body">
+                            <p style="color: #111827; font-weight: 600; margin: 0.5rem 0 0 0;">{{ $offday->reason }}</p>
+                            <p style="color: #6b7280; font-size: 0.85rem; margin: 0.5rem 0;">
+                                📆 {{ optional($offday->start_date)->diffInDays(optional($offday->end_date)->addDay()) ?? 1 }} ngày • 
+                                Gửi lúc {{ optional($offday->created_at)->format('d/m/Y H:i') ?? 'N/A' }}
+                            </p>
+                        </div>
+
+                        <div class="offday-card-actions">
+                            <button type="button" class="btn-action edit" onclick="editOffDay({{ $offday->id }}, '{{ $offday->start_date }}', '{{ $offday->end_date }}', '{{ addslashes($offday->reason) }}')">
+                                ✏️ Chỉnh sửa
+                            </button>
+                            <button type="button" class="btn-action delete" onclick="deleteOffDay({{ $offday->id }})">
+                                🗑️ Hủy đơn
+                            </button>
+                        </div>
                     </div>
                 @endforeach
             </div>
         </div>
     @endif
-</div>
 
-<!-- Tab 3: Approved Schedules -->
-<div id="tab-approved" class="tab-content">
-    <div class="offday-form">
-        @if($approvedSchedules->count() > 0)
-            <h3 style="margin-top: 0; color: #111827;">📅 Danh sách ca đã duyệt</h3>
-            
-            @foreach($approvedSchedules as $schedule)
-                <div class="approved-item">
-                    <p>{{ optional($schedule->shift)->name ?? 'Ca làm việc' }}</p>
-                    <p>📅 Ngày: {{ $schedule->work_date->format('d/m/Y') }}</p>
-                    <p>⏰ Giờ: {{ $schedule->time_range }}</p>
-                </div>
-            @endforeach
-        @else
-            <div style="text-align: center; padding: 3rem; color: #9ca3af;">
-                <p>📭 Chưa có ca làm việc nào được duyệt</p>
+    <!-- Approved Off-Day Requests -->
+    @if($approvedOffDays->count() > 0)
+        <div class="offday-requests-container">
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="margin: 0 0 0.5rem 0; color: #10b981; display: flex; align-items: center; gap: 0.5rem;">
+                    ✅ Đơn xin nghỉ đã duyệt ({{ $approvedOffDays->count() }})
+                </h3>
             </div>
-        @endif
-    </div>
+
+            <div style="display: grid; gap: 1rem;">
+                @foreach($approvedOffDays as $offday)
+                    <div class="offday-request-card approved">
+                        <div class="offday-card-header">
+                            <div class="offday-card-date">
+                                <span class="date-badge">{{ optional($offday->start_date)->format('d/m') }}</span>
+                                <span style="color: #9ca3af; margin: 0 0.5rem;">→</span>
+                                <span class="date-badge">{{ optional($offday->end_date)->format('d/m') }}</span>
+                            </div>
+                            <span class="status-badge approved-badge">✅ Đã duyệt</span>
+                        </div>
+
+                        <div class="offday-card-body">
+                            <p style="color: #111827; font-weight: 600; margin: 0.5rem 0 0 0;">{{ $offday->reason }}</p>
+                            <p style="color: #6b7280; font-size: 0.85rem; margin: 0.5rem 0;">
+                                📆 {{ optional($offday->start_date)->diffInDays(optional($offday->end_date)->addDay()) ?? 1 }} ngày
+                            </p>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
 </div>
 
 <!-- Modal Đăng ký/Cập nhật -->
@@ -669,7 +842,6 @@
                 </select>
             </div>
 
-            <!-- Custom Hours Section -->
             <div id="customHours" style="display: none;">
                 <div class="custom-hours-header">
                     <p>✏️ Tùy chỉnh giờ làm việc</p>
@@ -720,13 +892,47 @@
     </div>
 </div>
 
+<!-- Modal Chỉnh Sửa Đơn Xin Nghỉ -->
+<div id="editOffdayModal" class="modal">
+    <div class="modal-content">
+        <button type="button" class="modal-close" onclick="closeEditOffdayModal()">✕</button>
+        <div class="modal-header">✏️ Chỉnh sửa đơn xin nghỉ</div>
+
+        <form action="" method="POST" id="editOffdayForm">
+            @csrf
+            @method('PUT')
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div class="form-group">
+                    <label>📅 Từ ngày <span style="color: #ef4444;">*</span></label>
+                    <input type="date" name="start_date" id="editStartDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label>📅 Đến ngày <span style="color: #ef4444;">*</span></label>
+                    <input type="date" name="end_date" id="editEndDate" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>📝 Lý do xin nghỉ <span style="color: #ef4444;">*</span></label>
+                <textarea name="reason" id="editReason" rows="4" required></textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <button type="submit" class="btn-submit">✅ Cập nhật</button>
+                <button type="button" class="btn-cancel" onclick="closeEditOffdayModal()">❌ Hủy</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     let currentMonth = new Date().getMonth();
     let currentYear = new Date().getFullYear();
     let selectedDate = null;
     let editingSchedule = null;
 
-    // Dữ liệu ngày đã đăng ký
     const registeredDates = {
         pending: [
             @foreach($pendingRequests as $req)
@@ -740,37 +946,37 @@
         ]
     };
 
-    
- const allSchedulesData = {
-    pending: {!! json_encode($pendingRequests->map(function($r) {
-        return [
-            'id' => $r->id,
-            'date' => $r->work_date->format('Y-m-d'),
-            'name' => optional($r->shift)->name ?? 'Ca làm việc',
-            'time' => $r->time_range,
-            'shift_id' => $r->shift_id,
-            'status' => 'pending',
-            'start_hour' => $r->start_hour,
-            'start_minute' => $r->start_minute,
-            'end_hour' => $r->end_hour,
-            'end_minute' => $r->end_minute,
-        ];
-    })) !!},
-    approved: {!! json_encode($approvedSchedules->map(function($s) {
-        return [
-            'id' => $s->id,
-            'date' => $s->work_date->format('Y-m-d'),
-            'name' => optional($s->shift)->name ?? 'Ca làm việc',
-            'time' => $s->time_range,
-            'shift_id' => $s->shift_id,
-            'status' => 'approved',
-            'start_hour' => $s->start_hour,
-            'start_minute' => $s->start_minute,
-            'end_hour' => $s->end_hour,
-            'end_minute' => $s->end_minute,
-        ];
-    })) !!}
- };
+    const allSchedulesData = {
+        pending: {!! json_encode($pendingRequests->map(function($r) {
+            return [
+                'id' => $r->id,
+                'date' => $r->work_date->format('Y-m-d'),
+                'name' => optional($r->shift)->name ?? 'Ca làm việc',
+                'time' => $r->time_range,
+                'shift_id' => $r->shift_id,
+                'status' => 'pending',
+                'start_hour' => $r->start_hour,
+                'start_minute' => $r->start_minute,
+                'end_hour' => $r->end_hour,
+                'end_minute' => $r->end_minute,
+            ];
+        })) !!},
+        approved: {!! json_encode($approvedSchedules->map(function($s) {
+            return [
+                'id' => $s->id,
+                'date' => $s->work_date->format('Y-m-d'),
+                'name' => optional($s->shift)->name ?? 'Ca làm việc',
+                'time' => $s->time_range,
+                'shift_id' => $s->shift_id,
+                'status' => 'approved',
+                'start_hour' => $s->start_hour,
+                'start_minute' => $s->start_minute,
+                'end_hour' => $s->end_hour,
+                'end_minute' => $s->end_minute,
+            ];
+        })) !!}
+    };
+
     function formatDate(year, month, day) {
         const m = String(month + 1).padStart(2, '0');
         const d = String(day).padStart(2, '0');
@@ -783,7 +989,6 @@
         const endHour = document.getElementById('endHour');
         const endMinute = document.getElementById('endMinute');
         
-        // Clear existing options
         startHour.innerHTML = '<option value="">Chọn giờ</option>';
         endHour.innerHTML = '<option value="">Chọn giờ</option>';
         startMinute.innerHTML = '<option value="">Chọn phút</option>';
@@ -861,7 +1066,6 @@
                 day.innerHTML = `<div class="calendar-day-number">${i}</div>`;
             }
             
-            // Click all days
             day.style.cursor = 'pointer';
             day.onclick = () => {
                 if (isApproved || isPending) {
@@ -886,72 +1090,55 @@
     }
 
     function openModal(dateStr, isEdit = false) {
-    console.log('openModal called with isEdit:', isEdit, 'editingSchedule:', editingSchedule);
-    
-    selectedDate = dateStr;
-    document.getElementById('workDate').value = dateStr;
-    document.getElementById('shiftId').value = '';
-    document.getElementById('startHour').value = '';
-    document.getElementById('startMinute').value = '';
-    document.getElementById('endHour').value = '';
-    document.getElementById('endMinute').value = '';
-    document.getElementById('customHours').style.display = 'none';
-    document.getElementById('methodInput').value = 'POST';
-    document.getElementById('shiftForm').action = "{{ route('employees.schedule.store') }}";
-    
-    if (isEdit && editingSchedule) {
-        console.log('Setting edit mode for schedule:', editingSchedule);
-        document.getElementById('modalTitle').textContent = '✏️ Cập nhật ca làm việc';
-        document.getElementById('submitBtn').textContent = '✅ Cập nhật ca';
-        document.getElementById('workDate').value = editingSchedule.date;
-        document.getElementById('shiftId').value = editingSchedule.shift_id;
-        document.getElementById('methodInput').value = 'PUT';
+        selectedDate = dateStr;
+        document.getElementById('workDate').value = dateStr;
+        document.getElementById('shiftId').value = '';
+        document.getElementById('startHour').value = '';
+        document.getElementById('startMinute').value = '';
+        document.getElementById('endHour').value = '';
+        document.getElementById('endMinute').value = '';
+        document.getElementById('customHours').style.display = 'none';
+        document.getElementById('methodInput').value = 'POST';
+        document.getElementById('shiftForm').action = "{{ route('employees.schedule.store') }}";
         
-        // Set correct action URL
-        const actionUrl = "{{ url('employees/schedule') }}/" + editingSchedule.id;
-        document.getElementById('shiftForm').action = actionUrl;
-        console.log('Form action set to:', actionUrl);
+        if (isEdit && editingSchedule) {
+            document.getElementById('modalTitle').textContent = '✏️ Cập nhật ca làm việc';
+            document.getElementById('submitBtn').textContent = '✅ Cập nhật ca';
+            document.getElementById('workDate').value = editingSchedule.date;
+            document.getElementById('shiftId').value = editingSchedule.shift_id;
+            document.getElementById('methodInput').value = 'PUT';
+            
+            const actionUrl = "{{ url('employees/schedule') }}/" + editingSchedule.id;
+            document.getElementById('shiftForm').action = actionUrl;
+            
+            setTimeout(() => {
+                document.getElementById('startHour').value = editingSchedule.start_hour || '';
+                document.getElementById('startMinute').value = editingSchedule.start_minute || '';
+                document.getElementById('endHour').value = editingSchedule.end_hour || '';
+                document.getElementById('endMinute').value = editingSchedule.end_minute || '';
+                
+                document.getElementById('customHours').style.display = 'block';
+                document.getElementById('shiftId').dispatchEvent(new Event('change'));
+            }, 100);
+        } else {
+            document.getElementById('modalTitle').textContent = '📋 Đăng ký ca làm việc';
+            document.getElementById('submitBtn').textContent = '✅ Đăng ký ca';
+        }
         
-        // Load custom hours từ schedule data
-        setTimeout(() => {
-            document.getElementById('startHour').value = editingSchedule.start_hour || '';
-            document.getElementById('startMinute').value = editingSchedule.start_minute || '';
-            document.getElementById('endHour').value = editingSchedule.end_hour || '';
-            document.getElementById('endMinute').value = editingSchedule.end_minute || '';
-            
-            document.getElementById('customHours').style.display = 'block';
-            
-            // Trigger shift change
-            document.getElementById('shiftId').dispatchEvent(new Event('change'));
-        }, 100);
-    } else {
-        document.getElementById('modalTitle').textContent = '📋 Đăng ký ca làm việc';
-        document.getElementById('submitBtn').textContent = '✅ Đăng ký ca';
+        document.getElementById('shiftModal').classList.add('active');
     }
-    
-    console.log('Opening shiftModal');
-    document.getElementById('shiftModal').classList.add('active');
-}
+
     function closeModal() {
-        console.log('Closing modal');
         document.getElementById('shiftModal').classList.remove('active');
     }
 
     function showDetailModal(dateStr) {
-        console.log('showDetailModal called with dateStr:', dateStr);
-        
         const allSchedules = [...allSchedulesData.approved, ...allSchedulesData.pending];
         const schedule = allSchedules.find(s => s.date === dateStr);
 
-        console.log('Found schedule:', schedule);
-
-        if (!schedule) {
-            console.log('No schedule found');
-            return;
-        }
+        if (!schedule) return;
 
         editingSchedule = schedule;
-        console.log('editingSchedule set to:', editingSchedule);
 
         const statusText = schedule.status === 'approved' ? '✅ Đã duyệt' : '⏳ Chờ duyệt';
         const statusColor = schedule.status === 'approved' ? '#10b981' : '#f59e0b';
@@ -981,25 +1168,69 @@
     }
 
     function closeDetailModal() {
-        console.log('Closing detail modal');
         document.getElementById('detailModal').classList.remove('active');
     }
 
     function openEditModal() {
-        console.log('openEditModal called, editingSchedule:', editingSchedule);
-        
         if (!editingSchedule) {
-            console.log('No editingSchedule found');
             alert('Không tìm thấy thông tin ca làm việc');
             return;
         }
         
         closeDetailModal();
         
-        // Small delay to ensure modal is closed
         setTimeout(() => {
             openModal(editingSchedule.date, true);
         }, 100);
+    }
+
+    // Off-Day Functions
+    document.getElementById('reason')?.addEventListener('input', function() {
+        const counter = this.parentElement.querySelector('.char-counter');
+        if (counter) {
+            counter.textContent = this.value.length + ' / 200 ký tự';
+        }
+    });
+
+    function editOffDay(id, startDate, endDate, reason) {
+        document.getElementById('editStartDate').value = startDate;
+        document.getElementById('editEndDate').value = endDate;
+        document.getElementById('editReason').value = reason;
+        
+        const form = document.getElementById('editOffdayForm');
+        form.action = `/employees/schedule/off-day/${id}`;
+        
+        document.getElementById('editOffdayModal').classList.add('active');
+    }
+
+    function closeEditOffdayModal() {
+        document.getElementById('editOffdayModal').classList.remove('active');
+    }
+
+    function deleteOffDay(id) {
+        if (!confirm('⚠️ Bạn có chắc chắn muốn hủy đơn xin nghỉ này không?')) {
+            return;
+        }
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/employees/schedule/off-day/${id}`;
+        
+        const csrfToken = document.querySelector('input[name="_token"]').value;
+        const methodInput = document.createElement('input');
+        methodInput.type = 'hidden';
+        methodInput.name = '_token';
+        methodInput.value = csrfToken;
+        
+        const methodField = document.createElement('input');
+        methodField.type = 'hidden';
+        methodField.name = '_method';
+        methodField.value = 'DELETE';
+        
+        form.appendChild(methodInput);
+        form.appendChild(methodField);
+        document.body.appendChild(form);
+        form.submit();
     }
 
     document.addEventListener('DOMContentLoaded', function() {
@@ -1009,7 +1240,6 @@
         if (shiftId) {
             shiftId.addEventListener('change', function() {
                 const option = this.options[this.selectedIndex];
-                console.log('Shift changed to:', option.value);
                 
                 if (option.value && option.dataset.startHour) {
                     document.getElementById('startHour').value = option.dataset.startHour;
@@ -1017,7 +1247,6 @@
                     document.getElementById('endHour').value = option.dataset.endHour;
                     document.getElementById('endMinute').value = option.dataset.endMinute;
                     customHours.style.display = 'block';
-                    console.log('Custom hours shown');
                 } else if (!option.value) {
                     customHours.style.display = 'none';
                 }
@@ -1045,7 +1274,7 @@
         renderCalendar();
     });
 
-    document.querySelectorAll('.tab-btn').forEach(btn => {
+    document.querySelectorAll('.tab-btn:not(.link-btn)').forEach(btn => {
         btn.addEventListener('click', function() {
             const tabId = this.getAttribute('data-tab');
             
@@ -1053,7 +1282,7 @@
                 tab.classList.remove('active');
             });
             
-            document.querySelectorAll('.tab-btn').forEach(b => {
+            document.querySelectorAll('.tab-btn:not(.link-btn)').forEach(b => {
                 b.classList.remove('active');
             });
             
@@ -1065,12 +1294,10 @@
     window.addEventListener('click', (e) => {
         const modal = document.getElementById('shiftModal');
         const detailModal = document.getElementById('detailModal');
-        if (e.target === modal) {
-            closeModal();
-        }
-        if (e.target === detailModal) {
-            closeDetailModal();
-        }
+        const editOffdayModal = document.getElementById('editOffdayModal');
+        if (e.target === modal) closeModal();
+        if (e.target === detailModal) closeDetailModal();
+        if (e.target === editOffdayModal) closeEditOffdayModal();
     });
 
     renderCalendar();

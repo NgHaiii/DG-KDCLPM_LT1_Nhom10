@@ -44,10 +44,9 @@ class EmployeeScheduleController extends Controller
     }
 
     /**
-     * ✅ GET /employees/schedule - Hiển thị trang chính với 3 tabs
+     * ✅ GET /employees/schedule - Hiển thị trang chính với 2 tabs
      * Tab 1: Calendar để đăng ký ca
      * Tab 2: Xin ngày nghỉ
-     * Tab 3: Xem ca & ngày nghỉ đã duyệt
      */
     public function create()
     {
@@ -63,11 +62,51 @@ class EmployeeScheduleController extends Controller
             // Lấy data để hiển thị trên các tabs
             $pendingRequests = $this->scheduleRequestService->getPendingRequests($employee->id);
             $approvedSchedules = $this->scheduleRequestService->getApprovedRequests($employee->id);
+            
+            // ✅ FIX: Thêm pending off-days
+            $pendingOffDays = OffDay::where('employee_id', $employee->id)
+                ->where('status', 'pending')
+                ->orderBy('date', 'asc')
+                ->get();
+            
             $approvedOffDays = $this->scheduleRequestService->getApprovedOffDays($employee->id);
 
             return view('employees.schedule.request-form', compact(
                 'shifts',
                 'pendingRequests',
+                'approvedSchedules',
+                'pendingOffDays',
+                'approvedOffDays',
+                'employee'
+            ));
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => '❌ Lỗi: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * ✅ GET /employees/schedule/official - Hiển thị lịch làm việc chính thức đã được duyệt
+     * Hiển thị ca làm việc được phê duyệt + ngày nghỉ được phê duyệt
+     */
+    public function officialSchedule()
+    {
+        try {
+            $employee = $this->getEmployee();
+            
+            // Lấy ca làm việc được duyệt, sắp xếp theo ngày
+            $approvedSchedules = ScheduleRequest::where('employee_id', $employee->id)
+                ->where('status', 'approved')
+                ->with('shift')
+                ->orderBy('work_date', 'asc')
+                ->get();
+            
+            // Lấy ngày nghỉ được duyệt, sắp xếp theo ngày (FIX: 'off_date' -> 'date')
+            $approvedOffDays = OffDay::where('employee_id', $employee->id)
+                ->where('status', 'approved')
+                ->orderBy('date', 'asc')
+                ->get();
+
+            return view('employees.schedule.official-schedule', compact(
                 'approvedSchedules',
                 'approvedOffDays',
                 'employee'
@@ -188,9 +227,9 @@ class EmployeeScheduleController extends Controller
 
             // Validate dữ liệu
             $validated = $request->validate([
-                'start_date' => 'required|date|after_or_equal:today',
+                'start_date' => 'required|date',
                 'end_date' => 'required|date|after_or_equal:start_date',
-                'reason' => 'nullable|string|max:500',
+                'reason' => 'required|string|min:10|max:200',
             ]);
 
             // Tạo record OffDay cho mỗi ngày trong khoảng
@@ -223,6 +262,45 @@ class EmployeeScheduleController extends Controller
     }
 
     /**
+     * ✅ PUT /employees/schedule/off-day/{offDay} - Cập nhật đơn xin nghỉ
+     * Nhân viên chỉ có thể cập nhật đơn của chính mình và chỉ khi đang pending
+     */
+    public function updateOffDay(Request $request, OffDay $offDay)
+    {
+        try {
+            $employee = $this->getEmployee();
+
+            // Kiểm tra quyền - chỉ nhân viên của chính họ mới có thể cập nhật
+            if ($offDay->employee_id !== $employee->id) {
+                return back()->withErrors(['error' => '❌ Không có quyền cập nhật']);
+            }
+
+            // Kiểm tra trạng thái - chỉ cập nhật được đơn đang chờ duyệt
+            if ($offDay->status !== 'pending') {
+                return back()->withErrors(['error' => '❌ Chỉ có thể cập nhật đơn đang chờ duyệt']);
+            }
+
+            // Validate dữ liệu
+            $validated = $request->validate([
+                'start_date' => 'required|date',
+                'end_date' => 'required|date|after_or_equal:start_date',
+                'reason' => 'required|string|min:10|max:200',
+            ]);
+
+            // Cập nhật đơn xin nghỉ
+            $offDay->update([
+                'date' => $validated['start_date'],
+                'reason' => $validated['reason'],
+            ]);
+
+            return redirect(route('employees.schedule.create'))
+                ->with('success', '✅ Cập nhật đơn xin nghỉ thành công!');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => '❌ ' . $e->getMessage()]);
+        }
+    }
+
+    /**
      * ✅ DELETE /employees/schedule/off-day/{offDay} - Hủy đơn xin nghỉ
      * Nhân viên chỉ có thể hủy đơn của chính mình và đơn chưa được duyệt
      */
@@ -248,5 +326,13 @@ class EmployeeScheduleController extends Controller
         } catch (\Exception $e) {
             return back()->withErrors(['error' => '❌ ' . $e->getMessage()]);
         }
+    }
+
+    /**
+     * ✅ DELETE /employees/schedule/off-day/{offDay} - Alias cho cancelOffDay
+     */
+    public function destroyOffDay(OffDay $offDay)
+    {
+        return $this->cancelOffDay($offDay);
     }
 }

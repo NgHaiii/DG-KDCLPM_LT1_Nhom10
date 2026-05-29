@@ -144,11 +144,16 @@ Route::middleware('auth')->group(function () {
         // ✅ LỊCH LÀM VIỆC & NGÀY NGHỈ
         Route::prefix('schedule')->name('schedule.')->group(function () {
             Route::get('/', [DoctorScheduleController::class, 'create'])->name('create');
+            Route::get('official', [DoctorScheduleController::class, 'officialSchedule'])->name('official');
             Route::post('/', [DoctorScheduleController::class, 'store'])->name('store');
             Route::put('{scheduleRequest}', [DoctorScheduleController::class, 'updateSchedule'])->name('update');
             Route::delete('{scheduleRequest}', [DoctorScheduleController::class, 'cancel'])->name('cancel');
             Route::post('request-off-day', [DoctorScheduleController::class, 'requestOffDay'])->name('request-off-day');
-            Route::delete('off-day/{offDay}', [DoctorScheduleController::class, 'cancelOffDay'])->name('off-day.cancel');
+            
+            // ✅ OFF-DAY ROUTES (Xin ngày nghỉ)
+            Route::put('off-day/{offDay}', [DoctorScheduleController::class, 'updateOffDay'])->name('off-day.update');
+            Route::delete('off-day/{offDay}', [DoctorScheduleController::class, 'destroyOffDay'])->name('off-day.destroy');
+            
             Route::get('approved', function () {
                 return redirect(route('doctor.schedule.create'));
             })->name('approved');
@@ -175,11 +180,16 @@ Route::middleware('auth')->group(function () {
         // LỊCH LÀM VIỆC & NGÀY NGHỈ
         Route::prefix('schedule')->name('schedule.')->group(function () {
             Route::get('/', [EmployeeScheduleController::class, 'create'])->name('create');
+            Route::get('official', [EmployeeScheduleController::class, 'officialSchedule'])->name('official');
             Route::post('/', [EmployeeScheduleController::class, 'store'])->name('store');
             Route::put('{scheduleRequest}', [EmployeeScheduleController::class, 'updateSchedule'])->name('update');
             Route::delete('{scheduleRequest}', [EmployeeScheduleController::class, 'cancel'])->name('cancel');
+            
+            // ✅ OFF-DAY ROUTES (Xin ngày nghỉ)
             Route::post('off-day', [EmployeeScheduleController::class, 'requestOffDay'])->name('off-day.store');
+            Route::put('off-day/{offDay}', [EmployeeScheduleController::class, 'updateOffDay'])->name('off-day.update');
             Route::delete('off-day/{offDay}', [EmployeeScheduleController::class, 'cancelOffDay'])->name('off-day.cancel');
+            
             Route::get('approved', function () {
                 return redirect(route('employees.schedule.create'));
             })->name('approved');

@@ -141,5 +141,13 @@
         </table>
     </div>
 
-
+    <!-- Quick Actions -->
+    <div class="card">
+        <h3>⚡ Thao tác nhanh</h3>
+        <div class="quick-actions">
+            <a href="{{ route('doctor.appointments.create') }}" class="btn btn-primary">+ Tạo lịch khám</a>
+            <a href="{{ route('doctor.patients.create') }}" class="btn btn-primary">+ Thêm bệnh nhân</a>
+            <a href="{{ route('doctor.schedule.create') }}" class="btn btn-primary">📅 Quản lý ca làm việc</a>
+        </div>
+    </div>
 @endsection

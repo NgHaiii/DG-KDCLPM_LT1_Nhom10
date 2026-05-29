@@ -344,16 +344,9 @@
             </li>
 
             <li class="nav-item">
-                <a href="{{ route('employees.schedule.approved') }}" class="nav-link @if(request()->routeIs('employees.schedule.approved')) active @endif">
-                    <span class="nav-icon">✅</span>
-                    <span>Lịch duyệt</span>
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a href="{{ route('employees.schedule.off-days') }}" class="nav-link @if(request()->routeIs('employees.schedule.off-days')) active @endif">
-                    <span class="nav-icon">🏖️</span>
-                    <span>Ngày nghỉ</span>
+                <a href="{{ route('employees.schedule.official') }}" class="nav-link @if(request()->routeIs('employees.schedule.official')) active @endif">
+                    <span class="nav-icon">📋</span>
+                    <span>Lịch chính thức</span>
                 </a>
             </li>
 
@@ -472,24 +465,24 @@
                 </div>
             @endif
 
-           <!-- Errors & Messages Display -->
-@if ($errors->any())
-    <div style="background: #fee2e2; border: 2px solid #dc2626; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-        <h4 style="color: #991b1b; margin: 0 0 0.5rem 0;">❌ Lỗi:</h4>
-        @foreach ($errors->all() as $error)
-            <p style="color: #991b1b; margin: 0.25rem 0;">{{ $error }}</p>
-        @endforeach
-    </div>
-@endif
+            <!-- Errors & Messages Display -->
+            @if ($errors->any())
+                <div style="background: #fee2e2; border: 2px solid #dc2626; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <h4 style="color: #991b1b; margin: 0 0 0.5rem 0;">❌ Lỗi:</h4>
+                    @foreach ($errors->all() as $error)
+                        <p style="color: #991b1b; margin: 0.25rem 0;">{{ $error }}</p>
+                    @endforeach
+                </div>
+            @endif
 
-@if (session('success'))
-    <div style="background: #dcfce7; border: 2px solid #16a34a; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-        <p style="color: #15803d; margin: 0;">✅ {{ session('success') }}</p>
-    </div>
-@endif
+            @if (session('success'))
+                <div style="background: #dcfce7; border: 2px solid #16a34a; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <p style="color: #15803d; margin: 0;">✅ {{ session('success') }}</p>
+                </div>
+            @endif
 
-<!-- Content -->
-@yield('content')
+            <!-- Content -->
+            @yield('content')
         </div>
     </main>
 

@@ -50,10 +50,9 @@ class DoctorScheduleController extends Controller
     }
 
     /**
-     * ✅ GET /doctor/schedule - Hiển thị trang chính với 3 tabs
+     * ✅ GET /doctor/schedule - Hiển thị trang chính với 2 tabs
      * Tab 1: Calendar để đăng ký ca
      * Tab 2: Xin ngày nghỉ
-     * Tab 3: Xem ca & ngày nghỉ đã duyệt
      */
     public function create()
     {
@@ -68,12 +67,51 @@ class DoctorScheduleController extends Controller
             // Lấy data để hiển thị trên các tabs - chỉ của bác sĩ hiện tại
             $pendingRequests = $this->scheduleRequestService->getPendingRequests($doctor->id);
             $approvedRequests = $this->scheduleRequestService->getApprovedRequests($doctor->id);
+            
+            // ✅ THÊM: Lấy pending off-days
+            $pendingOffDays = OffDay::where('employee_id', $doctor->id)
+                ->where('status', 'pending')
+                ->orderBy('date', 'asc')
+                ->get();
+            
             $approvedOffDays = $this->scheduleRequestService->getApprovedOffDays($doctor->id);
 
             return view('doctor.schedule.request-form', compact(
                 'shifts',
                 'pendingRequests',
                 'approvedRequests',
+                'pendingOffDays',  // ✅ THÊM
+                'approvedOffDays',
+                'doctor'
+            ));
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => '❌ Lỗi: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * ✅ GET /doctor/schedule/official - Hiển thị lịch chính thức (approved schedules & off-days)
+     * Bác sĩ xem lịch làm việc & ngày nghỉ đã được duyệt
+     */
+    public function officialSchedule()
+    {
+        try {
+            $doctor = $this->getDoctor();
+            
+            // Lấy approved schedules của bác sĩ hiện tại
+            $approvedSchedules = ScheduleRequest::where('employee_id', $doctor->id)
+                ->where('status', 'approved')
+                ->orderBy('work_date', 'asc')
+                ->get();
+            
+            // Lấy approved off-days của bác sĩ hiện tại
+            $approvedOffDays = OffDay::where('employee_id', $doctor->id)
+                ->where('status', 'approved')
+                ->orderBy('date', 'asc')
+                ->get();
+
+            return view('doctor.schedule.official-schedule', compact(
+                'approvedSchedules',
                 'approvedOffDays',
                 'doctor'
             ));
@@ -198,22 +236,31 @@ class DoctorScheduleController extends Controller
         try {
             $doctor = $this->getDoctor();
 
-            // Validate dữ liệu
+            // ✅ UPDATED: Validate reason tối thiểu 5 ký tự
             $validated = $request->validate([
                 'start_date' => 'required|date',
-                'reason' => 'nullable|string|max:500',
+                'end_date' => 'required|date|after_or_equal:start_date',
+                'reason' => 'nullable|string|min:5|max:200',
             ]);
 
-            OffDay::firstOrCreate(
-                [
-                    'employee_id' => $doctor->id,
-                    'date' => $validated['start_date'],
-                ],
-                [
-                    'reason' => $validated['reason'] ?? '',
-                    'status' => 'pending',
-                ]
-            );
+            // Tạo off-day record cho mỗi ngày trong khoảng
+            $startDate = strtotime($validated['start_date']);
+            $endDate = strtotime($validated['end_date']);
+
+            for ($date = $startDate; $date <= $endDate; $date += 86400) {
+                $dayStr = date('Y-m-d', $date);
+                
+                OffDay::firstOrCreate(
+                    [
+                        'employee_id' => $doctor->id,
+                        'date' => $dayStr,
+                    ],
+                    [
+                        'reason' => $validated['reason'] ?? '',
+                        'status' => 'pending',
+                    ]
+                );
+            }
 
             // Redirect về trang chính với success message
             return redirect(route('doctor.schedule.create'))
@@ -226,11 +273,51 @@ class DoctorScheduleController extends Controller
     }
 
     /**
+     * ✅ PUT /doctor/schedule/off-day/{offDay} - Cập nhật đơn xin nghỉ
+     * Bác sĩ chỉ có thể cập nhật đơn của chính mình và chỉ khi đang pending
+     * 🔒 BẢO MẬT: Kiểm tra ownership trước khi cập nhật
+     */
+    public function updateOffDay(Request $request, OffDay $offDay)
+    {
+        try {
+            $doctor = $this->getDoctor();
+
+            // 🔒 KIỂM TRA BẢO MẬT: Đơn xin nghỉ này có thuộc bác sĩ hiện tại không?
+            if ($offDay->employee_id !== $doctor->id) {
+                abort(403, '❌ Không có quyền cập nhật');
+            }
+
+            // Kiểm tra trạng thái - chỉ cập nhật được đơn đang chờ duyệt
+            if ($offDay->status !== 'pending') {
+                return back()->withErrors(['error' => '❌ Chỉ có thể cập nhật đơn đang chờ duyệt']);
+            }
+
+            // Validate dữ liệu
+            $validated = $request->validate([
+                'start_date' => 'required|date',
+                'end_date' => 'required|date|after_or_equal:start_date',
+                'reason' => 'nullable|string|min:5|max:200',
+            ]);
+
+            // Cập nhật đơn xin nghỉ
+            $offDay->update([
+                'date' => $validated['start_date'],
+                'reason' => $validated['reason'] ?? '',
+            ]);
+
+            return redirect(route('doctor.schedule.create'))
+                ->with('success', '✅ Cập nhật đơn xin nghỉ thành công!');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => '❌ ' . $e->getMessage()]);
+        }
+    }
+
+    /**
      * ✅ DELETE /doctor/schedule/off-day/{offDay} - Hủy đơn xin nghỉ
      * Bác sĩ chỉ có thể hủy đơn của chính mình và đơn chưa được duyệt
      * 🔒 BẢO MẬT: Kiểm tra ownership trước khi hủy
      */
-    public function cancelOffDay(OffDay $offDay)
+    public function destroyOffDay(OffDay $offDay)
     {
         try {
             $doctor = $this->getDoctor();
@@ -252,5 +339,13 @@ class DoctorScheduleController extends Controller
         } catch (\Exception $e) {
             return back()->withErrors(['error' => '❌ ' . $e->getMessage()]);
         }
+    }
+
+    /**
+     * ✅ DELETE /doctor/schedule/off-day/{offDay} - Alias cho destroyOffDay
+     */
+    public function cancelOffDay(OffDay $offDay)
+    {
+        return $this->destroyOffDay($offDay);
     }
 }

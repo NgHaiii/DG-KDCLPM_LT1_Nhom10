@@ -58,6 +58,7 @@
         background: white;
         padding: 0 1rem;
         border-radius: 12px 12px 0 0;
+        overflow-x: auto;
     }
 
     .tab-btn {
@@ -70,6 +71,7 @@
         color: #6b7280;
         border-bottom: 3px solid transparent;
         transition: all 0.3s ease;
+        white-space: nowrap;
     }
 
     .tab-btn:hover {
@@ -133,7 +135,6 @@
         background: #1e40af;
     }
 
-    /* Calendar Grid */
     .calendar-weekdays {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
@@ -295,7 +296,6 @@
         color: #6b7280;
     }
 
-    /* Detail Item */
     .detail-item {
         padding: 0.75rem;
         background: #f0f9ff;
@@ -350,11 +350,6 @@
         outline: none;
         border-color: #3b82f6;
         box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
-    .form-group input[type="date"],
-    .form-group textarea {
-        cursor: text;
     }
 
     .hour-inputs {
@@ -441,64 +436,164 @@
         color: #374151;
     }
 
-    /* Off-Day Form */
+    /* Off-Day Form & Requests */
     .offday-form {
         background: white;
         border-radius: 12px;
         padding: 2rem;
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
         margin-bottom: 2rem;
+        border-top: 4px solid #ec4899;
     }
 
-    .approved-list-container {
+    .offday-requests-container {
         background: white;
         border-radius: 12px;
-        overflow: hidden;
+        padding: 2rem;
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-        border: 1px solid #e5e7eb;
+        border-top: 4px solid #3b82f6;
         margin-bottom: 2rem;
     }
 
-    .approved-list-header {
-        padding: 1.25rem 1.5rem;
-        font-size: 1.125rem;
-        font-weight: 700;
-        color: white;
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    }
-
-    .approved-list-body {
-        padding: 1.5rem;
-    }
-
-    .approved-item {
-        padding: 1rem 1.25rem;
-        background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
-        border: 2px solid #0ea5e9;
-        border-radius: 8px;
-        margin-bottom: 0.75rem;
+    .offday-request-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.25rem;
+        border-left: 5px solid;
         transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
-    .approved-item:last-child {
-        margin-bottom: 0;
+    .offday-request-card.pending {
+        border-left-color: #f59e0b;
+        background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
     }
 
-    .approved-item:hover {
-        border-color: #0284c7;
-        box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+    .offday-request-card.pending:hover {
+        box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
+        transform: translateY(-2px);
     }
 
-    .approved-item p:first-child {
+    .offday-request-card.approved {
+        border-left-color: #10b981;
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    }
+
+    .offday-request-card.approved:hover {
+        box-shadow: 0 4px 16px rgba(16, 185, 129, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .offday-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .offday-card-date {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .date-badge {
+        background: white;
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.9rem;
+        border: 2px solid #e5e7eb;
+    }
+
+    .offday-request-card.pending .date-badge {
+        color: #f59e0b;
+        border-color: #f59e0b;
+    }
+
+    .offday-request-card.approved .date-badge {
+        color: #10b981;
+        border-color: #10b981;
+    }
+
+    .status-badge {
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    .status-badge.pending-badge {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .status-badge.approved-badge {
+        background: #dcfce7;
+        color: #065f46;
+    }
+
+    .offday-card-body {
+        margin: 0.75rem 0;
+    }
+
+    .offday-card-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .btn-action {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.85rem;
         font-weight: 600;
-        color: #0c4a6e;
-        margin: 0 0 0.25rem 0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid;
     }
 
-    .approved-item p {
-        font-size: 0.875rem;
-        color: #0c4a6e;
-        margin: 0.25rem 0;
+    .btn-action.edit {
+        background: white;
+        color: #f59e0b;
+        border-color: #f59e0b;
+    }
+
+    .btn-action.edit:hover {
+        background: #f59e0b;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-action.delete {
+        background: white;
+        color: #ef4444;
+        border-color: #ef4444;
+    }
+
+    .btn-action.delete:hover {
+        background: #ef4444;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+
+    textarea#reason,
+    textarea#editReason {
+        font-family: inherit;
+        resize: vertical;
+        min-height: 100px;
+    }
+
+    .char-counter {
+        font-size: 0.8rem;
+        color: #9ca3af;
+        margin-top: 0.5rem;
     }
 
     @media (max-width: 768px) {
@@ -517,6 +612,10 @@
 
         .hour-inputs {
             grid-template-columns: 1fr 1fr;
+        }
+
+        .offday-card-actions {
+            grid-template-columns: 1fr;
         }
     }
 </style>
@@ -543,7 +642,6 @@
 <div class="tabs-nav">
     <button class="tab-btn active" data-tab="tab-shift">📅 Lịch đăng ký ca</button>
     <button class="tab-btn" data-tab="tab-offday">🏖️ Xin ngày nghỉ</button>
-    <button class="tab-btn" data-tab="tab-approved">✅ Ca đã duyệt</button>
 </div>
 
 <!-- Tab 1: Shift Calendar -->
@@ -557,7 +655,6 @@
             </div>
         </div>
 
-        <!-- Weekdays -->
         <div class="calendar-weekdays">
             <div class="weekday">T2</div>
             <div class="weekday">T3</div>
@@ -568,69 +665,116 @@
             <div class="weekday">CN</div>
         </div>
 
-        <!-- Days -->
         <div class="calendar-days" id="calendarDays"></div>
     </div>
 </div>
 
 <!-- Tab 2: Off-Day -->
 <div id="tab-offday" class="tab-content">
+    <!-- Off-Day Form -->
     <div class="offday-form">
-        <h3 style="margin-top: 0; color: #111827;">🏖️ Xin ngày nghỉ</h3>
-        <form action="{{ route('doctor.schedule.request-off-day') }}" method="POST">
+        <div style="margin-bottom: 1.5rem;">
+            <h3 style="margin: 0 0 0.5rem 0; color: #111827;">🏖️ Đơn Xin Ngày Nghỉ</h3>
+            <p style="margin: 0; color: #6b7280; font-size: 0.9rem;">Gửi đơn xin phép nghỉ và chờ quản lý phê duyệt</p>
+        </div>
+
+        <form action="{{ route('doctor.schedule.request-off-day') }}" method="POST" id="offdayForm">
             @csrf
 
-            <div class="form-group">
-                <label>📅 Ngày xin nghỉ</label>
-                <input type="date" name="start_date" required>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div class="form-group">
+                    <label>📅 Từ ngày <span style="color: #ef4444;">*</span></label>
+                    <input type="date" name="start_date" id="startDate" required style="font-weight: 500;">
+                </div>
+
+                <div class="form-group">
+                    <label>📅 Đến ngày <span style="color: #ef4444;">*</span></label>
+                    <input type="date" name="end_date" id="endDate" required style="font-weight: 500;">
+                </div>
             </div>
 
             <div class="form-group">
-                <label>📝 Lý do</label>
-                <textarea name="reason" rows="4" placeholder="Nhập lý do xin nghỉ..." required></textarea>
+                <label>📝 Lý do xin nghỉ <span style="color: #ef4444;">*</span></label>
+                <textarea name="reason" id="reason" rows="4" placeholder="Nhập lý do xin nghỉ (tối thiểu 5 ký tự)..." required style="resize: vertical;"></textarea>
+                <p class="char-counter">0 / 200 ký tự</p>
             </div>
 
-            <button type="submit" class="btn-submit">✅ Gửi đơn xin nghỉ</button>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <button type="submit" class="btn-submit">✅ Gửi đơn xin nghỉ</button>
+                <button type="reset" class="btn-cancel">🔄 Xóa</button>
+            </div>
         </form>
     </div>
 
-    @if($approvedOffDays->count() > 0)
-        <div class="approved-list-container">
-            <div class="approved-list-header">
-                ✅ Ngày nghỉ đã duyệt ({{ $approvedOffDays->count() }})
+    <!-- Pending Off-Day Requests -->
+    @if($pendingOffDays && $pendingOffDays->count() > 0)
+        <div class="offday-requests-container">
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="margin: 0 0 0.5rem 0; color: #f59e0b; display: flex; align-items: center; gap: 0.5rem;">
+                    ⏳ Đơn xin nghỉ chờ duyệt ({{ $pendingOffDays->count() }})
+                </h3>
+                <p style="margin: 0; color: #6b7280; font-size: 0.9rem;">Nhấn để chỉnh sửa hoặc hủy đơn xin nghỉ</p>
             </div>
-            
-            <div class="approved-list-body">
-                @foreach($approvedOffDays as $offday)
-                    <div class="approved-item">
-                        <p>{{ $offday->reason ?? 'Không có lý do' }}</p>
-                        <p>📅 {{ $offday->date->format('d/m/Y') }} • ✅ Đã duyệt</p>
+
+            <div style="display: grid; gap: 1rem;">
+                @foreach($pendingOffDays as $offday)
+                    <div class="offday-request-card pending">
+                        <div class="offday-card-header">
+                            <div class="offday-card-date">
+                                <span class="date-badge">{{ optional($offday->date)->format('d/m') }}</span>
+                            </div>
+                            <span class="status-badge pending-badge">⏳ Chờ duyệt</span>
+                        </div>
+
+                        <div class="offday-card-body">
+                            <p style="color: #111827; font-weight: 600; margin: 0.5rem 0 0 0;">{{ $offday->reason ?? 'Không có lý do' }}</p>
+                            <p style="color: #6b7280; font-size: 0.85rem; margin: 0.5rem 0;">
+                                📆 {{ optional($offday->date)->format('d/m/Y') }} • 
+                                Gửi lúc {{ optional($offday->created_at)->format('d/m/Y H:i') ?? 'N/A' }}
+                            </p>
+                        </div>
+
+                        <div class="offday-card-actions">
+                            <button type="button" class="btn-action edit" onclick="editOffDay({{ $offday->id }}, '{{ optional($offday->date)->format('Y-m-d') }}', '{{ optional($offday->date)->format('Y-m-d') }}', '{{ addslashes($offday->reason ?? '') }}')">
+                                ✏️ Chỉnh sửa
+                            </button>
+                            <button type="button" class="btn-action delete" onclick="deleteOffDay({{ $offday->id }})">
+                                🗑️ Hủy đơn
+                            </button>
+                        </div>
                     </div>
                 @endforeach
             </div>
         </div>
     @endif
-</div>
 
-<!-- Tab 3: Approved Schedules -->
-<div id="tab-approved" class="tab-content">
-    <div class="offday-form">
-        @if($approvedRequests->count() > 0)
-            <h3 style="margin-top: 0; color: #111827;">📅 Danh sách ca đã duyệt</h3>
-            
-            @foreach($approvedRequests as $schedule)
-                <div class="approved-item">
-                    <p>{{ optional($schedule->shift)->name ?? 'Ca làm việc' }}</p>
-                    <p>📅 Ngày: {{ $schedule->work_date->format('d/m/Y') }}</p>
-                    <p>⏰ Giờ: {{ sprintf('%02d:%02d', $schedule->start_hour ?? 0, $schedule->start_minute ?? 0) }} - {{ sprintf('%02d:%02d', $schedule->end_hour ?? 0, $schedule->end_minute ?? 0) }}</p>
-                </div>
-            @endforeach
-        @else
-            <div style="text-align: center; padding: 3rem; color: #9ca3af;">
-                <p>📭 Chưa có ca làm việc nào được duyệt</p>
+    <!-- Approved Off-Day Requests -->
+    @if($approvedOffDays->count() > 0)
+        <div class="offday-requests-container">
+            <div style="margin-bottom: 1.5rem;">
+                <h3 style="margin: 0 0 0.5rem 0; color: #10b981; display: flex; align-items: center; gap: 0.5rem;">
+                    ✅ Đơn xin nghỉ đã duyệt ({{ $approvedOffDays->count() }})
+                </h3>
             </div>
-        @endif
-    </div>
+
+            <div style="display: grid; gap: 1rem;">
+                @foreach($approvedOffDays as $offday)
+                    <div class="offday-request-card approved">
+                        <div class="offday-card-header">
+                            <div class="offday-card-date">
+                                <span class="date-badge">{{ optional($offday->date)->format('d/m/Y') }}</span>
+                            </div>
+                            <span class="status-badge approved-badge">✅ Đã duyệt</span>
+                        </div>
+
+                        <div class="offday-card-body">
+                            <p style="color: #111827; font-weight: 600; margin: 0.5rem 0 0 0;">{{ $offday->reason ?? 'Không có lý do' }}</p>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
 </div>
 
 <!-- Modal Đăng ký/Cập nhật -->
@@ -664,7 +808,6 @@
                 </select>
             </div>
 
-            <!-- Custom Hours Section -->
             <div id="customHours" style="display: none;">
                 <div class="custom-hours-header">
                     <p>✏️ Tùy chỉnh giờ làm việc</p>
@@ -715,13 +858,40 @@
     </div>
 </div>
 
+<!-- Modal Chỉnh Sửa Đơn Xin Nghỉ -->
+<div id="editOffdayModal" class="modal">
+    <div class="modal-content">
+        <button type="button" class="modal-close" onclick="closeEditOffdayModal()">✕</button>
+        <div class="modal-header">✏️ Chỉnh sửa đơn xin nghỉ</div>
+
+        <form action="" method="POST" id="editOffdayForm">
+            @csrf
+            @method('PUT')
+
+            <div class="form-group">
+                <label>📅 Ngày xin nghỉ <span style="color: #ef4444;">*</span></label>
+                <input type="date" name="start_date" id="editStartDate" required>
+            </div>
+
+            <div class="form-group">
+                <label>📝 Lý do xin nghỉ <span style="color: #ef4444;">*</span></label>
+                <textarea name="reason" id="editReason" rows="4" required></textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <button type="submit" class="btn-submit">✅ Cập nhật</button>
+                <button type="button" class="btn-cancel" onclick="closeEditOffdayModal()">❌ Hủy</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     let currentMonth = new Date().getMonth();
     let currentYear = new Date().getFullYear();
     let selectedDate = null;
     let editingSchedule = null;
 
-    // Dữ liệu ngày đã đăng ký
     const registeredDates = {
         pending: [
             @foreach($pendingRequests as $req)
@@ -973,6 +1143,43 @@
         }, 100);
     }
 
+    function editOffDay(id, startDate, endDate, reason) {
+        document.getElementById('editStartDate').value = startDate;
+        document.getElementById('editEndDate').value = endDate;
+        document.getElementById('editReason').value = reason;
+        document.getElementById('editOffdayForm').action = "{{ url('doctor/schedule/off-day') }}/" + id;
+        document.getElementById('editOffdayModal').classList.add('active');
+    }
+
+    function closeEditOffdayModal() {
+        document.getElementById('editOffdayModal').classList.remove('active');
+    }
+
+    function deleteOffDay(id) {
+        if (confirm('Bạn chắc chắn muốn hủy đơn xin nghỉ này?')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{{ url('doctor/schedule/off-day') }}/" + id;
+            form.innerHTML = `
+                @csrf
+                @method('DELETE')
+            `;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    // Character counter for reason field
+    const reasonField = document.getElementById('reason');
+    if (reasonField) {
+        reasonField.addEventListener('input', function() {
+            const counter = this.parentElement.querySelector('.char-counter');
+            if (counter) {
+                counter.textContent = this.value.length + ' / 200 ký tự';
+            }
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const shiftId = document.getElementById('shiftId');
         const customHours = document.getElementById('customHours');
@@ -1034,8 +1241,10 @@
     window.addEventListener('click', (e) => {
         const modal = document.getElementById('shiftModal');
         const detailModal = document.getElementById('detailModal');
+        const editOffdayModal = document.getElementById('editOffdayModal');
         if (e.target === modal) closeModal();
         if (e.target === detailModal) closeDetailModal();
+        if (e.target === editOffdayModal) closeEditOffdayModal();
     });
 
     renderCalendar();

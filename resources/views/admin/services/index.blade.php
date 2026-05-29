@@ -127,10 +127,12 @@
 
         .status-active {
             color: #059669;
+            font-weight: 500;
         }
 
         .status-inactive {
             color: #999;
+            font-weight: 500;
         }
 
         .actions {
@@ -228,6 +230,19 @@
             box-sizing: border-box;
         }
 
+        .form-group.error input,
+        .form-group.error select,
+        .form-group.error textarea {
+            border-color: #dc2626;
+            background-color: #fef2f2;
+        }
+
+        .error-text {
+            color: #dc2626;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
         .form-group textarea {
             resize: vertical;
             min-height: 80px;
@@ -237,6 +252,24 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 400;
         }
 
         .modal-footer {
@@ -324,17 +357,22 @@
 @endsection
 
 @section('content')
+    {{-- Hiển thị lỗi --}}
     @if ($errors->any())
         <div class="alert alert-error">
-            @foreach ($errors->all() as $error)
-                <p>❌ {{ $error }}</p>
-            @endforeach
+            <strong>❌ Có lỗi xảy ra:</strong>
+            <ul style="margin: 8px 0 0 0; padding-left: 20px;">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
         </div>
     @endif
 
+    {{-- Hiển thị thành công --}}
     @if (session('success'))
         <div class="alert alert-success">
-            {!! session('success') !!}
+            ✅ {!! session('success') !!}
         </div>
     @endif
 
@@ -380,11 +418,15 @@
                             <td><span class="badge">{{ $service->type ?? 'Khác' }}</span></td>
                             <td class="hidden-mobile" style="font-size: 13px; color: #666;">{{ Str::limit($service->description ?? 'Không có mô tả', 50) }}</td>
                             <td>
-                                <span class="status-active">● Đang cung cấp</span>
+                                @if($service->is_active)
+                                    <span class="status-active">● Đang cung cấp</span>
+                                @else
+                                    <span class="status-inactive">● Tạm dừng</span>
+                                @endif
                             </td>
                             <td>
                                 <div class="actions" style="justify-content: flex-end;">
-                                    <button class="action-btn" type="button" onclick="openEditModal({{ $service->id }}, '{{ addslashes($service->name) }}', '{{ addslashes($service->description ?? '') }}', '{{ $service->type ?? '' }}')">✏️</button>
+                                    <button class="action-btn" type="button" onclick="openEditModal({{ $service->id }}, '{{ addslashes($service->name) }}', '{{ addslashes($service->description ?? '') }}', '{{ $service->type ?? '' }}', {{ $service->is_active ? 'true' : 'false' }})">✏️</button>
                                     <button class="action-btn delete" type="button" onclick="confirmDelete({{ $service->id }})">🗑️</button>
                                 </div>
                             </td>
@@ -412,17 +454,22 @@
                 <div class="modal-subtitle">Thông tin dịch vụ hiển thị trong bảng giá</div>
             </div>
 
-            <form id="serviceForm" method="POST">
+            {{-- Hiển thị lỗi trong modal --}}
+            <div id="modalErrors" style="display: none;">
+                <div class="alert alert-error" id="errorList"></div>
+            </div>
+
+            <form id="serviceForm" method="POST" action="">
                 @csrf
-                <input type="hidden" id="formMethod" name="_method" value="POST">
+                <input type="hidden" name="_method" id="formMethod" value="POST">
 
                 <div class="form-row">
                     <div class="form-group">
                         <label>Mã dịch vụ</label>
-                        <input type="text" id="serviceId" placeholder="DV001" disabled>
+                        <input type="text" id="serviceId" placeholder="Tự động" disabled>
                     </div>
                     <div class="form-group">
-                        <label>Loại dịch vụ</label>
+                        <label>Loại dịch vụ <span style="color: #dc2626;">*</span></label>
                         <select name="type" id="type" required>
                             <option value="">-- Chọn loại --</option>
                             <option value="Khám">Khám</option>
@@ -435,21 +482,20 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Tên dịch vụ</label>
-                    <input type="text" name="name" id="name" required>
+                    <label>Tên dịch vụ <span style="color: #dc2626;">*</span></label>
+                    <input type="text" name="name" id="name" required placeholder="VD: Nhổ răng khôn">
                 </div>
 
                 <div class="form-group">
                     <label>Mô tả</label>
-                    <textarea name="description" id="description"></textarea>
+                    <textarea name="description" id="description" placeholder="Mô tả chi tiết về dịch vụ..."></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label>Trạng thái</label>
-                    <select name="status" id="status">
-                        <option value="active">Đang cung cấp</option>
-                        <option value="inactive">Tạm dừng</option>
-                    </select>
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="is_active" id="is_active" value="1">
+                        <label for="is_active">Đang cung cấp dịch vụ</label>
+                    </div>
                 </div>
 
                 <div class="modal-footer">
@@ -463,52 +509,53 @@
     <script>
         const searchInput = document.getElementById('searchInput');
         const typeFilter = document.getElementById('typeFilter');
+        const serviceForm = document.getElementById('serviceForm');
 
         // Thêm event listeners
         searchInput?.addEventListener('input', filterTable);
         typeFilter?.addEventListener('change', filterTable);
 
         function filterTable() {
-    const search = searchInput.value.toLowerCase().trim();
-    const type = typeFilter.value.toLowerCase().trim();
-    const rows = document.querySelectorAll('.service-row');
+            const search = searchInput.value.toLowerCase().trim();
+            const type = typeFilter.value.toLowerCase().trim();
+            const rows = document.querySelectorAll('.service-row');
 
-    console.log('Search:', search, 'Type:', type); // Debug
+            rows.forEach(row => {
+                const name = (row.dataset.name || '').toLowerCase();
+                const rowType = (row.dataset.type || '').toLowerCase().trim();
+                
+                const matchSearch = !search || name.includes(search);
+                const matchType = !type || rowType.includes(type);
 
-    rows.forEach(row => {
-        const name = (row.dataset.name || '').toLowerCase();
-        const rowType = (row.dataset.type || '').toLowerCase().trim();
-        
-        const matchSearch = !search || name.includes(search);
-        const matchType = !type || rowType.includes(type);
-
-        console.log('Row:', name, 'RowType:', rowType, 'Match:', matchSearch && matchType);
-
-        row.style.display = (matchSearch && matchType) ? '' : 'none';
-    });
-}
+                row.style.display = (matchSearch && matchType) ? '' : 'none';
+            });
+        }
 
         function openAddModal() {
             document.getElementById('modalTitle').textContent = 'Thêm dịch vụ mới';
-            document.getElementById('serviceForm').reset();
+            serviceForm.reset();
             document.getElementById('formMethod').value = 'POST';
             document.getElementById('type').value = '';
-            document.getElementById('serviceId').disabled = true;
+            document.getElementById('serviceId').value = '';
+            document.getElementById('is_active').checked = true;
             document.getElementById('submitBtn').textContent = 'Thêm mới';
-            document.getElementById('serviceForm').action = '{{ route("admin.services.store") }}';
+            serviceForm.action = '{{ route("admin.services.store") }}';
             document.getElementById('formModal').classList.add('active');
+            document.getElementById('modalErrors').style.display = 'none';
         }
 
-        function openEditModal(id, name, desc, type) {
+        function openEditModal(id, name, desc, type, isActive) {
             document.getElementById('modalTitle').textContent = 'Sửa dịch vụ';
             document.getElementById('serviceId').value = 'DV' + String(id).padStart(3, '0');
             document.getElementById('name').value = name;
             document.getElementById('description').value = desc;
             document.getElementById('type').value = type;
+            document.getElementById('is_active').checked = isActive;
             document.getElementById('formMethod').value = 'PATCH';
             document.getElementById('submitBtn').textContent = 'Cập nhật';
-            document.getElementById('serviceForm').action = '{{ route("admin.services.update", ":id") }}'.replace(':id', id);
+            serviceForm.action = '{{ route("admin.services.update", ":id") }}'.replace(':id', id);
             document.getElementById('formModal').classList.add('active');
+            document.getElementById('modalErrors').style.display = 'none';
         }
 
         function closeModal() {
@@ -524,6 +571,35 @@
                 document.body.appendChild(form);
                 form.submit();
             }
+        }
+
+        // Form submission handler
+        serviceForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Kiểm tra validation cơ bản
+            const name = document.getElementById('name').value.trim();
+            const type = document.getElementById('type').value.trim();
+            
+            if (!name) {
+                showModalError('Tên dịch vụ không được để trống');
+                return;
+            }
+            
+            if (!type) {
+                showModalError('Loại dịch vụ không được để trống');
+                return;
+            }
+            
+            // Submit form
+            this.submit();
+        });
+
+        function showModalError(message) {
+            const errorDiv = document.getElementById('modalErrors');
+            const errorList = document.getElementById('errorList');
+            errorList.innerHTML = '❌ ' + message;
+            errorDiv.style.display = 'block';
         }
 
         // Đóng modal khi click bên ngoài
