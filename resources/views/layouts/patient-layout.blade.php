@@ -452,71 +452,76 @@
         <ul class="nav-menu">
             <!-- Dashboard -->
             <li class="nav-item">
-                <a href="{{ route('employees.dashboard') }}" class="nav-link @if(request()->routeIs('employees.dashboard')) active @endif">
+                <a href="{{ route('patient.dashboard') }}" class="nav-link @if(request()->routeIs('patient.dashboard')) active @endif">
                     <i class="nav-icon ri-dashboard-3-line"></i>
                     <span>Dashboard</span>
                 </a>
             </li>
 
-            <!-- Lịch làm việc -->
-            <div class="menu-group-title">Lịch làm việc</div>
+            <!-- Lịch khám hẹn -->
+            <div class="menu-group-title">Lịch khám</div>
 
             <li class="nav-item">
-                <a href="{{ route('employees.schedule.create') }}" class="nav-link @if(request()->routeIs('employees.schedule.create')) active @endif">
-                    <i class="nav-icon ri-edit-line"></i>
-                    <span>Đăng ký ca & Nghỉ</span>
+                <a href="{{ route('patient.appointment.list') }}" class="nav-link @if(request()->routeIs('patient.appointment.list')) active @endif">
+                    <i class="nav-icon ri-calendar-event-line"></i>
+                    <span>Danh sách lịch hẹn</span>
                 </a>
             </li>
 
             <li class="nav-item">
-                <a href="{{ route('employees.schedule.official') }}" class="nav-link @if(request()->routeIs('employees.schedule.official')) active @endif">
-                    <i class="nav-icon ri-calendar-check-line"></i>
-                    <span>Lịch chính thức</span>
-                </a>
-            </li>
-
-            <div class="divider"></div>
-
-            <!-- Quản lý bệnh nhân -->
-            <div class="menu-group-title">Quản lý bệnh nhân</div>
-
-            <li class="nav-item">
-                <a href="{{ route('employees.reception') }}" class="nav-link @if(request()->routeIs('employees.reception')) active @endif">
-                    <i class="nav-icon ri-user-add-line"></i>
-                    <span>Tiếp nhận bệnh nhân</span>
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a href="{{ route('employees.appointment') }}" class="nav-link @if(request()->routeIs('employees.appointment')) active @endif">
-                    <i class="nav-icon ri-list-check-3"></i>
-                    <span>Danh sách khám</span>
+                <a href="{{ route('patient.appointment.create') }}" class="nav-link @if(request()->routeIs('patient.appointment.create')) active @endif">
+                    <i class="nav-icon ri-add-circle-line"></i>
+                    <span>Đặt lịch khám</span>
                 </a>
             </li>
 
             <div class="divider"></div>
 
-            <!-- Thanh toán -->
-            <div class="menu-group-title">Thanh toán</div>
+            <!-- Hồ sơ sức khỏe -->
+            <div class="menu-group-title">Hồ sơ</div>
 
             <li class="nav-item">
-                <a href="{{ route('employees.payment') }}" class="nav-link @if(request()->routeIs('employees.payment')) active @endif">
-                    <i class="nav-icon ri-bank-card-line"></i>
-                    <span>Thanh toán</span>
+                <a href="{{ route('patient.medical-records') }}" class="nav-link @if(request()->routeIs('patient.medical-records')) active @endif">
+                    <i class="nav-icon ri-file-medical-line"></i>
+                    <span>Lịch sử khám</span>
                 </a>
             </li>
 
             <li class="nav-item">
-                <a href="{{ route('employees.invoice') }}" class="nav-link @if(request()->routeIs('employees.invoice')) active @endif">
+                <a href="{{ route('patient.health-profile') }}" class="nav-link @if(request()->routeIs('patient.health-profile')) active @endif">
+                    <i class="nav-icon ri-heart-pulse-line"></i>
+                    <span>Hồ sơ sức khỏe</span>
+                </a>
+            </li>
+
+            <div class="divider"></div>
+
+            <!-- Thanh toán & Hóa đơn -->
+            <div class="menu-group-title">Tài chính</div>
+
+            <li class="nav-item">
+                <a href="{{ route('patient.invoices') }}" class="nav-link @if(request()->routeIs('patient.invoices')) active @endif">
                     <i class="nav-icon ri-file-list-3-line"></i>
                     <span>Hóa đơn</span>
                 </a>
             </li>
 
             <li class="nav-item">
-                <a href="{{ route('employees.services') }}" class="nav-link @if(request()->routeIs('employees.services')) active @endif">
-                    <i class="nav-icon ri-price-tag-3-line"></i>
-                    <span>Bảng giá dịch vụ</span>
+                <a href="{{ route('patient.payments') }}" class="nav-link @if(request()->routeIs('patient.payments')) active @endif">
+                    <i class="nav-icon ri-bank-card-line"></i>
+                    <span>Thanh toán</span>
+                </a>
+            </li>
+
+            <div class="divider"></div>
+
+            <!-- Dịch vụ & Giá -->
+            <div class="menu-group-title">Dịch vụ</div>
+
+            <li class="nav-item">
+                <a href="{{ route('patient.services') }}" class="nav-link @if(request()->routeIs('patient.services')) active @endif">
+                    <i class="nav-icon ri-hospital-line"></i>
+                    <span>Dịch vụ & Giá</span>
                 </a>
             </li>
 
@@ -526,7 +531,7 @@
             <div class="menu-group-title">Cài đặt</div>
 
             <li class="nav-item">
-                <a href="{{ route('employees.settings') }}" class="nav-link @if(request()->routeIs('employees.settings')) active @endif">
+                <a href="{{ route('patient.settings') }}" class="nav-link @if(request()->routeIs('patient.settings')) active @endif">
                     <i class="nav-icon ri-user-settings-line"></i>
                     <span>Cài đặt cá nhân</span>
                 </a>
@@ -541,7 +546,7 @@
             </div>
             <div class="user-info">
                 <h4>{{ Auth::user()->name }}</h4>
-                <p>Nhân viên</p>
+                <p>Bệnh nhân</p>
             </div>
             <form action="{{ route('logout') }}" method="POST" style="margin: 0;">
                 @csrf

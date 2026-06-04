@@ -14,6 +14,9 @@ return new class extends Migration
             $table->string('type')->nullable();
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->integer('slots_required');  // Xóa ->default(1)
+            $table->integer('duration_minutes'); // Xóa ->default(30)
+            $table->integer('actual_duration')->nullable();
             $table->timestamps();
         });
     }

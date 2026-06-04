@@ -441,11 +441,14 @@
             <div class="select-group">
                 <select id="specialtyFilter" onchange="filterDoctors()">
                     <option value="">Tất cả chuyên khoa</option>
-                    <option value="Niềng răng">Niềng răng</option>
-                    <option value="Implant">Implant</option>
-                    <option value="Tổng quát">Tổng quát</option>
+                    <option value="Nha khoa tổng quát">Nha khoa tổng quát</option>
                     <option value="Nội nha">Nội nha</option>
-                    <option value="Phẫu thuật hàm mặt">Phẫu thuật hàm mặt</option>
+                    <option value="Nha chu">Nha chu</option>
+                    <option value="Chỉnh nha">Chỉnh nha</option>
+                    <option value="Phục hình răng">Phục hình răng</option>
+                    <option value="Implant">Implant</option>
+                    <option value="Phẫu thuật miệng - hàm mặt">Phẫu thuật miệng - hàm mặt</option>
+                    <option value="Nha khoa trẻ em">Nha khoa trẻ em</option>
                 </select>
                 <select id="statusFilter" onchange="filterDoctors()">
                     <option value="">Tất cả</option>
@@ -463,7 +466,7 @@
                         <div class="card-title-group">
                             <div class="card-title">{{ $emp->name }}</div>
                             <div class="card-code">{{ $emp->code }}</div>
-                            <span class="badge">{{ $emp->specialization ?? 'Tổng quát' }}</span>
+                            <span class="badge">{{ $emp->specialization ?? 'Nha khoa tổng quát' }}</span>
                         </div>
                     </div>
 
@@ -576,17 +579,19 @@
                         </select>
                     </div>
                     <div class="form-group">
-    <label>Chuyên môn</label>
-    <select name="specialization" id="specialization">
-        <option value="">-- Chọn chuyên môn --</option>
-        <option value="Niềng răng">Niềng răng</option>
-        <option value="Implant">Implant</option>
-        <option value="Tổng quát">Tổng quát</option>
-        <option value="Nội nha">Nội nha</option>
-        <option value="Phẫu thuật hàm mặt">Phẫu thuật hàm mặt</option>
-        <option value="Chỉnh nha">Chỉnh nha</option>
-    </select>
-</div>
+                        <label>Chuyên khoa *</label>
+                        <select name="specialization" id="specialization" required>
+                            <option value="">-- Chọn chuyên khoa --</option>
+                            <option value="Nha khoa tổng quát">Nha khoa tổng quát</option>
+                            <option value="Nội nha">Nội nha</option>
+                            <option value="Nha chu">Nha chu</option>
+                            <option value="Chỉnh nha">Chỉnh nha</option>
+                            <option value="Phục hình răng">Phục hình răng</option>
+                            <option value="Implant">Implant</option>
+                            <option value="Phẫu thuật miệng - hàm mặt">Phẫu thuật miệng - hàm mặt</option>
+                            <option value="Nha khoa trẻ em">Nha khoa trẻ em</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="form-row">
@@ -622,7 +627,6 @@
     </div>
 
     <!-- Alert Dialog Xóa -->
-   <!-- Alert Dialog Xóa -->
     <div class="alert-dialog" id="deleteDialog">
         <div class="alert-dialog-content">
             <div class="alert-title">Xóa bác sĩ?</div>
@@ -705,7 +709,7 @@
                     <div class="view-info">
                         <div class="view-name">${emp.name}</div>
                         <div class="view-code">${emp.code}</div>
-                        <span class="badge">${emp.specialization || 'Tổng quát'}</span>
+                        <span class="badge">${emp.specialization || 'Nha khoa tổng quát'}</span>
                     </div>
                 </div>
                 <div class="view-grid">

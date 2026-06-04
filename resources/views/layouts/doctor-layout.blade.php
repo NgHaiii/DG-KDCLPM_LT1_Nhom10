@@ -350,12 +350,7 @@
     </a>
 </li>
 
-            <li class="nav-item">
-                <a href="{{ route('doctor.schedule.off-days') }}" class="nav-link @if(request()->routeIs('doctor.schedule.off-days')) active @endif">
-                    <span class="nav-icon">🏖️</span>
-                    <span>Ngày nghỉ</span>
-                </a>
-            </li>
+           
 
             <div class="divider"></div>
 

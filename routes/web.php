@@ -95,11 +95,10 @@ Route::middleware('auth')->group(function () {
         // Quản lý ca trực bác sĩ
         Route::prefix('duty')->name('duty.')->group(function () {
             Route::get('/', [AdminDutyController::class, 'index'])->name('index');
-            Route::get('create', [AdminDutyController::class, 'create'])->name('create');
-            Route::post('/', [AdminDutyController::class, 'store'])->name('store');
+            Route::post('store', [AdminDutyController::class, 'store'])->name('store');
             Route::put('{shiftAssignment}', [AdminDutyController::class, 'update'])->name('update');
             Route::delete('{shiftAssignment}', [AdminDutyController::class, 'destroy'])->name('destroy');
-            Route::get('available-doctors', [AdminDutyController::class, 'getAvailableDoctors'])->name('available-doctors');
+            Route::get('api/schedule-grid', [AdminDutyController::class, 'getScheduleGrid'])->name('api.schedule-grid');
         });
     });
 
@@ -213,6 +212,55 @@ Route::middleware('auth')->group(function () {
         })->name('services');
         Route::get('settings', function () {
             return view('employees.settings');
+        })->name('settings');
+    });
+
+    // ========== PATIENT PANEL ==========
+    Route::prefix('patient')->name('patient.')->group(function () {
+        Route::get('dashboard', function () {
+            return view('patient.dashboard');
+        })->name('dashboard');
+
+        // LỊCH KHÁM
+        Route::prefix('appointment')->name('appointment.')->group(function () {
+            Route::get('list', function () {
+                return view('patient.appointments');
+            })->name('list');
+            Route::get('create', function () {
+                return view('patient.appointments-create');
+            })->name('create');
+            Route::get('{id}', function ($id) {
+                return view('patient.appointments-view');
+            })->name('show');
+        });
+
+        // HỒ SƠ BỆNH NHÂN
+        Route::get('medical-records', function () {
+            return view('patient.medical-records');
+        })->name('medical-records');
+
+        Route::get('health-profile', function () {
+            return view('patient.health-profile');
+        })->name('health-profile');
+
+        // TÀI CHÍNH
+        Route::get('invoices', function () {
+            return view('patient.invoices');
+        })->name('invoices');
+
+        Route::get('payments', function () {
+            return view('patient.payments');
+        })->name('payments');
+
+        // DỊCH VỤ
+        Route::get('services', function () {
+            $services = \App\Models\Service::with('currentPrice')->get();
+            return view('patient.services', compact('services'));
+        })->name('services');
+
+        // CÀI ĐẶT
+        Route::get('settings', function () {
+            return view('patient.settings');
         })->name('settings');
     });
 });

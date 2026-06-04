@@ -125,6 +125,12 @@
             background: #f9fafb;
         }
 
+        .badge-slots {
+            background: #dbeafe;
+            color: #2563eb;
+            border-color: #93c5fd;
+        }
+
         .status-active {
             color: #059669;
             font-weight: 500;
@@ -185,8 +191,10 @@
             background: white;
             border-radius: 12px;
             padding: 30px;
-            max-width: 500px;
+            max-width: 550px;
             width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
         }
 
@@ -252,6 +260,37 @@
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
+        }
+
+        .preview-box {
+            background: #f0f9ff;
+            border: 2px solid #0ea5e9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+
+        .preview-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: #1e40af;
+        }
+
+        .preview-item:last-child {
+            margin-bottom: 0;
+            border-top: 2px solid #0ea5e9;
+            padding-top: 10px;
+            margin-top: 10px;
+            font-weight: 600;
+            color: #0284c7;
+            font-size: 14px;
+        }
+
+        .preview-item strong {
+            color: #2563eb;
+            font-weight: 700;
         }
 
         .checkbox-group {
@@ -340,6 +379,13 @@
             border-left-color: #ef4444;
         }
 
+        .help-text {
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+            display: block;
+        }
+
         @media (max-width: 768px) {
             .search-filter-container {
                 flex-direction: column;
@@ -387,8 +433,7 @@
                 <option value="khám">Khám</option>
                 <option value="điều trị">Điều trị</option>
                 <option value="thẩm mỹ">Thẩm mỹ</option>
-                <option value="phẫu thuật">Phẫu thuật</option>
-                <option value="chỉnh nha">Chỉnh nha</option>
+                <option value="phẫu thuật">Phẫu thuật</option>             
             </select>
         </div>
 
@@ -401,6 +446,8 @@
                         <th>Dịch vụ</th>
                         <th>Loại</th>
                         <th class="hidden-mobile">Mô tả</th>
+                        <th>Slots</th>
+                        <th>Thời Gian</th>
                         <th>Trạng thái</th>
                         <th style="text-align: right;">Thao tác</th>
                     </tr>
@@ -417,6 +464,8 @@
                             </td>
                             <td><span class="badge">{{ $service->type ?? 'Khác' }}</span></td>
                             <td class="hidden-mobile" style="font-size: 13px; color: #666;">{{ Str::limit($service->description ?? 'Không có mô tả', 50) }}</td>
+                            <td><span class="badge badge-slots">{{ $service->slots_required ?? 1 }} slot{{ ($service->slots_required ?? 1) > 1 ? 's' : '' }}</span></td>
+                            <td><span style="color: #2563eb; font-weight: 600;">{{ $service->actual_duration ?? 30 }}p</span></td>
                             <td>
                                 @if($service->is_active)
                                     <span class="status-active">● Đang cung cấp</span>
@@ -426,14 +475,14 @@
                             </td>
                             <td>
                                 <div class="actions" style="justify-content: flex-end;">
-                                    <button class="action-btn" type="button" onclick="openEditModal({{ $service->id }}, '{{ addslashes($service->name) }}', '{{ addslashes($service->description ?? '') }}', '{{ $service->type ?? '' }}', {{ $service->is_active ? 'true' : 'false' }})">✏️</button>
+                                    <button class="action-btn" type="button" onclick="openEditModal({{ $service->id }}, '{{ addslashes($service->name) }}', '{{ addslashes($service->description ?? '') }}', '{{ $service->type ?? '' }}', {{ $service->is_active ? 'true' : 'false' }}, {{ $service->slots_required ?? 1 }}, {{ $service->duration_minutes ?? 30 }})">✏️</button>
                                     <button class="action-btn delete" type="button" onclick="confirmDelete({{ $service->id }})">🗑️</button>
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6">
+                            <td colspan="8">
                                 <div class="empty-state">
                                     <div class="empty-state-icon">📭</div>
                                     <p>Không có dữ liệu</p>
@@ -475,8 +524,7 @@
                             <option value="Khám">Khám</option>
                             <option value="Điều trị">Điều trị</option>
                             <option value="Thẩm mỹ">Thẩm mỹ</option>
-                            <option value="Phẫu thuật">Phẫu thuật</option>
-                            <option value="Chỉnh nha">Chỉnh nha</option>
+                            <option value="Phẫu thuật">Phẫu thuật</option>                           
                         </select>
                     </div>
                 </div>
@@ -489,6 +537,44 @@
                 <div class="form-group">
                     <label>Mô tả</label>
                     <textarea name="description" id="description" placeholder="Mô tả chi tiết về dịch vụ..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Số Slot <span style="color: #dc2626;">*</span></label>
+                        <select name="slots_required" id="slots_required" required>
+                            <option value="">-- Chọn số slot --</option>
+                            <option value="1">1 slot</option>
+                            <option value="2">2 slots</option>
+                            <option value="3">3 slots</option>
+                            <option value="4">4 slots</option>
+                            <option value="5">5 slots</option>
+                            <option value="6">6 slots</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Thời Gian/Slot (phút) <span style="color: #dc2626;">*</span></label>
+                        <input type="number" name="duration_minutes" id="duration_minutes" 
+                               min="30" max="300" step="1" value="30" required
+                               placeholder="VD: 30, 45, 60, 90...">
+                        <span class="help-text">Nhập giá trị từ 30 đến 300 phút</span>
+                    </div>
+                </div>
+
+                <!-- Live Preview Box -->
+                <div id="previewBox" class="preview-box" style="display: none;">
+                    <div class="preview-item">
+                        <span>📊 Số Slot:</span>
+                        <strong id="previewSlots">-</strong>
+                    </div>
+                    <div class="preview-item">
+                        <span>⏱️ Thời Gian/Slot:</span>
+                        <strong id="previewDuration">-</strong> phút
+                    </div>
+                    <div class="preview-item">
+                        <span>✅ Tổng Thời Gian:</span>
+                        <strong id="previewTotal">-</strong>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -510,10 +596,14 @@
         const searchInput = document.getElementById('searchInput');
         const typeFilter = document.getElementById('typeFilter');
         const serviceForm = document.getElementById('serviceForm');
+        const slotsSelect = document.getElementById('slots_required');
+        const durationInput = document.getElementById('duration_minutes');
 
-        // Thêm event listeners
+        // Event listeners
         searchInput?.addEventListener('input', filterTable);
         typeFilter?.addEventListener('change', filterTable);
+        slotsSelect?.addEventListener('change', updatePreview);
+        durationInput?.addEventListener('input', updatePreview);
 
         function filterTable() {
             const search = searchInput.value.toLowerCase().trim();
@@ -531,31 +621,60 @@
             });
         }
 
+        function updatePreview() {
+            const slots = document.getElementById('slots_required').value;
+            const duration = document.getElementById('duration_minutes').value;
+            const previewBox = document.getElementById('previewBox');
+
+            if (slots && duration) {
+                const slotsInt = parseInt(slots);
+                const durationInt = parseInt(duration);
+                const actualDuration = slotsInt * durationInt;
+                
+                document.getElementById('previewSlots').textContent = slotsInt;
+                document.getElementById('previewDuration').textContent = durationInt;
+                document.getElementById('previewTotal').textContent = slotsInt + ' slot' + (slotsInt > 1 ? 's' : '') + ' × ' + durationInt + 'p = ' + actualDuration + 'p';
+                
+                previewBox.style.display = 'block';
+            } else {
+                previewBox.style.display = 'none';
+            }
+        }
+
         function openAddModal() {
             document.getElementById('modalTitle').textContent = 'Thêm dịch vụ mới';
             serviceForm.reset();
             document.getElementById('formMethod').value = 'POST';
             document.getElementById('type').value = '';
             document.getElementById('serviceId').value = '';
+            document.getElementById('slots_required').value = '';
+            document.getElementById('duration_minutes').value = '30';
             document.getElementById('is_active').checked = true;
             document.getElementById('submitBtn').textContent = 'Thêm mới';
+            document.getElementById('previewBox').style.display = 'none';
+            document.getElementById('modalErrors').style.display = 'none';
             serviceForm.action = '{{ route("admin.services.store") }}';
             document.getElementById('formModal').classList.add('active');
-            document.getElementById('modalErrors').style.display = 'none';
         }
 
-        function openEditModal(id, name, desc, type, isActive) {
+        function openEditModal(id, name, desc, type, isActive, slotsRequired, durationMinutes) {
             document.getElementById('modalTitle').textContent = 'Sửa dịch vụ';
             document.getElementById('serviceId').value = 'DV' + String(id).padStart(3, '0');
             document.getElementById('name').value = name;
             document.getElementById('description').value = desc;
             document.getElementById('type').value = type;
+            document.getElementById('slots_required').value = slotsRequired;
+            document.getElementById('duration_minutes').value = durationMinutes;
             document.getElementById('is_active').checked = isActive;
             document.getElementById('formMethod').value = 'PATCH';
             document.getElementById('submitBtn').textContent = 'Cập nhật';
+            document.getElementById('modalErrors').style.display = 'none';
             serviceForm.action = '{{ route("admin.services.update", ":id") }}'.replace(':id', id);
             document.getElementById('formModal').classList.add('active');
-            document.getElementById('modalErrors').style.display = 'none';
+            
+            setTimeout(() => {
+                updatePreview();
+            }, 50);
         }
 
         function closeModal() {
@@ -577,21 +696,30 @@
         serviceForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            // Kiểm tra validation cơ bản
             const name = document.getElementById('name').value.trim();
             const type = document.getElementById('type').value.trim();
+            const slotsRequired = document.getElementById('slots_required').value.trim();
+            const durationMinutes = document.getElementById('duration_minutes').value.trim();
             
-            if (!name) {
-                showModalError('Tên dịch vụ không được để trống');
+            if (!name || !type || !slotsRequired || !durationMinutes) {
+                showModalError('Vui lòng điền đủ thông tin bắt buộc');
                 return;
             }
             
-            if (!type) {
-                showModalError('Loại dịch vụ không được để trống');
+            const duration = parseInt(durationMinutes);
+            if (isNaN(duration) || duration < 30 || duration > 300) {
+                showModalError('Thời gian phải từ 30 đến 300 phút');
                 return;
             }
             
-            // Submit form
+            // Log form data trước submit (để debug)
+            const formData = new FormData(this);
+            console.log('=== FORM DATA GỬI LÊN ===');
+            for (let [key, value] of formData.entries()) {
+                console.log(`${key}: ${value}`);
+            }
+            console.log('=========================');
+            
             this.submit();
         });
 
@@ -602,7 +730,6 @@
             errorDiv.style.display = 'block';
         }
 
-        // Đóng modal khi click bên ngoài
         document.getElementById('formModal')?.addEventListener('click', (e) => {
             if (e.target.id === 'formModal') closeModal();
         });

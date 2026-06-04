@@ -14,11 +14,31 @@ class Service extends Model
         'description',
         'type',
         'is_active',
+        'slots_required',
+        'duration_minutes',
+        'actual_duration',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'slots_required' => 'integer',
+        'duration_minutes' => 'integer',
+        'actual_duration' => 'integer',
     ];
+
+    /**
+     * Mutator để đảm bảo actual_duration được lưu đúng
+     */
+    protected function setActualDurationAttribute($value)
+    {
+        if ($value === null || $value === '') {
+            // Nếu null, tính lại từ slots_required * duration_minutes
+            $this->attributes['actual_duration'] = ($this->slots_required ?? 1) * ($this->duration_minutes ?? 30);
+        } else {
+            // Nếu có giá trị, lưu trực tiếp
+            $this->attributes['actual_duration'] = (int) $value;
+        }
+    }
 
     public function prices()
     {
