@@ -7,290 +7,416 @@
 @section('content')
 
 <style>
+    /* ===== Tabs ===== */
     .tabs-container {
         display: flex;
-        border-bottom: 2px solid #e5e7eb;
-        margin-bottom: 2rem;
         background: white;
-        border-radius: 8px;
+        border-radius: 14px;
         overflow: hidden;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 12px rgba(14,165,233,0.07);
+        border: 1px solid #e0f2fe;
+        margin-bottom: 1.5rem;
     }
 
     .tab-btn {
         flex: 1;
-        padding: 1rem;
+        padding: 14px 10px;
         border: none;
-        background: white;
+        background: transparent;
         cursor: pointer;
         font-weight: 600;
-        color: #6b7280;
+        font-size: 13px;
+        color: #64748b;
         border-bottom: 3px solid transparent;
-        transition: all 0.3s ease;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
     }
 
-    .tab-btn:hover { color: #3b82f6; background: #f9fafb; }
-    .tab-btn.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+    .tab-btn:hover { color: #0ea5e9; background: #f0f9ff; }
+    .tab-btn.active { color: #0ea5e9; border-bottom-color: #0ea5e9; background: #f0f9ff; }
 
-    .badge {
-        display: inline-block;
+    .tab-count {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 6px;
         background: #ef4444;
         color: white;
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
+        border-radius: 10px;
+        font-size: 11px;
         font-weight: 700;
-        margin-left: 0.5rem;
     }
 
-    .badge-green {
-        background: #10b981;
-    }
+    .tab-count.green { background: #10b981; }
 
-    .employee-list { display: grid; gap: 1rem; }
+    /* ===== Employee List ===== */
+    .employee-list { display: grid; gap: 12px; }
 
     .employee-card {
         background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        padding: 1.5rem;
+        border: 1px solid #e0f2fe;
+        border-radius: 14px;
+        padding: 18px 20px;
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        transition: all 0.3s ease;
+        gap: 16px;
+        transition: all 0.2s;
+        box-shadow: 0 1px 6px rgba(14,165,233,0.05);
     }
 
     .employee-card:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(14,165,233,0.12);
+        border-color: #bae6fd;
+        transform: translateY(-1px);
     }
 
-    .employee-info { flex: 1; }
-    .employee-name { font-size: 1.1rem; font-weight: 700; color: #1f2937; margin: 0; }
-    .employee-meta { font-size: 0.9rem; color: #6b7280; margin: 0.5rem 0 0 0; }
-
-    .request-count {
-        background: #fef3c7;
-        border-left: 4px solid #f59e0b;
-        padding: 0.75rem 1rem;
-        border-radius: 4px;
-        margin-top: 0.75rem;
-        font-size: 0.9rem;
-        color: #92400e;
+    .emp-avatar {
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #38bdf8, #0ea5e9);
+        color: white;
+        font-size: 18px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
     }
 
-    .request-count.approved {
-        background: #d1fae5;
-        border-left-color: #10b981;
-        color: #047857;
-    }
+    .emp-avatar.purple { background: linear-gradient(135deg, #a78bfa, #8b5cf6); }
 
-    .btn {
-        padding: 0.6rem 1.5rem;
-        border: none;
-        border-radius: 6px;
+    .employee-info { flex: 1; min-width: 0; }
+    .employee-name { font-size: 15px; font-weight: 700; color: #0f172a; margin: 0; }
+    .employee-meta { font-size: 12px; color: #94a3b8; margin: 3px 0 0 0; }
+
+    .req-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
         font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
+        margin-top: 8px;
     }
 
-    .btn-primary { background: #3b82f6; color: white; }
-    .btn-primary:hover { background: #2563eb; }
+    .req-chip.pending  { background: #fef9c3; color: #92400e; border: 1px solid #fde68a; }
+    .req-chip.approved { background: #dcfce7; color: #15803d; border: 1px solid #86efac; }
+
+    /* ===== Buttons ===== */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 18px;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+        flex-shrink: 0;
+    }
+
+    .btn-primary { background: linear-gradient(135deg,#38bdf8,#0ea5e9); color:white; box-shadow:0 3px 10px rgba(14,165,233,0.3); }
+    .btn-primary:hover { box-shadow:0 5px 16px rgba(14,165,233,0.45); transform:translateY(-1px); }
     .btn-success { background: #10b981; color: white; }
     .btn-success:hover { background: #059669; }
-    .btn-danger { background: #ef4444; color: white; }
-    .btn-danger:hover { background: #dc2626; }
+    .btn-danger  { background: #ef4444; color: white; }
+    .btn-danger:hover  { background: #dc2626; }
     .btn-warning { background: #f59e0b; color: white; }
     .btn-warning:hover { background: #d97706; }
+    .btn-neutral { background: #f1f5f9; color: #475569; }
+    .btn-neutral:hover { background: #e2e8f0; }
 
+    /* ===== Empty State ===== */
     .empty-state {
         text-align: center;
-        padding: 3rem 2rem;
+        padding: 48px 24px;
         background: white;
-        border-radius: 8px;
-        color: #9ca3af;
+        border-radius: 14px;
+        border: 1px solid #e0f2fe;
     }
+
+    .empty-state i { font-size: 44px; color: #bae6fd; display: block; margin-bottom: 12px; }
+    .empty-state p { color: #64748b; font-size: 15px; margin: 0; }
 
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
+    /* ===== Section heading ===== */
+    .section-heading {
+        font-size: 14px;
+        font-weight: 700;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        margin: 20px 0 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .section-heading i { font-size: 16px; color: #0ea5e9; }
+
+    /* ===== Modal ===== */
     .modal {
         display: none;
         position: fixed;
         inset: 0;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(15,23,42,0.45);
         z-index: 50;
         align-items: center;
         justify-content: center;
         padding: 1rem;
+        backdrop-filter: blur(2px);
     }
 
     .modal.active { display: flex; }
 
     .modal-content {
         background: white;
-        border-radius: 8px;
+        border-radius: 16px;
         max-width: 700px;
         width: 100%;
         max-height: 90vh;
         overflow-y: auto;
-        box-shadow: 0 20px 25px rgba(0,0,0,0.15);
+        box-shadow: 0 24px 60px rgba(0,0,0,0.18);
+        animation: modal-in 0.25s ease;
+    }
+
+    @keyframes modal-in {
+        from { transform: translateY(-14px); opacity: 0; }
+        to   { transform: translateY(0); opacity: 1; }
     }
 
     .modal-header {
-        background: linear-gradient(135deg, #667eea, #764ba2);
+        background: linear-gradient(135deg, #38bdf8, #0284c7);
         color: white;
-        padding: 1.5rem;
+        padding: 20px 24px;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        border-radius: 16px 16px 0 0;
     }
 
-    .modal-header h2 { margin: 0; font-size: 1.25rem; }
+    .modal-header h2 { margin: 0; font-size: 17px; font-weight: 700; }
+    .modal-header p  { margin: 4px 0 0; font-size: 13px; opacity: 0.85; }
 
     .modal-close {
         background: rgba(255,255,255,0.2);
         border: none;
         color: white;
-        width: 32px;
-        height: 32px;
+        width: 34px;
+        height: 34px;
         border-radius: 50%;
         cursor: pointer;
-        font-size: 1.25rem;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
     }
 
-    .modal-close:hover { background: rgba(255,255,255,0.3); }
-    .modal-body { padding: 1.5rem; }
+    .modal-close:hover { background: rgba(255,255,255,0.35); }
+    .modal-body { padding: 20px 24px; }
 
-    .calendar-section { margin-bottom: 2rem; }
-    .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .calendar-header h3 { margin: 0; font-size: 1.1rem; color: #1f2937; }
+    /* Calendar */
+    .calendar-section { margin-bottom: 1.5rem; }
 
-    .calendar-nav { display: flex; gap: 0.5rem; }
+    .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .calendar-header h3 { margin: 0; font-size: 15px; font-weight: 700; color: #0f172a; }
+    .month-label { text-align: center; font-weight: 700; color: #0ea5e9; margin-bottom: 10px; font-size: 14px; }
+
+    .calendar-nav { display: flex; gap: 6px; }
     .calendar-nav button {
-        padding: 0.5rem 1rem;
-        font-size: 0.85rem;
-        border: 1px solid #e5e7eb;
-        background: #f9fafb;
-        border-radius: 6px;
+        padding: 6px 14px;
+        font-size: 13px;
+        border: 1px solid #e2e8f0;
+        background: #f8fafc;
+        border-radius: 8px;
         cursor: pointer;
+        font-weight: 600;
+        color: #475569;
+        transition: all 0.2s;
     }
+
+    .calendar-nav button:hover { border-color: #38bdf8; color: #0ea5e9; background: #f0f9ff; }
 
     .calendar-grid {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
-        gap: 0.5rem;
-        background: #f9fafb;
-        padding: 1rem;
-        border-radius: 6px;
+        gap: 4px;
+    }
+
+    .cal-weekday {
+        text-align: center;
+        font-size: 11px;
+        font-weight: 700;
+        color: #94a3b8;
+        padding: 6px 0;
+        text-transform: uppercase;
     }
 
     .calendar-day {
         aspect-ratio: 1;
-        border: 2px solid #e5e7eb;
-        border-radius: 6px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         font-weight: 600;
+        font-size: 13px;
         background: white;
-        color: #6b7280;
-        transition: all 0.3s ease;
+        color: #475569;
+        transition: all 0.15s;
     }
 
-    .calendar-day:hover { border-color: #3b82f6; background: #f0f9ff; }
-    .calendar-day.other-month { color: #d1d5db; background: #fafbfc; cursor: not-allowed; }
-    .calendar-day.registered { background: #fef3c7; border-color: #f59e0b; color: #92400e; }
-    .calendar-day.approved { background: #d1fae5; border-color: #10b981; color: #047857; }
-    .calendar-day.selected { background: #3b82f6; border-color: #3b82f6; color: white; }
+    .calendar-day:hover { border-color: #38bdf8; background: #f0f9ff; color: #0ea5e9; }
+    .calendar-day.other-month { color: #d1d5db; background: #fafafa; cursor: default; pointer-events: none; }
+    .calendar-day.registered { background: #fef9c3; border-color: #fbbf24; color: #92400e; }
+    .calendar-day.approved   { background: #dcfce7; border-color: #4ade80; color: #15803d; }
+    .calendar-day.selected   { background: #0ea5e9; border-color: #0ea5e9; color: white; }
 
-    .schedule-info { display: none; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; padding: 1rem; margin-top: 1rem; }
+    .schedule-info { display: none; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-top: 12px; }
     .schedule-info.show { display: block; }
 
     .info-row {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-        gap: 1rem;
-        margin-bottom: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 10px;
+        margin-bottom: 14px;
     }
 
-    .info-item { background: white; padding: 0.75rem; border-radius: 6px; border-left: 3px solid #3b82f6; }
-    .info-label { font-size: 0.8rem; color: #6b7280; font-weight: 600; margin-bottom: 0.25rem; }
-    .info-value { font-size: 0.95rem; font-weight: 700; color: #1f2937; }
+    .info-item {
+        background: white;
+        padding: 10px 14px;
+        border-radius: 8px;
+        border-left: 3px solid #0ea5e9;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }
 
-    .form-group { margin-bottom: 1rem; }
-    .form-label { display: block; font-weight: 600; color: #1f2937; margin-bottom: 0.5rem; font-size: 0.9rem; }
+    .info-label { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; }
+    .info-value { font-size: 14px; font-weight: 700; color: #0f172a; }
+
+    .form-group { margin-bottom: 12px; }
+    .form-label { display: block; font-weight: 600; color: #374151; margin-bottom: 5px; font-size: 13px; }
 
     .form-control {
         width: 100%;
-        padding: 0.6rem 1rem;
-        border: 1px solid #e5e7eb;
-        border-radius: 6px;
-        font-size: 0.9rem;
+        padding: 9px 12px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 13px;
         font-family: inherit;
+        background: #fafafa;
+        transition: all 0.2s;
+        box-sizing: border-box;
     }
 
     .form-control:focus {
         outline: none;
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+        border-color: #38bdf8;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(56,189,248,0.12);
     }
 
     .form-actions {
         display: flex;
-        gap: 1rem;
-        margin-top: 1.5rem;
+        gap: 8px;
+        margin-top: 16px;
         flex-wrap: wrap;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 14px;
     }
 
-    .form-actions button { flex: 1; min-width: 100px; }
+    .form-actions .btn { flex: 1; min-width: 90px; justify-content: center; }
 
     .status-badge {
-        display: inline-block;
-        padding: 0.25rem 0.75rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 10px;
         border-radius: 20px;
-        font-size: 0.75rem;
+        font-size: 11px;
         font-weight: 700;
     }
 
-    .status-pending { background: #fef3c7; color: #92400e; }
-    .status-approved { background: #d1fae5; color: #047857; }
+    .status-pending  { background: #fef9c3; color: #92400e; }
+    .status-approved { background: #dcfce7; color: #15803d; }
 </style>
 
 <!-- Stats -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-    <div class="card bg-yellow-50 border-l-4 border-yellow-500">
-        <p class="text-sm text-gray-600">📋 Đơn chờ duyệt</p>
-        <p class="text-3xl font-bold text-yellow-700 mt-2">{{ $stats['total_pending_requests'] ?? 0 }}</p>
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px;">
+    <div class="card" style="display:flex;align-items:center;gap:14px;padding:18px 20px;border-left:4px solid #f59e0b;">
+        <div style="width:44px;height:44px;border-radius:11px;background:#fef9c3;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">
+            <i class="ri-time-line" style="color:#d97706;"></i>
+        </div>
+        <div>
+            <div style="font-size:26px;font-weight:800;color:#0f172a;line-height:1;">{{ $stats['total_pending_requests'] ?? 0 }}</div>
+            <div style="font-size:12px;color:#64748b;font-weight:500;margin-top:2px;">Đơn chờ duyệt</div>
+        </div>
     </div>
-    <div class="card bg-green-50 border-l-4 border-green-500">
-        <p class="text-sm text-gray-600">✅ Đã duyệt</p>
-        <p class="text-3xl font-bold text-green-700 mt-2">{{ $stats['total_approved_requests'] ?? 0 }}</p>
+    <div class="card" style="display:flex;align-items:center;gap:14px;padding:18px 20px;border-left:4px solid #10b981;">
+        <div style="width:44px;height:44px;border-radius:11px;background:#dcfce7;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">
+            <i class="ri-checkbox-circle-line" style="color:#10b981;"></i>
+        </div>
+        <div>
+            <div style="font-size:26px;font-weight:800;color:#0f172a;line-height:1;">{{ $stats['total_approved_requests'] ?? 0 }}</div>
+            <div style="font-size:12px;color:#64748b;font-weight:500;margin-top:2px;">Đã duyệt</div>
+        </div>
     </div>
-    <div class="card bg-orange-50 border-l-4 border-orange-500">
-        <p class="text-sm text-gray-600">🏖️ Xin nghỉ chờ duyệt</p>
-        <p class="text-3xl font-bold text-orange-700 mt-2">{{ $stats['total_pending_offdays'] ?? 0 }}</p>
+    <div class="card" style="display:flex;align-items:center;gap:14px;padding:18px 20px;border-left:4px solid #f97316;">
+        <div style="width:44px;height:44px;border-radius:11px;background:#ffedd5;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">
+            <i class="ri-calendar-close-line" style="color:#ea580c;"></i>
+        </div>
+        <div>
+            <div style="font-size:26px;font-weight:800;color:#0f172a;line-height:1;">{{ $stats['total_pending_offdays'] ?? 0 }}</div>
+            <div style="font-size:12px;color:#64748b;font-weight:500;margin-top:2px;">Xin nghỉ chờ duyệt</div>
+        </div>
     </div>
-    <div class="card bg-red-50 border-l-4 border-red-500">
-        <p class="text-sm text-gray-600">❌ Từ chối</p>
-        <p class="text-3xl font-bold text-red-700 mt-2">{{ $stats['total_rejected_requests'] ?? 0 }}</p>
+    <div class="card" style="display:flex;align-items:center;gap:14px;padding:18px 20px;border-left:4px solid #ef4444;">
+        <div style="width:44px;height:44px;border-radius:11px;background:#fee2e2;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">
+            <i class="ri-close-circle-line" style="color:#dc2626;"></i>
+        </div>
+        <div>
+            <div style="font-size:26px;font-weight:800;color:#0f172a;line-height:1;">{{ $stats['total_rejected_requests'] ?? 0 }}</div>
+            <div style="font-size:12px;color:#64748b;font-weight:500;margin-top:2px;">Từ chối</div>
+        </div>
     </div>
 </div>
 
 <!-- Tabs -->
 <div class="tabs-container">
     <button class="tab-btn active" onclick="switchTab('pending-doctors')">
-        👨‍⚕️ Bác sĩ chờ duyệt <span class="badge">{{ $pendingDoctorsCount ?? 0 }}</span>
+        <i class="ri-stethoscope-line"></i> Bác sĩ chờ duyệt
+        <span class="tab-count">{{ $pendingDoctorsCount ?? 0 }}</span>
     </button>
     <button class="tab-btn" onclick="switchTab('pending-employees')">
-        👨‍💼 Nhân viên chờ duyệt <span class="badge">{{ $pendingEmployeesCount ?? 0 }}</span>
+        <i class="ri-user-settings-line"></i> Nhân viên chờ duyệt
+        <span class="tab-count">{{ $pendingEmployeesCount ?? 0 }}</span>
     </button>
     <button class="tab-btn" onclick="switchTab('approved-schedules')">
-        ✅ Lịch đã duyệt <span class="badge badge-green">{{ $approvedSchedulesCount ?? 0 }}</span>
+        <i class="ri-calendar-check-line"></i> Lịch đã duyệt
+        <span class="tab-count green">{{ $approvedSchedulesCount ?? 0 }}</span>
     </button>
     <button class="tab-btn" onclick="switchTab('offdays')">
-        🏖️ Xin nghỉ <span class="badge">{{ $pendingOffDays->count() ?? 0 }}</span>
+        <i class="ri-rest-time-line"></i> Xin nghỉ
+        <span class="tab-count">{{ $pendingOffDays->count() ?? 0 }}</span>
     </button>
 </div>
 
@@ -300,17 +426,26 @@
         <div class="employee-list">
             @foreach($pendingDoctorsList as $doctor)
             <div class="employee-card">
+                <div class="emp-avatar">{{ strtoupper(substr($doctor->name,0,1)) }}</div>
                 <div class="employee-info">
-                    <p class="employee-name">👨‍⚕️ {{ $doctor->name }}</p>
-                    <p class="employee-meta">Mã: {{ $doctor->code ?? 'N/A' }}</p>
-                    <div class="request-count"><span class="status-badge status-pending">Chờ duyệt</span> {{ $doctor->pending_requests_count ?? 0 }} đơn</div>
+                    <p class="employee-name">{{ $doctor->name }}</p>
+                    <p class="employee-meta"><i class="ri-id-card-line"></i> Mã: {{ $doctor->code ?? 'N/A' }}</p>
+                    <span class="req-chip pending">
+                        <i class="ri-time-line"></i>
+                        {{ $doctor->pending_requests_count ?? 0 }} đơn chờ duyệt
+                    </span>
                 </div>
-                <button class="btn btn-primary" onclick="openScheduleModal({{ $doctor->id }}, '{{ $doctor->name }}', 'pending')">Xem & Duyệt</button>
+                <button class="btn btn-primary" onclick="openScheduleModal({{ $doctor->id }},'{{ $doctor->name }}','pending')">
+                    <i class="ri-eye-line"></i> Xem & Duyệt
+                </button>
             </div>
             @endforeach
         </div>
     @else
-        <div class="empty-state"><div style="font-size: 2.5rem; margin-bottom: 1rem;">✅</div><p>Không có bác sĩ có đơn chờ duyệt</p></div>
+        <div class="empty-state">
+            <i class="ri-checkbox-circle-line"></i>
+            <p>Không có bác sĩ có đơn chờ duyệt</p>
+        </div>
     @endif
 </div>
 
@@ -320,60 +455,77 @@
         <div class="employee-list">
             @foreach($pendingEmployeesList as $employee)
             <div class="employee-card">
+                <div class="emp-avatar purple">{{ strtoupper(substr($employee->name,0,1)) }}</div>
                 <div class="employee-info">
-                    <p class="employee-name">👨‍💼 {{ $employee->name }}</p>
-                    <p class="employee-meta">Mã: {{ $employee->code ?? 'N/A' }}</p>
-                    <div class="request-count"><span class="status-badge status-pending">Chờ duyệt</span> {{ $employee->pending_requests_count ?? 0 }} đơn</div>
+                    <p class="employee-name">{{ $employee->name }}</p>
+                    <p class="employee-meta"><i class="ri-id-card-line"></i> Mã: {{ $employee->code ?? 'N/A' }}</p>
+                    <span class="req-chip pending">
+                        <i class="ri-time-line"></i>
+                        {{ $employee->pending_requests_count ?? 0 }} đơn chờ duyệt
+                    </span>
                 </div>
-                <button class="btn btn-primary" onclick="openScheduleModal({{ $employee->id }}, '{{ $employee->name }}', 'pending')">Xem & Duyệt</button>
+                <button class="btn btn-primary" onclick="openScheduleModal({{ $employee->id }},'{{ $employee->name }}','pending')">
+                    <i class="ri-eye-line"></i> Xem & Duyệt
+                </button>
             </div>
             @endforeach
         </div>
     @else
-        <div class="empty-state"><div style="font-size: 2.5rem; margin-bottom: 1rem;">✅</div><p>Không có nhân viên có đơn chờ duyệt</p></div>
+        <div class="empty-state">
+            <i class="ri-checkbox-circle-line"></i>
+            <p>Không có nhân viên có đơn chờ duyệt</p>
+        </div>
     @endif
 </div>
 
-<!-- Tab 3: Approved Schedules (Lịch đã duyệt) -->
+<!-- Tab 3: Approved Schedules -->
 <div id="approved-schedules-tab" class="tab-content">
     @if(isset($approvedDoctorsList) && $approvedDoctorsList->count() > 0)
-        <div style="margin-bottom: 2rem;">
-            <h3 style="color: #1f2937; font-weight: 700; margin-bottom: 1rem;">👨‍⚕️ Bác sĩ</h3>
-            <div class="employee-list">
-                @foreach($approvedDoctorsList as $doctor)
-                <div class="employee-card">
-                    <div class="employee-info">
-                        <p class="employee-name">{{ $doctor->name }}</p>
-                        <p class="employee-meta">Mã: {{ $doctor->code ?? 'N/A' }}</p>
-                        <div class="request-count approved"><span class="status-badge status-approved">Đã duyệt</span> {{ $doctor->approved_requests_count ?? 0 }} đơn</div>
-                    </div>
-                    <button class="btn btn-warning" onclick="openScheduleModal({{ $doctor->id }}, '{{ $doctor->name }}', 'approved')">Chỉnh sửa</button>
+        <div class="section-heading"><i class="ri-stethoscope-line"></i> Bác sĩ</div>
+        <div class="employee-list">
+            @foreach($approvedDoctorsList as $doctor)
+            <div class="employee-card">
+                <div class="emp-avatar">{{ strtoupper(substr($doctor->name,0,1)) }}</div>
+                <div class="employee-info">
+                    <p class="employee-name">{{ $doctor->name }}</p>
+                    <p class="employee-meta"><i class="ri-id-card-line"></i> Mã: {{ $doctor->code ?? 'N/A' }}</p>
+                    <span class="req-chip approved">
+                        <i class="ri-checkbox-circle-line"></i>
+                        {{ $doctor->approved_requests_count ?? 0 }} lịch đã duyệt
+                    </span>
                 </div>
-                @endforeach
+                <button class="btn btn-warning" onclick="openScheduleModal({{ $doctor->id }},'{{ $doctor->name }}','approved')">
+                    <i class="ri-edit-line"></i> Chỉnh sửa
+                </button>
             </div>
+            @endforeach
         </div>
     @endif
 
     @if(isset($approvedEmployeesList) && $approvedEmployeesList->count() > 0)
-        <div>
-            <h3 style="color: #1f2937; font-weight: 700; margin-bottom: 1rem;">👨‍💼 Nhân viên</h3>
-            <div class="employee-list">
-                @foreach($approvedEmployeesList as $employee)
-                <div class="employee-card">
-                    <div class="employee-info">
-                        <p class="employee-name">{{ $employee->name }}</p>
-                        <p class="employee-meta">Mã: {{ $employee->code ?? 'N/A' }}</p>
-                        <div class="request-count approved"><span class="status-badge status-approved">Đã duyệt</span> {{ $employee->approved_requests_count ?? 0 }} đơn</div>
-                    </div>
-                    <button class="btn btn-warning" onclick="openScheduleModal({{ $employee->id }}, '{{ $employee->name }}', 'approved')">Chỉnh sửa</button>
+        <div class="section-heading" style="margin-top:20px;"><i class="ri-user-settings-line"></i> Nhân viên</div>
+        <div class="employee-list">
+            @foreach($approvedEmployeesList as $employee)
+            <div class="employee-card">
+                <div class="emp-avatar purple">{{ strtoupper(substr($employee->name,0,1)) }}</div>
+                <div class="employee-info">
+                    <p class="employee-name">{{ $employee->name }}</p>
+                    <p class="employee-meta"><i class="ri-id-card-line"></i> Mã: {{ $employee->code ?? 'N/A' }}</p>
+                    <span class="req-chip approved">
+                        <i class="ri-checkbox-circle-line"></i>
+                        {{ $employee->approved_requests_count ?? 0 }} lịch đã duyệt
+                    </span>
                 </div>
-                @endforeach
+                <button class="btn btn-warning" onclick="openScheduleModal({{ $employee->id }},'{{ $employee->name }}','approved')">
+                    <i class="ri-edit-line"></i> Chỉnh sửa
+                </button>
             </div>
+            @endforeach
         </div>
     @endif
 
-    @if((!isset($approvedDoctorsList) || $approvedDoctorsList->count() == 0) && (!isset($approvedEmployeesList) || $approvedEmployeesList->count() == 0))
-        <div class="empty-state"><div style="font-size: 2.5rem; margin-bottom: 1rem;">📭</div><p>Chưa có lịch đã duyệt</p></div>
+    @if((!isset($approvedDoctorsList)||$approvedDoctorsList->count()==0)&&(!isset($approvedEmployeesList)||$approvedEmployeesList->count()==0))
+        <div class="empty-state"><i class="ri-inbox-line"></i><p>Chưa có lịch đã duyệt</p></div>
     @endif
 </div>
 
@@ -383,20 +535,30 @@
         <div class="employee-list">
             @foreach($pendingOffDays as $offDay)
             <div class="employee-card">
-                <div class="employee-info">
-                    <p class="employee-name">🏖️ {{ $offDay->employee->name }}</p>
-                    <p class="employee-meta">Mã: {{ $offDay->employee->code ?? 'N/A' }}</p>
-                    <div class="request-count">📅 {{ $offDay->date->format('d/m/Y') }} | {{ Str::limit($offDay->reason, 50) }}</div>
+                <div class="emp-avatar" style="background:linear-gradient(135deg,#fb923c,#f97316);">
+                    {{ strtoupper(substr($offDay->employee->name,0,1)) }}
                 </div>
-                <div style="display: flex; gap: 0.5rem;">
-                    <button class="btn btn-success" onclick="approveOffDay({{ $offDay->id }})">✅ Duyệt</button>
-                    <button class="btn btn-danger" onclick="rejectOffDay({{ $offDay->id }})">❌ Từ chối</button>
+                <div class="employee-info">
+                    <p class="employee-name">{{ $offDay->employee->name }}</p>
+                    <p class="employee-meta"><i class="ri-id-card-line"></i> Mã: {{ $offDay->employee->code ?? 'N/A' }}</p>
+                    <span class="req-chip pending">
+                        <i class="ri-calendar-line"></i>
+                        {{ $offDay->date->format('d/m/Y') }} — {{ Str::limit($offDay->reason, 40) }}
+                    </span>
+                </div>
+                <div style="display:flex;gap:8px;flex-shrink:0;">
+                    <button class="btn btn-success" onclick="approveOffDay({{ $offDay->id }})">
+                        <i class="ri-check-line"></i> Duyệt
+                    </button>
+                    <button class="btn btn-danger" onclick="rejectOffDay({{ $offDay->id }})">
+                        <i class="ri-close-line"></i> Từ chối
+                    </button>
                 </div>
             </div>
             @endforeach
         </div>
     @else
-        <div class="empty-state"><div style="font-size: 2.5rem; margin-bottom: 1rem;">✅</div><p>Không có đơn xin nghỉ chờ duyệt</p></div>
+        <div class="empty-state"><i class="ri-checkbox-circle-line"></i><p>Không có đơn xin nghỉ chờ duyệt</p></div>
     @endif
 </div>
 
@@ -405,10 +567,10 @@
     <div class="modal-content">
         <div class="modal-header">
             <div>
-                <h2>📅 Lịch đăng ký ca</h2>
-                <p id="modalEmployeeName" style="margin: 0.25rem 0 0 0; opacity: 0.9; font-size: 0.9rem;"></p>
+                <h2><i class="ri-calendar-line"></i> Lịch đăng ký ca</h2>
+                <p id="modalEmployeeName"></p>
             </div>
-            <button class="modal-close" onclick="closeModal()">✕</button>
+            <button class="modal-close" onclick="closeModal()"><i class="ri-close-line"></i></button>
         </div>
 
         <div class="modal-body">
@@ -422,16 +584,16 @@
                     </div>
                 </div>
 
-                <div style="margin-bottom: 1rem; text-align: center; font-weight: 600; color: #1f2937;" id="monthYear"></div>
+                <div class="month-label" id="monthYear"></div>
 
                 <div class="calendar-grid">
-                    <div style="text-align: center; font-weight: 600; color: #6b7280; font-size: 0.85rem;">T2</div>
-                    <div style="text-align: center; font-weight: 600; color: #6b7280; font-size: 0.85rem;">T3</div>
-                    <div style="text-align: center; font-weight: 600; color: #6b7280; font-size: 0.85rem;">T4</div>
-                    <div style="text-align: center; font-weight: 600; color: #6b7280; font-size: 0.85rem;">T5</div>
-                    <div style="text-align: center; font-weight: 600; color: #6b7280; font-size: 0.85rem;">T6</div>
-                    <div style="text-align: center; font-weight: 600; color: #6b7280; font-size: 0.85rem;">T7</div>
-                    <div style="text-align: center; font-weight: 600; color: #6b7280; font-size: 0.85rem;">CN</div>
+                    <div class="cal-weekday">T2</div>
+                    <div class="cal-weekday">T3</div>
+                    <div class="cal-weekday">T4</div>
+                    <div class="cal-weekday">T5</div>
+                    <div class="cal-weekday">T6</div>
+                    <div class="cal-weekday">T7</div>
+                    <div class="cal-weekday">CN</div>
                 </div>
                 <div id="calendarDays" class="calendar-grid"></div>
             </div>

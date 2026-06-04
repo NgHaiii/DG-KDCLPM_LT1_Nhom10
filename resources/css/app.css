@@ -25,12 +25,12 @@
 
 :root {
   --radius: 0.75rem;
-  --background: oklch(0.985 0.005 230);
-  --foreground: oklch(0.22 0.04 240);
-  --primary: oklch(0.58 0.16 240);
-  --secondary: oklch(0.95 0.02 230);
-  --accent: oklch(0.92 0.05 200);
-  --border: oklch(0.929 0.013 255.508);
+  --background: oklch(0.99 0.004 220);
+  --foreground: oklch(0.22 0.04 220);
+  --primary: oklch(0.55 0.18 220);
+  --secondary: oklch(0.96 0.02 210);
+  --accent: oklch(0.90 0.06 195);
+  --border: oklch(0.92 0.015 220);
 }
 
 .dark {
@@ -59,10 +59,10 @@
   position: relative;
   overflow: hidden;
   background:
-    radial-gradient(1200px 600px at 10% 10%, oklch(0.85 0.12 230 / 0.55), transparent 60%),
+    radial-gradient(1200px 600px at 10% 10%, oklch(0.85 0.12 220 / 0.55), transparent 60%),
     radial-gradient(900px 500px at 90% 20%, oklch(0.88 0.10 200 / 0.5), transparent 60%),
-    radial-gradient(900px 700px at 50% 100%, oklch(0.82 0.13 250 / 0.45), transparent 60%),
-    linear-gradient(135deg, oklch(0.97 0.01 230), oklch(0.94 0.03 220));
+    radial-gradient(900px 700px at 50% 100%, oklch(0.82 0.13 215 / 0.45), transparent 60%),
+    linear-gradient(135deg, oklch(0.97 0.01 220), oklch(0.94 0.03 210));
 }
 
 .aurora-bg::before,
@@ -71,25 +71,27 @@
   position: absolute;
   inset: -20%;
   background:
-    radial-gradient(closest-side, oklch(0.7 0.18 235 / 0.55), transparent 70%),
-    radial-gradient(closest-side, oklch(0.78 0.16 200 / 0.45), transparent 70%);
+    radial-gradient(closest-side, oklch(0.7 0.18 220 / 0.45), transparent 70%),
+    radial-gradient(closest-side, oklch(0.78 0.16 200 / 0.35), transparent 70%);
   filter: blur(60px);
   animation: aurora-float 22s ease-in-out infinite alternate;
   pointer-events: none;
+  will-change: transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .aurora-bg::after {
   animation-duration: 30s;
   animation-direction: alternate-reverse;
   background:
-    radial-gradient(closest-side, oklch(0.75 0.18 270 / 0.4), transparent 70%),
-    radial-gradient(closest-side, oklch(0.82 0.14 190 / 0.45), transparent 70%);
+    radial-gradient(closest-side, oklch(0.75 0.18 235 / 0.35), transparent 70%),
+    radial-gradient(closest-side, oklch(0.82 0.14 195 / 0.35), transparent 70%);
 }
 
 @keyframes aurora-float {
-  0%   { transform: translate3d(-5%, -3%, 0) rotate(0deg) scale(1); }
-  50%  { transform: translate3d(6%, 4%, 0) rotate(8deg) scale(1.15); }
-  100% { transform: translate3d(-3%, 5%, 0) rotate(-6deg) scale(1.08); }
+  0%   { transform: translate3d(-5%, -3%, 0) rotate(0deg); }
+  100% { transform: translate3d(5%, 4%, 0) rotate(6deg); }
 }
 
 /* ===== Animation Keyframes ===== */
@@ -119,9 +121,9 @@
 }
 
 @keyframes pulse-ring {
-  0%   { box-shadow: 0 0 0 0 oklch(0.58 0.16 240 / 0.45); }
-  70%  { box-shadow: 0 0 0 14px oklch(0.58 0.16 240 / 0); }
-  100% { box-shadow: 0 0 0 0 oklch(0.58 0.16 240 / 0); }
+  0%   { box-shadow: 0 0 0 0 oklch(0.55 0.18 220 / 0.45); }
+  70%  { box-shadow: 0 0 0 14px oklch(0.55 0.18 220 / 0); }
+  100% { box-shadow: 0 0 0 0 oklch(0.55 0.18 220 / 0); }
 }
 
 @keyframes slideInLeft {
@@ -173,7 +175,7 @@
 
   .card-lift:hover {
     transform: translateY(-4px);
-    box-shadow: 0 18px 40px -20px oklch(0.58 0.16 240 / 0.35);
+    box-shadow: 0 18px 40px -20px oklch(0.55 0.18 220 / 0.35);
   }
 
   /* Button Utilities */
@@ -183,13 +185,13 @@
 
   .btn-primary {
     @apply px-6 py-3 rounded-lg font-semibold text-white transition-all duration-300 cursor-pointer inline-block;
-    background: linear-gradient(135deg, oklch(0.58 0.16 240), oklch(0.55 0.16 220));
-    box-shadow: 0 8px 24px -8px oklch(0.58 0.16 240 / 0.55);
+    background: linear-gradient(135deg, oklch(0.55 0.18 220), oklch(0.52 0.18 210));
+    box-shadow: 0 8px 24px -8px oklch(0.55 0.18 220 / 0.55);
   }
 
   .btn-primary:hover {
     transform: scale(1.05);
-    box-shadow: 0 12px 32px -8px oklch(0.58 0.16 240 / 0.65);
+    box-shadow: 0 12px 32px -8px oklch(0.55 0.18 220 / 0.65);
   }
 
   .btn-primary:active {
@@ -202,7 +204,7 @@
 
   /* Input Utilities */
   .input-field {
-    @apply w-full px-4 py-3 rounded-lg border-2 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-900 transition-all;
+    @apply w-full px-4 py-3 rounded-lg border-2 bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-200 dark:focus:ring-sky-900 transition-all;
     border-color: var(--color-border);
   }
 
@@ -220,7 +222,7 @@
 
   /* Gradient Text */
   .text-gradient {
-    background: linear-gradient(135deg, oklch(0.55 0.18 240), oklch(0.65 0.15 200));
+    background: linear-gradient(135deg, oklch(0.50 0.20 220), oklch(0.60 0.15 200));
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -266,8 +268,8 @@
 
   /* Loader */
   .loader {
-    border: 4px solid oklch(0.58 0.16 240 / 0.2);
-    border-top-color: oklch(0.58 0.16 240);
+    border: 4px solid oklch(0.55 0.18 220 / 0.2);
+    border-top-color: oklch(0.55 0.18 220);
     @apply w-10 h-10 rounded-full animate-spin;
   }
 
@@ -278,13 +280,13 @@
   }
 
   .nav-link {
-    @apply text-gray-700 dark:text-gray-300 hover:text-blue-500 dark:hover:text-cyan-400 transition-colors relative;
+    @apply text-gray-700 dark:text-gray-300 hover:text-sky-500 dark:hover:text-sky-400 transition-colors relative;
   }
 
   .nav-link::after {
     content: '';
     @apply absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-300;
-    background: linear-gradient(135deg, oklch(0.58 0.16 240), oklch(0.65 0.15 200));
+    background: linear-gradient(135deg, oklch(0.55 0.18 220), oklch(0.60 0.15 200));
   }
 
   .nav-link:hover::after {
@@ -294,6 +296,81 @@
   /* Hero Section */
   .section-hero {
     @apply min-h-screen relative overflow-hidden flex items-center justify-center;
+    background: linear-gradient(135deg, oklch(0.36 0.18 230) 0%, oklch(0.30 0.20 220) 50%, oklch(0.34 0.16 210) 100%);
+  }
+
+  /* Card Hover — used on welcome page feature cards */
+  .card-hover {
+    @apply bg-white dark:bg-slate-800 rounded-2xl p-6 border border-gray-100 dark:border-gray-700;
+    transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.3s ease;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  }
+
+  .card-hover:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.12);
+  }
+
+  /* Button Outline */
+  .btn-outline {
+    @apply px-6 py-3 rounded-lg font-semibold transition-all duration-300 cursor-pointer inline-block;
+    background: transparent;
+    border: 2px solid oklch(0.55 0.18 220);
+    color: oklch(0.55 0.18 220);
+  }
+
+  .btn-outline:hover {
+    background: oklch(0.55 0.18 220 / 0.08);
+  }
+
+  .btn-outline.text-white {
+    border-color: white;
+    color: white;
+  }
+
+  .btn-outline.text-white:hover {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  /* Feature Icon Box — welcome page */
+  .feature-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  /* Stat Icon Box — dashboard stat cards */
+  .stat-icon-box {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+
+  /* Stats Bar Item — welcome page */
+  .stats-bar-item {
+    @apply text-center px-8;
+  }
+
+  .stats-bar-item + .stats-bar-item {
+    border-left: 1px solid oklch(0.9 0.015 220);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
   }
 }
 

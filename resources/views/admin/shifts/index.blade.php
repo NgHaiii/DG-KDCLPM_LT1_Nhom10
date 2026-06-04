@@ -1,554 +1,510 @@
 @extends('layouts.admin-layout')
 
 @section('title', 'Quản Lý Ca Làm Việc')
-
 @section('page-title', 'Quản Lý Ca Làm Việc')
-
-@section('page-subtitle', 'Tạo, chỉnh sửa và xóa các ca làm việc cho bác sĩ và nhân viên')
+@section('page-subtitle', 'Tạo, chỉnh sửa và xóa các ca làm việc')
 
 @section('header-actions')
     <button class="btn btn-primary" onclick="openCreateModal()">
-        ➕ Thêm Ca Mới
+        <i class="ri-add-line"></i> Thêm Ca Mới
     </button>
 @endsection
 
 @section('styles')
 <style>
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 18px;
+        margin-bottom: 28px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 14px;
+        padding: 20px 24px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        box-shadow: 0 2px 12px rgba(14,165,233,0.07);
+        border: 1px solid #e0f2fe;
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 22px;
+        flex-shrink: 0;
+    }
+
+    .stat-icon.blue   { background: #e0f2fe; color: #0ea5e9; }
+    .stat-icon.indigo { background: #e0e7ff; color: #6366f1; }
+    .stat-icon.teal   { background: #ccfbf1; color: #14b8a6; }
+
+    .stat-value { font-size: 28px; font-weight: 800; color: #0f172a; line-height: 1; }
+    .stat-label { font-size: 13px; color: #64748b; font-weight: 500; margin-top: 4px; }
+
+    /* Table */
     .table-wrapper {
         background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        border-radius: 14px;
+        box-shadow: 0 2px 12px rgba(14,165,233,0.07);
+        border: 1px solid #e0f2fe;
         overflow: hidden;
     }
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
+    .table-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid #f1f5f9;
     }
 
-    thead {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+    .table-toolbar-title {
+        font-weight: 700;
+        font-size: 15px;
+        color: #0f172a;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
+
+    .table-toolbar-title i { color: #0ea5e9; font-size: 18px; }
+
+    table { width: 100%; border-collapse: collapse; }
+
+    thead tr { background: #f8fafc; }
 
     thead th {
-        padding: 16px;
+        padding: 12px 16px;
         text-align: left;
-        font-weight: 600;
-        font-size: 14px;
-        letter-spacing: 0.5px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        border-bottom: 1px solid #e2e8f0;
     }
 
-    tbody tr {
-        border-bottom: 1px solid #e5e7eb;
-        transition: background 0.2s ease;
-    }
-
-    tbody tr:hover {
-        background: #f9fafb;
-    }
-
-    tbody td {
-        padding: 16px;
-        font-size: 14px;
-        color: #333;
-    }
+    tbody tr { border-bottom: 1px solid #f1f5f9; transition: background 0.15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f8fafc; }
+    tbody td { padding: 14px 16px; font-size: 14px; color: #334155; vertical-align: middle; }
 
     .shift-name {
-        font-weight: 600;
-        color: #667eea;
+        font-weight: 700;
+        color: #0ea5e9;
+        font-size: 14px;
     }
 
-    .time-range {
-        background: #f0f4ff;
-        padding: 6px 12px;
-        border-radius: 6px;
-        color: #667eea;
+    .time-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: #f0f9ff;
+        border: 1px solid #bae6fd;
+        padding: 5px 11px;
+        border-radius: 8px;
+        color: #0284c7;
         font-family: 'Courier New', monospace;
-        font-weight: 500;
+        font-weight: 600;
+        font-size: 13px;
     }
 
-    .badge {
-        display: inline-block;
-        padding: 6px 12px;
+    .time-chip i { font-size: 13px; }
+
+    .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 4px 10px;
         border-radius: 20px;
         font-size: 12px;
         font-weight: 600;
     }
 
-    .badge-doctor {
-        background: #dbeafe;
-        color: #1e40af;
-    }
+    .tag-doctor   { background: #dbeafe; color: #1d4ed8; }
+    .tag-employee { background: #ede9fe; color: #7c3aed; }
+    .tag-active   { background: #dcfce7; color: #15803d; }
+    .tag-inactive { background: #f1f5f9; color: #64748b; }
 
-    .badge-employee {
-        background: #e9d5ff;
-        color: #6b21a8;
-    }
+    .actions { display: flex; gap: 8px; }
 
-    .badge-active {
-        background: #dcfce7;
-        color: #166534;
-    }
-
-    .badge-inactive {
-        background: #f3f4f6;
-        color: #6b7280;
-    }
-
-    .action-buttons {
-        display: flex;
-        gap: 8px;
-    }
-
-    .btn-small {
-        padding: 8px 16px;
+    .btn-icon {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 6px 14px;
         border: none;
-        border-radius: 6px;
-        cursor: pointer;
+        border-radius: 8px;
         font-size: 13px;
         font-weight: 600;
-        transition: all 0.3s ease;
+        cursor: pointer;
+        transition: all 0.2s;
         text-decoration: none;
-        display: inline-block;
     }
 
-    .btn-edit {
-        background: #3b82f6;
-        color: white;
-    }
+    .btn-icon.edit   { background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; }
+    .btn-icon.delete { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+    .btn-icon.edit:hover   { background: #dbeafe; }
+    .btn-icon.delete:hover { background: #fee2e2; }
 
-    .btn-edit:hover {
-        background: #2563eb;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-    }
-
-    .btn-delete {
-        background: #ef4444;
-        color: white;
-    }
-
-    .btn-delete:hover {
-        background: #dc2626;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
-    }
-
+    /* Empty state */
     .empty-state {
         text-align: center;
-        padding: 60px 30px;
+        padding: 64px 32px;
+        color: #94a3b8;
     }
 
-    .empty-state-icon {
-        font-size: 48px;
-        margin-bottom: 16px;
-    }
-
-    .empty-state-text {
-        color: #6b7280;
-        font-size: 16px;
-        margin-bottom: 20px;
-    }
-
-    .stats {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 20px;
-        margin-bottom: 30px;
-    }
-
-    .stat-card {
-        background: white;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-        text-align: center;
-    }
-
-    .stat-value {
-        font-size: 32px;
-        font-weight: 700;
-        color: #667eea;
-        margin-bottom: 8px;
-    }
-
-    .stat-label {
-        color: #6b7280;
-        font-size: 14px;
-        font-weight: 500;
-    }
+    .empty-state i { font-size: 52px; color: #bae6fd; margin-bottom: 16px; display: block; }
+    .empty-state p { font-size: 15px; margin-bottom: 8px; color: #64748b; }
+    .empty-state small { font-size: 13px; color: #94a3b8; }
 
     /* Modal */
     .modal {
         display: none;
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 1000;
+        inset: 0;
+        background: rgba(15,23,42,0.4);
+        z-index: 2000;
         align-items: center;
         justify-content: center;
+        padding: 1rem;
+        backdrop-filter: blur(2px);
     }
 
-    .modal.show {
-        display: flex;
-    }
+    .modal.show { display: flex; }
 
-    .modal-content {
+    .modal-box {
         background: white;
-        border-radius: 12px;
-        width: 90%;
-        max-width: 600px;
+        border-radius: 16px;
+        width: 100%;
+        max-width: 560px;
         max-height: 90vh;
         overflow-y: auto;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-        animation: slideDown 0.3s ease;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        animation: modal-in 0.25s ease;
     }
 
-    @keyframes slideDown {
-        from {
-            transform: translateY(-50px);
-            opacity: 0;
-        }
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
+    @keyframes modal-in {
+        from { transform: translateY(-16px); opacity: 0; }
+        to   { transform: translateY(0); opacity: 1; }
     }
 
-    .modal-header {
-        padding: 24px;
-        border-bottom: 1px solid #e5e7eb;
+    .modal-head {
+        padding: 20px 24px;
+        border-bottom: 1px solid #e2e8f0;
         display: flex;
         justify-content: space-between;
         align-items: center;
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        border-radius: 16px 16px 0 0;
     }
 
-    .modal-header h2 {
-        font-size: 20px;
-        color: #333;
-    }
+    .modal-head h3 { margin: 0; font-size: 17px; font-weight: 700; color: white; }
 
-    .modal-close {
-        background: none;
+    .modal-close-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
         border: none;
-        font-size: 24px;
+        background: rgba(255,255,255,0.2);
+        color: white;
+        font-size: 18px;
         cursor: pointer;
-        color: #6b7280;
-        width: 30px;
-        height: 30px;
         display: flex;
         align-items: center;
         justify-content: center;
+        transition: background 0.2s;
     }
 
-    .modal-close:hover {
-        color: #333;
-    }
+    .modal-close-btn:hover { background: rgba(255,255,255,0.35); }
 
-    .modal-body {
-        padding: 24px;
-    }
+    .modal-body { padding: 24px; }
 
-    .form-group {
-        margin-bottom: 20px;
-    }
+    .form-group { margin-bottom: 18px; }
 
     .form-label {
         display: block;
-        margin-bottom: 8px;
+        font-size: 13px;
         font-weight: 600;
-        color: #333;
-        font-size: 14px;
+        color: #374151;
+        margin-bottom: 6px;
     }
 
-    .form-control {
+    .form-label .req { color: #ef4444; }
+
+    .form-input {
         width: 100%;
-        padding: 10px 12px;
-        border: 1px solid #d1d5db;
-        border-radius: 6px;
+        padding: 10px 14px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 10px;
         font-size: 14px;
-        transition: border-color 0.3s ease;
+        color: #1e293b;
+        transition: all 0.2s;
+        background: #fafafa;
+        box-sizing: border-box;
     }
 
-    .form-control:focus {
+    .form-input:focus {
         outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        border-color: #38bdf8;
+        background: white;
+        box-shadow: 0 0 0 3px rgba(56,189,248,0.12);
     }
 
-    .form-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-    }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
-    .checkbox-group {
-        display: flex;
-        gap: 16px;
-        margin-top: 8px;
-    }
+    .check-group { display: flex; gap: 20px; margin-top: 6px; }
 
-    .checkbox-item {
+    .check-item {
         display: flex;
         align-items: center;
         gap: 8px;
-    }
-
-    .checkbox-item input {
-        width: 18px;
-        height: 18px;
+        padding: 10px 16px;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 10px;
         cursor: pointer;
+        flex: 1;
+        transition: all 0.2s;
     }
 
-    .checkbox-item label {
-        cursor: pointer;
-        font-size: 14px;
-        color: #333;
-    }
+    .check-item:has(input:checked) { border-color: #38bdf8; background: #f0f9ff; }
+    .check-item input { width: 16px; height: 16px; cursor: pointer; accent-color: #0ea5e9; }
+    .check-item span { font-size: 13px; font-weight: 600; color: #374151; }
 
-    .modal-footer {
+    .modal-foot {
         padding: 16px 24px;
-        border-top: 1px solid #e5e7eb;
+        border-top: 1px solid #f1f5f9;
         display: flex;
-        gap: 12px;
+        gap: 10px;
         justify-content: flex-end;
     }
 
-    .btn-submit {
-        padding: 10px 24px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    .btn-cancel-modal {
+        padding: 9px 20px;
+        background: #f1f5f9;
+        color: #475569;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .btn-cancel-modal:hover { background: #e2e8f0; }
+
+    .btn-save {
+        padding: 9px 24px;
+        background: linear-gradient(135deg, #38bdf8, #0ea5e9);
         color: white;
         border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: 600;
+        border-radius: 10px;
+        font-weight: 700;
         font-size: 14px;
-    }
-
-    .btn-submit:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-    }
-
-    .btn-cancel {
-        padding: 10px 24px;
-        background: #e5e7eb;
-        color: #333;
-        border: none;
-        border-radius: 6px;
         cursor: pointer;
-        font-weight: 600;
-        font-size: 14px;
+        box-shadow: 0 4px 12px rgba(14,165,233,0.3);
+        transition: all 0.2s;
     }
 
-    .btn-cancel:hover {
-        background: #d1d5db;
-    }
+    .btn-save:hover { box-shadow: 0 6px 16px rgba(14,165,233,0.45); transform: translateY(-1px); }
 
-    .error-message {
-        color: #dc2626;
-        font-size: 13px;
-        margin-top: 6px;
-    }
+    .err-msg { color: #dc2626; font-size: 12px; margin-top: 4px; }
 
     @media (max-width: 768px) {
-        table {
-            font-size: 12px;
-        }
-
-        thead th,
-        tbody td {
-            padding: 12px;
-        }
-
-        .action-buttons {
-            flex-direction: column;
-        }
-
-        .btn-small {
-            width: 100%;
-        }
-
-        .form-row {
-            grid-template-columns: 1fr;
-        }
-
-        .modal-content {
-            width: 95%;
-        }
+        .form-row { grid-template-columns: 1fr; }
+        .actions { flex-direction: column; }
     }
 </style>
 @endsection
 
 @section('content')
-<div class="card">
-    <!-- Stats -->
-    <div class="stats">
-        <div class="stat-card">
+
+<!-- Stats -->
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="ri-time-line"></i></div>
+        <div>
             <div class="stat-value">{{ $shifts->count() }}</div>
-            <div class="stat-label">Tổng Ca Làm Việc</div>
+            <div class="stat-label">Tổng ca làm việc</div>
         </div>
-        <div class="stat-card">
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon indigo"><i class="ri-stethoscope-line"></i></div>
+        <div>
             <div class="stat-value">{{ $shifts->where('is_for_doctor', true)->count() }}</div>
-            <div class="stat-label">Áp Dụng Bác Sĩ</div>
+            <div class="stat-label">Áp dụng bác sĩ</div>
         </div>
-        <div class="stat-card">
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon teal"><i class="ri-user-settings-line"></i></div>
+        <div>
             <div class="stat-value">{{ $shifts->where('is_for_employee', true)->count() }}</div>
-            <div class="stat-label">Áp Dụng Nhân Viên</div>
+            <div class="stat-label">Áp dụng nhân viên</div>
+        </div>
+    </div>
+</div>
+
+<!-- Table Card -->
+<div class="table-wrapper">
+    <div class="table-toolbar">
+        <div class="table-toolbar-title">
+            <i class="ri-list-check-2"></i> Danh sách ca làm việc
         </div>
     </div>
 
-    <!-- Table -->
     @if($shifts->count() > 0)
-        <div class="table-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 15%;">Tên Ca</th>
-                        <th style="width: 15%;">Giờ Làm Việc</th>
-                        <th style="width: 20%;">Áp Dụng Cho</th>
-                        <th style="width: 30%;">Mô Tả</th>
-                        <th style="width: 10%;">Trạng Thái</th>
-                        <th style="width: 10%; text-align: center;">Thao Tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($shifts as $shift)
-                    <tr>
-                        <td>
-                            <span class="shift-name">{{ $shift->name }}</span>
-                        </td>
-                        <td>
-                            <span class="time-range">
-                                {{ str_pad($shift->start_hour, 2, '0', STR_PAD_LEFT) }}:{{ str_pad($shift->start_minute, 2, '0', STR_PAD_LEFT) }} 
-                                - 
-                                {{ str_pad($shift->end_hour, 2, '0', STR_PAD_LEFT) }}:{{ str_pad($shift->end_minute, 2, '0', STR_PAD_LEFT) }}
-                            </span>
-                        </td>
-                        <td>
-                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                                @if($shift->is_for_doctor)
-                                    <span class="badge badge-doctor">🩺 Bác Sĩ</span>
-                                @endif
-                                @if($shift->is_for_employee)
-                                    <span class="badge badge-employee">👨‍💼 Nhân Viên</span>
-                                @endif
-                            </div>
-                        </td>
-                        <td>
-                            <span title="{{ $shift->description ?? 'Không có mô tả' }}" style="color: #6b7280;">
-                                {{ Str::limit($shift->description ?? 'Không có mô tả', 40) }}
-                            </span>
-                        </td>
-                        <td>
-                            @if($shift->is_active)
-                                <span class="badge badge-active">✓ Hoạt Động</span>
-                            @else
-                                <span class="badge badge-inactive">✕ Vô Hiệu</span>
-                            @endif
-                        </td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="btn-small btn-edit" onclick="openEditModal({{ $shift->id }}, '{{ $shift->name }}', {{ $shift->start_hour }}, {{ $shift->start_minute }}, {{ $shift->end_hour }}, {{ $shift->end_minute }}, '{{ $shift->description ?? '' }}', {{ $shift->is_for_doctor ? 'true' : 'false' }}, {{ $shift->is_for_employee ? 'true' : 'false' }})">
-                                    ✎ Sửa
-                                </button>
-                                <form method="POST" action="{{ route('admin.shifts.destroy', $shift->id) }}" style="display: inline;" onsubmit="return confirm('⚠️ Xóa ca làm việc này? Hành động này không thể hoàn tác.');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn-small btn-delete">
-                                        🗑️ Xóa
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Tên ca</th>
+                <th>Giờ làm việc</th>
+                <th>Áp dụng cho</th>
+                <th>Mô tả</th>
+                <th>Trạng thái</th>
+                <th style="text-align:center;">Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($shifts as $shift)
+            <tr>
+                <td><span class="shift-name">{{ $shift->name }}</span></td>
+                <td>
+                    <span class="time-chip">
+                        <i class="ri-time-line"></i>
+                        {{ str_pad($shift->start_hour,2,'0',STR_PAD_LEFT) }}:{{ str_pad($shift->start_minute,2,'0',STR_PAD_LEFT) }}
+                        –
+                        {{ str_pad($shift->end_hour,2,'0',STR_PAD_LEFT) }}:{{ str_pad($shift->end_minute,2,'0',STR_PAD_LEFT) }}
+                    </span>
+                </td>
+                <td>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        @if($shift->is_for_doctor)
+                            <span class="tag tag-doctor"><i class="ri-stethoscope-line"></i> Bác sĩ</span>
+                        @endif
+                        @if($shift->is_for_employee)
+                            <span class="tag tag-employee"><i class="ri-user-settings-line"></i> Nhân viên</span>
+                        @endif
+                    </div>
+                </td>
+                <td style="color:#64748b;max-width:220px;">
+                    {{ Str::limit($shift->description ?? 'Không có mô tả', 45) }}
+                </td>
+                <td>
+                    @if($shift->is_active)
+                        <span class="tag tag-active"><i class="ri-checkbox-circle-line"></i> Hoạt động</span>
+                    @else
+                        <span class="tag tag-inactive"><i class="ri-close-circle-line"></i> Vô hiệu</span>
+                    @endif
+                </td>
+                <td>
+                    <div class="actions" style="justify-content:center;">
+                        <button class="btn-icon edit"
+                            onclick="openEditModal({{ $shift->id }},'{{ $shift->name }}',{{ $shift->start_hour }},{{ $shift->start_minute }},{{ $shift->end_hour }},{{ $shift->end_minute }},'{{ $shift->description ?? '' }}',{{ $shift->is_for_doctor?'true':'false' }},{{ $shift->is_for_employee?'true':'false' }})">
+                            <i class="ri-edit-line"></i> Sửa
+                        </button>
+                        <form method="POST" action="{{ route('admin.shifts.destroy',$shift->id) }}" style="display:inline;"
+                            onsubmit="return confirm('Xóa ca làm việc này?')">
+                            @csrf @method('DELETE')
+                            <button type="submit" class="btn-icon delete">
+                                <i class="ri-delete-bin-line"></i> Xóa
+                            </button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
     @else
-        <div class="empty-state">
-            <div class="empty-state-icon">⏰</div>
-            <p class="empty-state-text">Chưa có ca làm việc nào</p>
-            <p style="color: #999; font-size: 14px; margin-bottom: 20px;">Tạo ca làm việc đầu tiên để bắt đầu quản lý lịch trình</p>
+    <div class="empty-state">
+        <i class="ri-time-line"></i>
+        <p>Chưa có ca làm việc nào</p>
+        <small>Tạo ca làm việc đầu tiên để bắt đầu quản lý lịch trình</small>
+        <div style="margin-top:20px;">
             <button class="btn btn-primary" onclick="openCreateModal()">
-                ➕ Tạo Ca Làm Việc Mới
+                <i class="ri-add-line"></i> Tạo Ca Mới
             </button>
         </div>
+    </div>
     @endif
 </div>
 
-<!-- Modal Tạo/Sửa Ca Làm Việc -->
+<!-- Modal -->
 <div id="shiftModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2 id="modalTitle">Tạo Ca Làm Việc Mới</h2>
-            <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-box">
+        <div class="modal-head">
+            <h3 id="modalTitle">Tạo Ca Làm Việc Mới</h3>
+            <button class="modal-close-btn" onclick="closeModal()"><i class="ri-close-line"></i></button>
         </div>
 
         <form id="shiftForm" method="POST">
             @csrf
             <div class="modal-body">
                 <div class="form-group">
-                    <label class="form-label">Tên Ca <span style="color: #ef4444;">*</span></label>
-                    <input type="text" name="name" id="name" class="form-control" required placeholder="VD: Sáng, Chiều, Tối...">
-                    <div class="error-message" id="nameError"></div>
+                    <label class="form-label">Tên ca <span class="req">*</span></label>
+                    <input type="text" name="name" id="name" class="form-input" required placeholder="VD: Ca Sáng, Ca Chiều...">
+                    <div class="err-msg" id="nameError"></div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Giờ Bắt Đầu <span style="color: #ef4444;">*</span></label>
-                        <input type="number" name="start_hour" id="start_hour" class="form-control" min="0" max="23" required placeholder="0-23">
-                        <div class="error-message" id="start_hourError"></div>
+                        <label class="form-label">Giờ bắt đầu <span class="req">*</span></label>
+                        <input type="number" name="start_hour" id="start_hour" class="form-input" min="0" max="23" required placeholder="0–23">
+                        <div class="err-msg" id="start_hourError"></div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Phút Bắt Đầu <span style="color: #ef4444;">*</span></label>
-                        <input type="number" name="start_minute" id="start_minute" class="form-control" min="0" max="59" required placeholder="0-59">
-                        <div class="error-message" id="start_minuteError"></div>
+                        <label class="form-label">Phút bắt đầu <span class="req">*</span></label>
+                        <input type="number" name="start_minute" id="start_minute" class="form-input" min="0" max="59" required placeholder="0–59">
+                        <div class="err-msg" id="start_minuteError"></div>
                     </div>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Giờ Kết Thúc <span style="color: #ef4444;">*</span></label>
-                        <input type="number" name="end_hour" id="end_hour" class="form-control" min="0" max="23" required placeholder="0-23">
-                        <div class="error-message" id="end_hourError"></div>
+                        <label class="form-label">Giờ kết thúc <span class="req">*</span></label>
+                        <input type="number" name="end_hour" id="end_hour" class="form-input" min="0" max="23" required placeholder="0–23">
+                        <div class="err-msg" id="end_hourError"></div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Phút Kết Thúc <span style="color: #ef4444;">*</span></label>
-                        <input type="number" name="end_minute" id="end_minute" class="form-control" min="0" max="59" required placeholder="0-59">
-                        <div class="error-message" id="end_minuteError"></div>
+                        <label class="form-label">Phút kết thúc <span class="req">*</span></label>
+                        <input type="number" name="end_minute" id="end_minute" class="form-input" min="0" max="59" required placeholder="0–59">
+                        <div class="err-msg" id="end_minuteError"></div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Mô Tả</label>
-                    <textarea name="description" id="description" class="form-control" rows="3" placeholder="Nhập mô tả..."></textarea>
+                    <label class="form-label">Mô tả</label>
+                    <textarea name="description" id="description" class="form-input" rows="2" placeholder="Mô tả ca làm việc..."></textarea>
                 </div>
 
                 <div class="form-group">
-    <label class="form-label">Áp Dụng Cho <span style="color: #ef4444;">*</span></label>
-    <div class="checkbox-group">
-        <div class="checkbox-item">
-            <input type="checkbox" name="is_for_doctor" id="is_for_doctor" value="1">
-            <label for="is_for_doctor">🩺 Bác Sĩ</label>
-        </div>
-        <div class="checkbox-item">
-            <input type="checkbox" name="is_for_employee" id="is_for_employee" value="1">
-            <label for="is_for_employee">👨‍💼 Nhân Viên</label>
-        </div>
-    </div>
-    <div class="error-message" id="applyError"></div>
-</div>
+                    <label class="form-label">Áp dụng cho <span class="req">*</span></label>
+                    <div class="check-group">
+                        <label class="check-item">
+                            <input type="checkbox" name="is_for_doctor" id="is_for_doctor" value="1">
+                            <i class="ri-stethoscope-line" style="color:#6366f1;font-size:16px;"></i>
+                            <span>Bác sĩ</span>
+                        </label>
+                        <label class="check-item">
+                            <input type="checkbox" name="is_for_employee" id="is_for_employee" value="1">
+                            <i class="ri-user-settings-line" style="color:#14b8a6;font-size:16px;"></i>
+                            <span>Nhân viên</span>
+                        </label>
+                    </div>
+                    <div class="err-msg" id="applyError"></div>
+                </div>
             </div>
 
-            <div class="modal-footer">
-                <button type="button" class="btn-cancel" onclick="closeModal()">Hủy</button>
-                <button type="submit" class="btn-submit">Lưu Ca Làm Việc</button>
+            <div class="modal-foot">
+                <button type="button" class="btn-cancel-modal" onclick="closeModal()">Hủy</button>
+                <button type="submit" class="btn-save"><i class="ri-save-line"></i> Lưu ca làm việc</button>
             </div>
         </form>
     </div>
@@ -562,7 +518,6 @@
         document.getElementById('modalTitle').textContent = 'Tạo Ca Làm Việc Mới';
         document.getElementById('shiftForm').reset();
         document.getElementById('shiftForm').action = '{{ route("admin.shifts.store") }}';
-        document.getElementById('shiftForm').method = 'POST';
         document.querySelector('input[name="_method"]')?.remove();
         document.getElementById('shiftModal').classList.add('show');
     }
@@ -577,20 +532,14 @@
         document.getElementById('description').value = desc;
         document.getElementById('is_for_doctor').checked = isDoctor;
         document.getElementById('is_for_employee').checked = isEmployee;
-        
+
         const form = document.getElementById('shiftForm');
         form.action = `/admin/shifts/${id}`;
-        
-        // Xóa method cũ nếu có
         document.querySelector('input[name="_method"]')?.remove();
-        
-        // Thêm method PUT
-        const methodInput = document.createElement('input');
-        methodInput.type = 'hidden';
-        methodInput.name = '_method';
-        methodInput.value = 'PUT';
-        form.appendChild(methodInput);
-        
+        const m = document.createElement('input');
+        m.type = 'hidden'; m.name = '_method'; m.value = 'PUT';
+        form.appendChild(m);
+
         document.getElementById('shiftModal').classList.add('show');
     }
 
@@ -598,23 +547,17 @@
         document.getElementById('shiftModal').classList.remove('show');
     }
 
-    // Đóng modal khi click ngoài
     document.getElementById('shiftModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            closeModal();
-        }
+        if (e.target === this) closeModal();
     });
 
-    // Auto-hide success message
     document.addEventListener('DOMContentLoaded', function() {
-        const successAlert = document.querySelector('.alert.success');
-        if (successAlert) {
+        const alert = document.querySelector('.alert.success');
+        if (alert) {
             setTimeout(() => {
-                successAlert.style.opacity = '0';
-                successAlert.style.transition = 'opacity 0.3s ease';
-                setTimeout(() => {
-                    successAlert.style.display = 'none';
-                }, 300);
+                alert.style.transition = 'opacity 0.3s';
+                alert.style.opacity = '0';
+                setTimeout(() => alert.style.display = 'none', 300);
             }, 5000);
         }
     });
