@@ -11,26 +11,38 @@ class ScheduleRequestService
 {
     /**
      * ✅ Lấy danh sách đơn đăng ký chờ duyệt của nhân viên
+     * 🔧 FIX: Thêm filter theo tuần nếu có tham số $weekStart, $weekEnd
      */
-    public function getPendingRequests($empId)
+    public function getPendingRequests($empId, $weekStart = null, $weekEnd = null)
     {
-        return ScheduleRequest::where('employee_id', $empId)
+        $query = ScheduleRequest::where('employee_id', $empId)
             ->where('status', 'pending')
-            ->with('shift')
-            ->orderBy('created_at', 'desc')
-            ->get();
+            ->with('shift');
+        
+        // ✅ Nếu có tuần được chỉ định, filter theo đó
+        if ($weekStart && $weekEnd) {
+            $query->whereBetween('work_date', [$weekStart, $weekEnd]);
+        }
+        
+        return $query->orderBy('created_at', 'desc')->get();
     }
 
     /**
      * ✅ Lấy các ca được duyệt của nhân viên
+     * 🔧 FIX: Thêm filter theo tuần nếu có tham số $weekStart, $weekEnd
      */
-    public function getApprovedRequests($empId)
+    public function getApprovedRequests($empId, $weekStart = null, $weekEnd = null)
     {
-        return ScheduleRequest::where('employee_id', $empId)
+        $query = ScheduleRequest::where('employee_id', $empId)
             ->where('status', 'approved')
-            ->with('shift')
-            ->orderBy('work_date', 'asc')
-            ->get();
+            ->with('shift');
+        
+        // ✅ Nếu có tuần được chỉ định, filter theo đó
+        if ($weekStart && $weekEnd) {
+            $query->whereBetween('work_date', [$weekStart, $weekEnd]);
+        }
+        
+        return $query->orderBy('work_date', 'asc')->get();
     }
 
     /**
@@ -87,7 +99,12 @@ class ScheduleRequestService
             throw new \Exception('❌ Bạn đã đăng ký ca này rồi, vui lòng đợi duyệt.');
         }
 
-        // 6️⃣ Chuẩn bị dữ liệu để lưu vào database
+        // 6️⃣ Kiểm tra: đã có schedule khác vào ngày này chưa?
+        if ($this->hasScheduleOnDate($empId, $workDate)) {
+            throw new \Exception('❌ Bạn đã có schedule vào ngày này rồi. Vui lòng thay đổi ngày hoặc xóa schedule cũ.');
+        }
+
+        // 7️⃣ Chuẩn bị dữ liệu để lưu vào database
         $scheduleData = [
             'employee_id' => $empId,
             'work_date' => $workDate,
@@ -96,7 +113,7 @@ class ScheduleRequestService
             'assignment_type' => 'work',
         ];
 
-        // 7️⃣ Nếu nhân viên tùy chỉnh giờ, lưu vào các cột riêng
+        // 8️⃣ Nếu nhân viên tùy chỉnh giờ, lưu vào các cột riêng
         $hasCustomHours = !empty($data['start_hour']) || !empty($data['start_minute']) || 
                          !empty($data['end_hour']) || !empty($data['end_minute']);
         
@@ -143,31 +160,44 @@ class ScheduleRequestService
             throw new \Exception('❌ Bạn đã xin nghỉ vào ngày này. Không thể cập nhật.');
         }
 
-        // 5️⃣ Kiểm tra: shift_id có tồn tại không?
+        // 5️⃣ 🆕 Kiểm tra: ngày mới đã có schedule khác chưa?
+        if ($workDate !== $request->work_date) {
+            $existingSchedule = ScheduleRequest::where('employee_id', $empId)
+                ->where('work_date', $workDate)
+                ->where('id', '!=', $requestId) // Exclude bản ghi hiện tại
+                ->where('status', 'pending')
+                ->first();
+            
+            if ($existingSchedule) {
+                throw new \Exception('❌ Bạn đã có schedule vào ngày ' . $workDate . ' rồi. Vui lòng xóa hoặc thay đổi ngày khác.');
+            }
+        }
+
+        // 6️⃣ Kiểm tra: shift_id có tồn tại không?
         $shift = CustomShift::find($shiftId);
         
         if (!$shift) {
             throw new \Exception('❌ Ca làm việc không tồn tại. Vui lòng chọn ca khác.');
         }
 
-        // 6️⃣ Kiểm tra: ca có còn hoạt động không?
+        // 7️⃣ Kiểm tra: ca có còn hoạt động không?
         if (!$shift->is_active) {
             throw new \Exception('❌ Ca làm việc này không còn hoạt động.');
         }
 
-        // 7️⃣ Kiểm tra: ca có áp dụng cho bác sĩ hoặc nhân viên không?
+        // 8️⃣ Kiểm tra: ca có áp dụng cho bác sĩ hoặc nhân viên không?
         if (!$shift->is_for_employee && !$shift->is_for_doctor) {
             throw new \Exception('❌ Ca này không áp dụng.');
         }
 
-        // 8️⃣ Chuẩn bị dữ liệu để cập nhật
+        // 9️⃣ Chuẩn bị dữ liệu để cập nhật
         $updateData = [
             'work_date' => $workDate,
             'shift_id' => $shiftId,
             'status' => 'pending', // Reset lại pending khi cập nhật
         ];
 
-        // 9️⃣ Nếu nhân viên tùy chỉnh giờ, lưu vào các cột riêng
+        // 🔟 Nếu nhân viên tùy chỉnh giờ, lưu vào các cột riêng
         $hasCustomHours = !empty($data['start_hour']) || !empty($data['start_minute']) || 
                          !empty($data['end_hour']) || !empty($data['end_minute']);
         
@@ -184,7 +214,7 @@ class ScheduleRequestService
             $updateData['end_minute'] = $shift->end_minute;
         }
 
-        // 🔟 Cập nhật vào database
+        // 1️⃣1️⃣ Cập nhật vào database
         $request->update($updateData);
         
         return $request;
@@ -228,6 +258,17 @@ class ScheduleRequestService
         return ScheduleRequest::where('employee_id', $empId)
             ->where('work_date', $workDate)
             ->where('shift_id', $shiftId)
+            ->where('status', 'pending')
+            ->exists();
+    }
+
+    /**
+     * ✅ 🆕 Kiểm tra: đã có schedule vào ngày này chưa? (bất kỳ ca nào)
+     */
+    public function hasScheduleOnDate($empId, $workDate)
+    {
+        return ScheduleRequest::where('employee_id', $empId)
+            ->where('work_date', $workDate)
             ->where('status', 'pending')
             ->exists();
     }

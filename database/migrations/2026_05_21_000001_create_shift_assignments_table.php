@@ -12,7 +12,7 @@ class CreateShiftAssignmentsTable extends Migration
             $table->id();
             $table->unsignedBigInteger('employee_id');
             $table->date('work_date');
-            $table->unsignedBigInteger('shift_id');
+            $table->unsignedBigInteger('shift_id')->nullable(); // ✅ Thêm nullable()
             
             // ✅ Thêm các cột giờ
             $table->integer('start_hour')->nullable();

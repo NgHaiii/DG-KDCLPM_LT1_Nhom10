@@ -7,8 +7,20 @@
 
 @section('content')
 
+@php
+    if (request('week_start')) {
+        try {
+            $weekStart = \Carbon\Carbon::createFromFormat('Y-m-d', request('week_start'))->startOfWeek(\Carbon\Carbon::MONDAY);
+        } catch (\Exception $e) {
+            $weekStart = now()->startOfWeek(\Carbon\Carbon::MONDAY);
+        }
+    } else {
+        $weekStart = now()->startOfWeek(\Carbon\Carbon::MONDAY);
+    }
+    $weekEnd = $weekStart->copy()->endOfWeek(\Carbon\Carbon::SUNDAY);
+@endphp
+
 <style>
-    /* Stats */
     .stats-container {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -49,7 +61,6 @@
     .stat-card.approved p:last-child { color: #10b981; }
     .stat-card.offday p:last-child { color: #0ea5e9; }
 
-    /* Tabs */
     .tabs-nav {
         display: flex;
         gap: 1rem;
@@ -74,29 +85,16 @@
         white-space: nowrap;
     }
 
-    .tab-btn:hover {
-        color: #3b82f6;
-    }
+    .tab-btn:hover { color: #3b82f6; }
+    .tab-btn.active { color: #3b82f6; border-bottom-color: #3b82f6; }
 
-    .tab-btn.active {
-        color: #3b82f6;
-        border-bottom-color: #3b82f6;
-    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
 
-    /* Tab Content */
-    .tab-content {
-        display: none;
-    }
-
-    .tab-content.active {
-        display: block;
-    }
-
-    /* Calendar */
     .calendar-container {
         background: white;
         border-radius: 12px;
-        padding: 1rem;
+        padding: 1.5rem;
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
         margin-bottom: 2rem;
     }
@@ -105,127 +103,243 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 1rem;
+        margin-bottom: 2rem;
+        gap: 1rem;
+        flex-wrap: wrap;
     }
 
-    .calendar-header h3 {
-        font-size: 1.1rem;
-        margin: 0;
-        color: #111827;
-    }
-
-    .calendar-nav {
+    .week-navigation {
         display: flex;
-        gap: 0.5rem;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
     }
 
-    .calendar-nav button {
-        background: #3b82f6;
+    .week-nav-btn {
+        background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
         color: white;
         border: none;
-        padding: 0.4rem 0.8rem;
-        border-radius: 6px;
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
         cursor: pointer;
         font-weight: 600;
+        font-size: 0.9rem;
         transition: all 0.3s ease;
-        font-size: 0.75rem;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
     }
 
-    .calendar-nav button:hover {
-        background: #1e40af;
+    .week-nav-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     }
 
-    .calendar-weekdays {
+    .week-display {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #111827;
+        min-width: 200px;
+        text-align: center;
+        padding: 0.5rem 1rem;
+        background: #f0f4ff;
+        border-radius: 8px;
+        border-left: 4px solid #3b82f6;
+    }
+
+    .legend-section {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+    }
+
+    .legend-dot.registered { background: #10b981; }
+    .legend-dot.pending { background: #f59e0b; }
+    .legend-dot.empty { background: #d1d5db; }
+
+    .calendar-grid {
         display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 0.2rem;
-        margin-bottom: 0.3rem;
+        grid-template-columns: 150px repeat(7, 1fr);
+        gap: 1px;
+        background: #d1d5db;
+        padding: 1px;
+        border-radius: 8px;
+        overflow-x: auto;
+        transition: opacity 0.3s ease;
     }
 
-    .weekday {
-        padding: 0.3rem;
+    .grid-time-header {
+        background: #f3f4f6;
+        padding: 1rem 0.75rem;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        min-height: 110px;
+    }
+
+    .grid-time-icon { font-size: 1.8rem; }
+    .grid-time-label { color: #111827; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; }
+    .grid-time-hours { font-size: 0.7rem; color: #6b7280; }
+
+    .grid-day-header {
+        background: #dbeafe;
+        padding: 1rem 0.75rem;
         text-align: center;
         font-weight: 700;
-        color: #6b7280;
-        background: #f3f4f6;
-        border-radius: 4px;
-        font-size: 0.65rem;
-    }
-
-    .calendar-days {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 0.2rem;
-    }
-
-    .calendar-day {
-        aspect-ratio: 1;
-        padding: 0.3rem;
-        border: 1.5px solid #e5e7eb;
-        border-radius: 4px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        background: white;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        position: relative;
+        gap: 0.3rem;
+        min-height: 100px;
+    }
+
+    .grid-day-header.today { background: #3b82f6; color: white; }
+    .grid-day-header.sunday { background: #fee2e2; }
+    .grid-day-header.sunday .day-name, .grid-day-header.sunday .day-number { color: #dc2626; }
+
+    .day-name {
         font-size: 0.7rem;
-    }
-
-    .calendar-day:hover {
-        border-color: #3b82f6;
-        background: #f0f9ff;
-        transform: scale(1.05);
-    }
-
-    .calendar-day.other-month {
-        color: #d1d5db;
-        background: #f9fafb;
-        cursor: not-allowed;
-    }
-
-    .calendar-day.today {
-        background: #dbeafe;
-        border-color: #3b82f6;
-        font-weight: 700;
-        color: #1e40af;
-    }
-
-    .calendar-day.registered {
-        background: linear-gradient(135deg, #fef08a 0%, #fef3c7 100%);
-        border-color: #f59e0b;
+        color: #3b82f6;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
         font-weight: 600;
     }
 
-    .calendar-day.registered-approved {
-        background: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%);
-        border-color: #10b981;
-        font-weight: 600;
+    .grid-day-header.today .day-name { color: white; }
+
+    .day-number {
+        font-size: 1.4rem;
+        color: #3b82f6;
     }
 
-    .calendar-day-number {
+    .grid-day-header.today .day-number { color: white; }
+
+    .grid-cell {
+        background: white;
+        padding: 0.6rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 110px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .grid-cell:hover { background: #f0f9ff; }
+
+    .shift-card {
+        width: 100%;
+        height: 100%;
+        border-radius: 8px;
+        padding: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
         font-size: 0.75rem;
         font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid;
+        line-height: 1.3;
     }
 
-    .calendar-day-badge {
-        position: absolute;
-        top: 1px;
-        right: 1px;
-        width: 5px;
-        height: 5px;
+    .shift-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .shift-card.registered {
+        background: #dcfce7;
+        border-color: #10b981;
+        color: #065f46;
+    }
+
+    .shift-card.pending {
+        background: #fef3c7;
+        border-color: #f59e0b;
+        color: #92400e;
+    }
+
+    .shift-card.empty {
+        background: white;
+        border: 2px dashed #d1d5db;
+        color: #9ca3af;
+    }
+
+    .shift-card.empty:hover {
+        border-color: #3b82f6;
+        color: #3b82f6;
+        background: #f0f9ff;
+    }
+
+    .shift-icon {
+        font-size: 1.4rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .spinner {
+        border: 4px solid #e5e7eb;
+        border-top: 4px solid #3b82f6;
         border-radius: 50%;
-        background: #f59e0b;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
     }
 
-    .calendar-day.registered-approved .calendar-day-badge {
-        background: #10b981;
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
 
-    /* Modal */
+    .loading-text {
+        margin-top: 1rem;
+        color: #6b7280;
+        font-weight: 600;
+    }
+
+    #weekPicker {
+        padding: 0.6rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+    #weekPicker:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+    }
+
     .modal {
         display: none;
         position: fixed;
@@ -256,26 +370,9 @@
         overflow-y: auto;
     }
 
-    .detail-modal-content {
-        background-color: white;
-        padding: 1.5rem;
-        border-radius: 12px;
-        max-width: 400px;
-        width: 90%;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        animation: slideIn 0.3s ease;
-        position: relative;
-    }
-
     @keyframes slideIn {
-        from {
-            transform: translateY(-50px);
-            opacity: 0;
-        }
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
+        from { transform: translateY(-50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
     }
 
     .modal-header {
@@ -318,7 +415,6 @@
         font-size: 0.8rem;
     }
 
-    /* Form */
     .form-group {
         margin-bottom: 1.25rem;
     }
@@ -353,14 +449,13 @@
     }
 
     .hour-inputs {
-        display: grid;
+        display: none;
         grid-template-columns: 1fr 1fr 1fr 1fr;
         gap: 0.75rem;
     }
 
-    .hour-inputs .form-group {
-        margin-bottom: 0;
-    }
+    .hour-inputs.active { display: grid; }
+    .hour-inputs .form-group { margin-bottom: 0; }
 
     .custom-hours-header {
         background: #f0f4ff;
@@ -368,8 +463,10 @@
         border-radius: 8px;
         margin-bottom: 1rem;
         border-left: 4px solid #3b82f6;
+        display: none;
     }
 
+    .custom-hours-header.active { display: block; }
     .custom-hours-header p {
         font-size: 0.875rem;
         color: #3b82f6;
@@ -395,11 +492,12 @@
         box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3);
     }
 
-    .btn-submit:active {
-        transform: scale(0.98);
+    .btn-submit:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
     }
 
-    .btn-edit {
+    .btn-edit, .btn-delete, .btn-cancel {
         width: 100%;
         padding: 0.875rem 1rem;
         border: none;
@@ -408,9 +506,12 @@
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
+        margin-top: 0.5rem;
+    }
+
+    .btn-edit {
         color: white;
         background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        margin-top: 0.5rem;
     }
 
     .btn-edit:hover {
@@ -419,16 +520,9 @@
     }
 
     .btn-cancel {
-        width: 100%;
-        padding: 0.875rem 1rem;
         border: 2px solid #e5e7eb;
-        border-radius: 8px;
         background: white;
         color: #6b7280;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin-top: 0.5rem;
     }
 
     .btn-cancel:hover {
@@ -436,7 +530,16 @@
         color: #374151;
     }
 
-    /* Off-Day Form & Requests */
+    .btn-delete {
+        color: white;
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+
+    .btn-delete:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+    }
+
     .offday-form {
         background: white;
         border-radius: 12px;
@@ -469,19 +572,9 @@
         background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
     }
 
-    .offday-request-card.pending:hover {
-        box-shadow: 0 4px 16px rgba(245, 158, 11, 0.15);
-        transform: translateY(-2px);
-    }
-
     .offday-request-card.approved {
         border-left-color: #10b981;
         background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-    }
-
-    .offday-request-card.approved:hover {
-        box-shadow: 0 4px 16px rgba(16, 185, 129, 0.15);
-        transform: translateY(-2px);
     }
 
     .offday-card-header {
@@ -533,9 +626,7 @@
         color: #065f46;
     }
 
-    .offday-card-body {
-        margin: 0.75rem 0;
-    }
+    .offday-card-body { margin: 0.75rem 0; }
 
     .offday-card-actions {
         display: grid;
@@ -548,17 +639,16 @@
 
     .btn-action {
         padding: 0.5rem 1rem;
-        border: none;
+        border: 2px solid;
         border-radius: 6px;
         font-size: 0.85rem;
         font-weight: 600;
         cursor: pointer;
         transition: all 0.3s ease;
-        border: 2px solid;
+        background: white;
     }
 
     .btn-action.edit {
-        background: white;
         color: #f59e0b;
         border-color: #f59e0b;
     }
@@ -567,11 +657,9 @@
         background: #f59e0b;
         color: white;
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
     }
 
     .btn-action.delete {
-        background: white;
         color: #ef4444;
         border-color: #ef4444;
     }
@@ -580,11 +668,9 @@
         background: #ef4444;
         color: white;
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
     }
 
-    textarea#reason,
-    textarea#editReason {
+    textarea#reason, textarea#editReason {
         font-family: inherit;
         resize: vertical;
         min-height: 100px;
@@ -597,26 +683,13 @@
     }
 
     @media (max-width: 768px) {
-        .calendar-day {
-            padding: 0.2rem;
-            font-size: 0.6rem;
-        }
-
-        .calendar-day-number {
-            font-size: 0.6rem;
-        }
-
-        .modal-content {
-            max-width: 90vw;
-        }
-
-        .hour-inputs {
-            grid-template-columns: 1fr 1fr;
-        }
-
-        .offday-card-actions {
-            grid-template-columns: 1fr;
-        }
+        .calendar-grid { grid-template-columns: 80px repeat(7, 1fr); }
+        .modal-content { max-width: 90vw; }
+        .hour-inputs { grid-template-columns: 1fr 1fr; }
+        .offday-card-actions { grid-template-columns: 1fr; }
+        .calendar-header { flex-direction: column; align-items: flex-start; }
+        .week-navigation { flex-direction: column; width: 100%; }
+        .week-display { width: 100%; }
     }
 </style>
 
@@ -624,17 +697,15 @@
 <div class="stats-container">
     <div class="stat-card pending">
         <p>⏳ Đơn ca chờ duyệt</p>
-        <p>{{ $pendingRequests->count() }}</p>
+        <p id="pendingCount">{{ $pendingRequests->count() }}</p>
     </div>
-
     <div class="stat-card approved">
         <p>✅ Ca được duyệt</p>
-        <p>{{ $approvedRequests->count() }}</p>
+        <p id="approvedCount">{{ $approvedRequests->count() }}</p>
     </div>
-
     <div class="stat-card offday">
         <p>🏖️ Ngày nghỉ được duyệt</p>
-        <p>{{ $approvedOffDays->count() }}</p>
+        <p id="offDayCount">{{ $approvedOffDays->count() }}</p>
     </div>
 </div>
 
@@ -648,30 +719,46 @@
 <div id="tab-shift" class="tab-content active">
     <div class="calendar-container">
         <div class="calendar-header">
-            <h3 id="monthYear">Tháng 5 - 2026</h3>
-            <div class="calendar-nav">
-                <button type="button" id="prevMonth">← Tháng trước</button>
-                <button type="button" id="nextMonth">Tháng sau →</button>
+            <div class="week-navigation">
+                <button type="button" class="week-nav-btn" onclick="previousWeek()">← Tuần trước</button>
+                <div class="week-display" id="weekDisplay" data-week-start="{{ $weekStart->format('Y-m-d') }}">
+                    {{ $weekStart->format('d/m') }} - {{ $weekEnd->format('d/m/Y') }}
+                </div>
+                <button type="button" class="week-nav-btn" onclick="nextWeek()">Tuần sau →</button>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                <input type="date" id="weekPicker" title="Chọn ngày để đi đến tuần đó">
+                <div class="legend-section">
+                    <div class="legend-item">
+                        <div class="legend-dot registered"></div>
+                        <span>Đã đăng ký</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot pending"></div>
+                        <span>Chờ duyệt</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-dot empty"></div>
+                        <span>Còn trống</span>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <div class="calendar-weekdays">
-            <div class="weekday">T2</div>
-            <div class="weekday">T3</div>
-            <div class="weekday">T4</div>
-            <div class="weekday">T5</div>
-            <div class="weekday">T6</div>
-            <div class="weekday">T7</div>
-            <div class="weekday">CN</div>
+        <div id="loadingSpinner" class="loading-spinner">
+            <div class="spinner"></div>
+            <p class="loading-text">⏳ Đang tải lịch...</p>
         </div>
 
-        <div class="calendar-days" id="calendarDays"></div>
+        <div class="calendar-grid" id="calendarGrid">
+            <!-- Calendar will be generated by JavaScript -->
+        </div>
     </div>
 </div>
 
 <!-- Tab 2: Off-Day -->
 <div id="tab-offday" class="tab-content">
-    <!-- Off-Day Form -->
     <div class="offday-form">
         <div style="margin-bottom: 1.5rem;">
             <h3 style="margin: 0 0 0.5rem 0; color: #111827;">🏖️ Đơn Xin Ngày Nghỉ</h3>
@@ -684,18 +771,18 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
                 <div class="form-group">
                     <label>📅 Từ ngày <span style="color: #ef4444;">*</span></label>
-                    <input type="date" name="start_date" id="startDate" required style="font-weight: 500;">
+                    <input type="date" name="start_date" id="startDate" required>
                 </div>
 
                 <div class="form-group">
                     <label>📅 Đến ngày <span style="color: #ef4444;">*</span></label>
-                    <input type="date" name="end_date" id="endDate" required style="font-weight: 500;">
+                    <input type="date" name="end_date" id="endDate" required>
                 </div>
             </div>
 
             <div class="form-group">
                 <label>📝 Lý do xin nghỉ <span style="color: #ef4444;">*</span></label>
-                <textarea name="reason" id="reason" rows="4" placeholder="Nhập lý do xin nghỉ (tối thiểu 5 ký tự)..." required style="resize: vertical;"></textarea>
+                <textarea name="reason" id="reason" rows="4" placeholder="Nhập lý do xin nghỉ..." required></textarea>
                 <p class="char-counter">0 / 200 ký tự</p>
             </div>
 
@@ -706,16 +793,13 @@
         </form>
     </div>
 
-    <!-- Pending Off-Day Requests -->
     @if($pendingOffDays && $pendingOffDays->count() > 0)
         <div class="offday-requests-container">
             <div style="margin-bottom: 1.5rem;">
-                <h3 style="margin: 0 0 0.5rem 0; color: #f59e0b; display: flex; align-items: center; gap: 0.5rem;">
+                <h3 style="margin: 0 0 0.5rem 0; color: #f59e0b;">
                     ⏳ Đơn xin nghỉ chờ duyệt ({{ $pendingOffDays->count() }})
                 </h3>
-                <p style="margin: 0; color: #6b7280; font-size: 0.9rem;">Nhấn để chỉnh sửa hoặc hủy đơn xin nghỉ</p>
             </div>
-
             <div style="display: grid; gap: 1rem;">
                 @foreach($pendingOffDays as $offday)
                     <div class="offday-request-card pending">
@@ -725,17 +809,11 @@
                             </div>
                             <span class="status-badge pending-badge">⏳ Chờ duyệt</span>
                         </div>
-
                         <div class="offday-card-body">
                             <p style="color: #111827; font-weight: 600; margin: 0.5rem 0 0 0;">{{ $offday->reason ?? 'Không có lý do' }}</p>
-                            <p style="color: #6b7280; font-size: 0.85rem; margin: 0.5rem 0;">
-                                📆 {{ optional($offday->date)->format('d/m/Y') }} • 
-                                Gửi lúc {{ optional($offday->created_at)->format('d/m/Y H:i') ?? 'N/A' }}
-                            </p>
                         </div>
-
                         <div class="offday-card-actions">
-                            <button type="button" class="btn-action edit" onclick="editOffDay({{ $offday->id }}, '{{ optional($offday->date)->format('Y-m-d') }}', '{{ optional($offday->date)->format('Y-m-d') }}', '{{ addslashes($offday->reason ?? '') }}')">
+                            <button type="button" class="btn-action edit" onclick="editOffDay({{ $offday->id }}, '{{ optional($offday->date)->format('Y-m-d') }}', '{{ addslashes($offday->reason ?? '') }}')">
                                 ✏️ Chỉnh sửa
                             </button>
                             <button type="button" class="btn-action delete" onclick="deleteOffDay({{ $offday->id }})">
@@ -748,15 +826,13 @@
         </div>
     @endif
 
-    <!-- Approved Off-Day Requests -->
     @if($approvedOffDays->count() > 0)
         <div class="offday-requests-container">
             <div style="margin-bottom: 1.5rem;">
-                <h3 style="margin: 0 0 0.5rem 0; color: #10b981; display: flex; align-items: center; gap: 0.5rem;">
+                <h3 style="margin: 0 0 0.5rem 0; color: #10b981;">
                     ✅ Đơn xin nghỉ đã duyệt ({{ $approvedOffDays->count() }})
                 </h3>
             </div>
-
             <div style="display: grid; gap: 1rem;">
                 @foreach($approvedOffDays as $offday)
                     <div class="offday-request-card approved">
@@ -766,7 +842,6 @@
                             </div>
                             <span class="status-badge approved-badge">✅ Đã duyệt</span>
                         </div>
-
                         <div class="offday-card-body">
                             <p style="color: #111827; font-weight: 600; margin: 0.5rem 0 0 0;">{{ $offday->reason ?? 'Không có lý do' }}</p>
                         </div>
@@ -777,13 +852,13 @@
     @endif
 </div>
 
-<!-- Modal Đăng ký/Cập nhật -->
+<!-- Modal Shift -->
 <div id="shiftModal" class="modal">
     <div class="modal-content">
         <button type="button" class="modal-close" onclick="closeModal()">✕</button>
-        <div class="modal-header" id="modalTitle">📋 Đăng ký ca làm việc</div>
+        <div class="modal-header" id="modalTitle">✏️ Tùy chỉnh giờ làm việc</div>
 
-        <form action="{{ route('doctor.schedule.store') }}" method="POST" id="shiftForm">
+        <form id="shiftForm" method="POST">
             @csrf
             <input type="hidden" id="methodInput" name="_method" value="POST">
 
@@ -792,54 +867,48 @@
                 <input type="date" id="workDate" name="work_date" required readonly style="background: #f3f4f6; cursor: not-allowed;">
             </div>
 
-            <div class="form-group">
-                <label>⏰ Chọn ca làm việc <span style="color: red;">*</span></label>
-                <select id="shiftId" name="shift_id" required>
-                    <option value="">-- Chọn ca --</option>
-                    @foreach($shifts as $shift)
-                        <option value="{{ $shift->id }}" 
-                                data-start-hour="{{ $shift->start_hour ?? 0 }}" 
-                                data-start-minute="{{ $shift->start_minute ?? 0 }}" 
-                                data-end-hour="{{ $shift->end_hour ?? 0 }}" 
-                                data-end-minute="{{ $shift->end_minute ?? 0 }}">
-                            {{ $shift->name }} ({{ sprintf('%02d:%02d', $shift->start_hour ?? 0, $shift->start_minute ?? 0) }} - {{ sprintf('%02d:%02d', $shift->end_hour ?? 0, $shift->end_minute ?? 0) }})
-                        </option>
-                    @endforeach
+            <div class="form-group" id="shiftTypeFormGroup">
+                <label>Chọn loại ca <span style="color: #ef4444;">*</span></label>
+                <select id="shiftTypeSelect" name="shift_type" onchange="onShiftTypeChange()">
+                    <option value="">-- Chọn loại ca --</option>
+                    <option value="morning">☀️ Ca sáng (08:00 - 17:00)</option>
+                    <option value="evening">🌙 Ca tối (14:00 - 22:00)</option>
+                    <option value="custom">⚙️ Tùy chỉnh</option>
                 </select>
             </div>
 
-            <div id="customHours" style="display: none;">
-                <div class="custom-hours-header">
-                    <p>✏️ Tùy chỉnh giờ làm việc</p>
+            <div class="custom-hours-header" id="customHoursHeader">
+                <p>✏️ Tùy chỉnh giờ làm việc</p>
+            </div>
+            
+            <div class="hour-inputs" id="hourInputs">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Từ giờ</label>
+                    <select id="startHour" name="start_hour">
+                        <option value="">Chọn giờ</option>
+                    </select>
                 </div>
-                
-                <div class="hour-inputs">
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label>Từ giờ</label>
-                        <select id="startHour" name="start_hour">
-                            <option value="">Chọn giờ</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label>Từ phút</label>
-                        <select id="startMinute" name="start_minute">
-                            <option value="">Chọn phút</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label>Đến giờ</label>
-                        <select id="endHour" name="end_hour">
-                            <option value="">Chọn giờ</option>
-                        </select>
-                    </div>
-                    <div class="form-group" style="margin-bottom: 0;">
-                        <label>Đến phút</label>
-                        <select id="endMinute" name="end_minute">
-                            <option value="">Chọn phút</option>
-                        </select>
-                    </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Từ phút</label>
+                    <select id="startMinute" name="start_minute">
+                        <option value="">Chọn phút</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Đến giờ</label>
+                    <select id="endHour" name="end_hour">
+                        <option value="">Chọn giờ</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Đến phút</label>
+                    <select id="endMinute" name="end_minute">
+                        <option value="">Chọn phút</option>
+                    </select>
                 </div>
             </div>
+
+            <input type="hidden" id="shiftId" name="shift_id" value="">
 
             <button type="submit" class="btn-submit" id="submitBtn">✅ Đăng ký ca</button>
             <button type="button" class="btn-cancel" onclick="closeModal()">❌ Hủy</button>
@@ -847,24 +916,25 @@
     </div>
 </div>
 
-<!-- Modal Chi tiết ca đã đăng ký -->
+<!-- Modal Chi tiết -->
 <div id="detailModal" class="modal">
-    <div class="detail-modal-content">
+    <div class="modal-content">
         <button type="button" class="modal-close" onclick="closeDetailModal()">✕</button>
         <div class="modal-header" style="color: #111827; font-size: 1.25rem;">📋 Thông tin ca làm việc</div>
         <div id="detailContent"></div>
         <button type="button" class="btn-edit" onclick="openEditModal()">✏️ Cập nhật ca làm việc</button>
+        <button type="button" class="btn-delete" id="deleteScheduleBtn" onclick="deleteScheduleRequest()" style="display: none;">🗑️ Hủy ca</button>
         <button type="button" class="btn-cancel" onclick="closeDetailModal()">Đóng</button>
     </div>
 </div>
 
-<!-- Modal Chỉnh Sửa Đơn Xin Nghỉ -->
+<!-- Modal Chỉnh sửa Off-Day -->
 <div id="editOffdayModal" class="modal">
     <div class="modal-content">
         <button type="button" class="modal-close" onclick="closeEditOffdayModal()">✕</button>
         <div class="modal-header">✏️ Chỉnh sửa đơn xin nghỉ</div>
 
-        <form action="" method="POST" id="editOffdayForm">
+        <form id="editOffdayForm" method="POST">
             @csrf
             @method('PUT')
 
@@ -887,25 +957,20 @@
 </div>
 
 <script>
-    let currentMonth = new Date().getMonth();
-    let currentYear = new Date().getFullYear();
     let selectedDate = null;
     let editingSchedule = null;
+    let currentWeekStart = new Date("{{ $weekStart->format('Y-m-d') }}" + 'T00:00:00');
 
-    const registeredDates = {
-        pending: [
-            @foreach($pendingRequests as $req)
-                '{{ $req->work_date->format("Y-m-d") }}',
-            @endforeach
-        ],
-        approved: [
-            @foreach($approvedRequests as $sch)
-                '{{ $sch->work_date->format("Y-m-d") }}',
-            @endforeach
-        ]
-    };
+    let shiftsData = {!! json_encode($shifts->map(function($s) {
+        return [
+            'id' => $s->id,
+            'name' => strtolower($s->name),
+            'start_hour' => $s->start_hour,
+            'end_hour' => $s->end_hour
+        ];
+    })) !!};
 
-    const allSchedulesData = {
+    let allSchedulesData = {
         pending: {!! json_encode($pendingRequests->map(function($r) {
             return [
                 'id' => $r->id,
@@ -936,164 +1001,268 @@
         })) !!}
     };
 
-    function formatDate(year, month, day) {
-        const m = String(month + 1).padStart(2, '0');
-        const d = String(day).padStart(2, '0');
-        return `${year}-${m}-${d}`;
+    function formatLocalDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
     }
 
-    function populateHours() {
-        const startHour = document.getElementById('startHour');
-        const startMinute = document.getElementById('startMinute');
-        const endHour = document.getElementById('endHour');
-        const endMinute = document.getElementById('endMinute');
+    function rebuildCalendarGrid(weekStart, weekEnd, pendingReqs, approvedReqs) {
+        let html = '<div style="background: white;"></div>';
         
-        startHour.innerHTML = '<option value="">Chọn giờ</option>';
-        endHour.innerHTML = '<option value="">Chọn giờ</option>';
-        startMinute.innerHTML = '<option value="">Chọn phút</option>';
-        endMinute.innerHTML = '<option value="">Chọn phút</option>';
-
-        for (let i = 0; i <= 23; i++) {
-            const option1 = document.createElement('option');
-            option1.value = i;
-            option1.textContent = `${String(i).padStart(2, '0')}h`;
-            startHour.appendChild(option1);
-
-            const option2 = document.createElement('option');
-            option2.value = i;
-            option2.textContent = `${String(i).padStart(2, '0')}h`;
-            endHour.appendChild(option2);
-        }
+        const morningShiftId = shiftsData.find(s => s.start_hour < 12)?.id;
+        const eveningShiftId = shiftsData.find(s => s.start_hour >= 14)?.id;
         
-        for (let i = 0; i < 60; i++) {
-            const option1 = document.createElement('option');
-            option1.value = i;
-            option1.textContent = `${String(i).padStart(2, '0')} phút`;
-            startMinute.appendChild(option1);
-
-            const option2 = document.createElement('option');
-            option2.value = i;
-            option2.textContent = `${String(i).padStart(2, '0')} phút`;
-            endMinute.appendChild(option2);
-        }
-    }
-
-    function renderCalendar() {
-        const firstDay = new Date(currentYear, currentMonth, 1);
-        const lastDay = new Date(currentYear, currentMonth + 1, 0);
-        const today = new Date();
-        const todayDate = formatDate(today.getFullYear(), today.getMonth(), today.getDate());
+        console.log('🔧 DEBUG rebuildCalendarGrid:', {
+            shiftsData: shiftsData,
+            morningShiftId: morningShiftId,
+            eveningShiftId: eveningShiftId,
+            pendingReqs: pendingReqs,
+            approvedReqs: approvedReqs
+        });
         
-        const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 
-                           'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
-        
-        document.getElementById('monthYear').textContent = `${monthNames[currentMonth]} - ${currentYear}`;
-
-        const calendarDays = document.getElementById('calendarDays');
-        calendarDays.innerHTML = '';
-
-        const prevLastDay = new Date(currentYear, currentMonth, 0).getDate();
-        const firstDayOfWeek = firstDay.getDay() || 7;
-        
-        for (let i = prevLastDay - firstDayOfWeek + 2; i <= prevLastDay; i++) {
-            const day = document.createElement('div');
-            day.className = 'calendar-day other-month';
-            day.innerHTML = `<div class="calendar-day-number">${i}</div>`;
-            calendarDays.appendChild(day);
-        }
-
-        for (let i = 1; i <= lastDay.getDate(); i++) {
-            const day = document.createElement('div');
-            const dateStr = formatDate(currentYear, currentMonth, i);
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(weekStart);
+            date.setDate(date.getDate() + i);
+            const dateStr = formatLocalDate(date);
+            const isToday = dateStr === formatLocalDate(new Date());
+            const isSunday = i === 6;
             
-            day.className = 'calendar-day';
+            const dayNum = String(date.getDate()).padStart(2, '0');
+            const dayName = i === 6 ? 'TCN' : 'T' + (i + 2);
             
-            if (dateStr === todayDate) {
-                day.classList.add('today');
+            html += `<div class="grid-day-header ${isToday ? 'today' : ''} ${isSunday ? 'sunday' : ''}">
+                <div class="day-name">${dayName}</div>
+                <div class="day-number">${dayNum}</div>
+            </div>`;
+        }
+        
+        function getRequestForDateShift(dateStr, shiftId) {
+            console.log('🔍 Looking for:', { dateStr, shiftId, pendingCount: pendingReqs.length, approvedCount: approvedReqs.length });
+            const approved = approvedReqs.find(r => r.date === dateStr && r.shift_id === shiftId);
+            if (approved) {
+                console.log('✅ Found approved:', approved);
+                return { ...approved, status: 'approved' };
             }
-
-            const isApproved = registeredDates.approved.includes(dateStr);
-            const isPending = registeredDates.pending.includes(dateStr);
-
-            if (isApproved) {
-                day.classList.add('registered-approved');
-                day.innerHTML = `<div class="calendar-day-number">${i}</div><div class="calendar-day-badge"></div>`;
-            } else if (isPending) {
-                day.classList.add('registered');
-                day.innerHTML = `<div class="calendar-day-number">${i}</div><div class="calendar-day-badge"></div>`;
+            const pending = pendingReqs.find(r => r.date === dateStr && r.shift_id === shiftId);
+            if (pending) {
+                console.log('✅ Found pending:', pending);
+                return { ...pending, status: 'pending' };
+            }
+            console.log('❌ Not found');
+            return null;
+        }
+        
+        html += `<div class="grid-time-header">
+            <div class="grid-time-icon">☀️</div>
+            <div class="grid-time-label">SÁNG</div>
+            <div class="grid-time-hours">08:00 - 17:00</div>
+        </div>`;
+        
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(weekStart);
+            date.setDate(date.getDate() + i);
+            const dateStr = formatLocalDate(date);
+            
+            if (!morningShiftId) {
+                html += '<div class="grid-cell"><div style="color: #d1d5db; font-weight: 600;">—</div></div>';
+                continue;
+            }
+            
+            const request = getRequestForDateShift(dateStr, morningShiftId);
+            
+            if (request) {
+                const statusClass = request.status === 'approved' ? 'registered' : 'pending';
+                const statusText = request.status === 'approved' ? '✅ Đã đăng ký' : '⏳ Chờ duyệt';
+                html += `<div class="grid-cell"><div class="shift-card ${statusClass}" onclick="showDetailModalById(${request.id})">${statusText}<br><small>${request.name}</small></div></div>`;
             } else {
-                day.innerHTML = `<div class="calendar-day-number">${i}</div>`;
+                const morningShift = shiftsData.find(s => s.id === morningShiftId);
+                const shiftName = morningShift?.name || 'Ca sáng';
+                html += `<div class="grid-cell"><div class="shift-card empty" onclick="quickRegister('${dateStr}', ${morningShiftId}, '${shiftName}')"><div class="shift-icon">➕</div>Đăng ký</div></div>`;
+            }
+        }
+        
+        html += `<div class="grid-time-header">
+            <div class="grid-time-icon">🌙</div>
+            <div class="grid-time-label">TỐI</div>
+            <div class="grid-time-hours">14:00 - 22:00</div>
+        </div>`;
+        
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(weekStart);
+            date.setDate(date.getDate() + i);
+            const dateStr = formatLocalDate(date);
+            
+            if (!eveningShiftId) {
+                html += '<div class="grid-cell"><div style="color: #d1d5db; font-weight: 600;">—</div></div>';
+                continue;
             }
             
-            day.style.cursor = 'pointer';
-            day.onclick = () => {
-                if (isApproved || isPending) {
-                    showDetailModal(dateStr);
-                } else {
-                    openModal(dateStr, false);
-                }
-            };
+            const request = getRequestForDateShift(dateStr, eveningShiftId);
             
-            calendarDays.appendChild(day);
+            if (request) {
+                const statusClass = request.status === 'approved' ? 'registered' : 'pending';
+                const statusText = request.status === 'approved' ? '✅ Đã đăng ký' : '⏳ Chờ duyệt';
+                html += `<div class="grid-cell"><div class="shift-card ${statusClass}" onclick="showDetailModalById(${request.id})">${statusText}<br><small>${request.name}</small></div></div>`;
+            } else {
+                const eveningShift = shiftsData.find(s => s.id === eveningShiftId);
+                const shiftName = eveningShift?.name || 'Ca tối';
+                html += `<div class="grid-cell"><div class="shift-card empty" onclick="quickRegister('${dateStr}', ${eveningShiftId}, '${shiftName}')"><div class="shift-icon">➕</div>Đăng ký</div></div>`;
+            }
         }
-
-        const totalCells = calendarDays.children.length;
-        const nextDaysCount = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
         
-        for (let i = 1; i <= nextDaysCount; i++) {
-            const day = document.createElement('div');
-            day.className = 'calendar-day other-month';
-            day.innerHTML = `<div class="calendar-day-number">${i}</div>`;
-            calendarDays.appendChild(day);
+        document.getElementById('calendarGrid').innerHTML = html;
+    }
+
+    function loadWeek(date) {
+        currentWeekStart = date;
+        const dateStr = formatLocalDate(date);
+        
+        document.getElementById('loadingSpinner').style.display = 'block';
+        document.getElementById('calendarGrid').style.opacity = '0.5';
+        
+        const url = new URL(window.location);
+        url.searchParams.set('week_start', dateStr);
+        window.history.pushState(null, '', url);
+        
+        fetch('{{ route("doctor.schedule.get-week-data") }}?week_start=' + dateStr, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+        .then(r => r.json())
+        .then(data => {
+            console.log('📥 API Response:', data);
+            
+            if (data.shifts && data.shifts.length > 0) {
+                shiftsData = data.shifts;
+                console.log('✅ shiftsData updated:', shiftsData);
+            } else {
+                console.error('❌ WARNING: API không trả về shifts!');
+            }
+            
+            allSchedulesData.pending = data.pending_requests || [];
+            allSchedulesData.approved = data.approved_requests || [];
+            
+            document.getElementById('pendingCount').textContent = data.pending_count;
+            document.getElementById('approvedCount').textContent = data.approved_count;
+            document.getElementById('offDayCount').textContent = data.approved_off_days;
+            
+            const weekStart = new Date(data.week_start + 'T00:00:00');
+            const weekEnd = new Date(data.week_end + 'T00:00:00');
+            
+            rebuildCalendarGrid(weekStart, weekEnd, allSchedulesData.pending, allSchedulesData.approved);
+            
+            const displayEl = document.getElementById('weekDisplay');
+            displayEl.setAttribute('data-week-start', data.week_start);
+            displayEl.textContent = 
+                String(weekStart.getDate()).padStart(2, '0') + '/' +
+                String(weekStart.getMonth() + 1).padStart(2, '0') + ' - ' +
+                String(weekEnd.getDate()).padStart(2, '0') + '/' +
+                String(weekEnd.getMonth() + 1).padStart(2, '0') + '/' +
+                weekEnd.getFullYear();
+            
+            document.getElementById('weekPicker').value = data.week_start;
+        })
+        .catch(e => {
+            console.error('❌ Fetch error:', e);
+            alert('Lỗi tải dữ liệu!');
+        })
+        .finally(() => {
+            document.getElementById('loadingSpinner').style.display = 'none';
+            document.getElementById('calendarGrid').style.opacity = '1';
+        });
+    }
+
+    function previousWeek() {
+        const newDate = new Date(currentWeekStart);
+        newDate.setDate(newDate.getDate() - 7);
+        loadWeek(newDate);
+    }
+
+    function nextWeek() {
+        const newDate = new Date(currentWeekStart);
+        newDate.setDate(newDate.getDate() + 7);
+        loadWeek(newDate);
+    }
+
+    function jumpToWeek(dateStr) {
+        if (!dateStr) return;
+        loadWeek(new Date(dateStr + 'T00:00:00'));
+    }
+
+    function getShiftIdByType(type) {
+        if (type === 'morning') {
+            const shift = shiftsData.find(s => s.name.includes('sáng') || s.start_hour < 12);
+            return shift ? shift.id : null;
+        } else if (type === 'evening') {
+            const shift = shiftsData.find(s => s.name.includes('tối') || s.start_hour >= 14);
+            return shift ? shift.id : null;
+        }
+        return null;
+    }
+
+    function getShiftTypeById(shiftId) {
+        const shift = shiftsData.find(s => s.id == shiftId);
+        if (!shift) return 'custom';
+        if (shift.name.includes('sáng') || shift.start_hour < 12) return 'morning';
+        if (shift.name.includes('tối') || shift.start_hour >= 14) return 'evening';
+        return 'custom';
+    }
+
+    function onShiftTypeChange() {
+        const shiftType = document.getElementById('shiftTypeSelect').value;
+        const customHoursHeader = document.getElementById('customHoursHeader');
+        const hourInputs = document.getElementById('hourInputs');
+        
+        if (shiftType === 'morning') {
+            const morningShift = shiftsData.find(s => s.name.includes('sáng') || s.start_hour < 12);
+            if (morningShift) {
+                document.getElementById('shiftId').value = morningShift.id;
+                console.log('✅ shift_id updated to morning:', morningShift.id);
+            }
+            
+            document.getElementById('startHour').value = '8';
+            document.getElementById('startMinute').value = '0';
+            document.getElementById('endHour').value = '17';
+            document.getElementById('endMinute').value = '0';
+            customHoursHeader.classList.add('active');
+            hourInputs.classList.add('active');
+            document.querySelector('.custom-hours-header p').textContent = '✏️ Ca sáng (08:00 - 17:00)';
+        } else if (shiftType === 'evening') {
+            const eveningShift = shiftsData.find(s => s.name.includes('tối') || s.start_hour >= 14);
+            if (eveningShift) {
+                document.getElementById('shiftId').value = eveningShift.id;
+                console.log('✅ shift_id updated to evening:', eveningShift.id);
+            }
+            
+            document.getElementById('startHour').value = '14';
+            document.getElementById('startMinute').value = '0';
+            document.getElementById('endHour').value = '22';
+            document.getElementById('endMinute').value = '0';
+            customHoursHeader.classList.add('active');
+            hourInputs.classList.add('active');
+            document.querySelector('.custom-hours-header p').textContent = '✏️ Ca tối (14:00 - 22:00)';
+        } else if (shiftType === 'custom') {
+            document.getElementById('shiftId').value = '';
+            console.log('✅ shift_id reset for custom');
+            
+            document.getElementById('startHour').value = '';
+            document.getElementById('startMinute').value = '';
+            document.getElementById('endHour').value = '';
+            document.getElementById('endMinute').value = '';
+            customHoursHeader.classList.add('active');
+            hourInputs.classList.add('active');
+            document.querySelector('.custom-hours-header p').textContent = '✏️ Tùy chỉnh giờ làm việc';
         }
     }
 
-    function openModal(dateStr, isEdit = false) {
-        selectedDate = dateStr;
-        document.getElementById('workDate').value = dateStr;
-        document.getElementById('shiftId').value = '';
-        document.getElementById('startHour').value = '';
-        document.getElementById('startMinute').value = '';
-        document.getElementById('endHour').value = '';
-        document.getElementById('endMinute').value = '';
-        document.getElementById('customHours').style.display = 'none';
-        document.getElementById('methodInput').value = 'POST';
-        document.getElementById('shiftForm').action = "{{ route('doctor.schedule.store') }}";
-        
-        if (isEdit && editingSchedule) {
-            document.getElementById('modalTitle').textContent = '✏️ Cập nhật ca làm việc';
-            document.getElementById('submitBtn').textContent = '✅ Cập nhật ca';
-            document.getElementById('workDate').value = editingSchedule.date;
-            document.getElementById('shiftId').value = editingSchedule.shift_id;
-            document.getElementById('methodInput').value = 'PUT';
-            
-            const actionUrl = "{{ url('doctor/schedule') }}/" + editingSchedule.id;
-            document.getElementById('shiftForm').action = actionUrl;
-            
-            setTimeout(() => {
-                document.getElementById('startHour').value = editingSchedule.start_hour || '';
-                document.getElementById('startMinute').value = editingSchedule.start_minute || '';
-                document.getElementById('endHour').value = editingSchedule.end_hour || '';
-                document.getElementById('endMinute').value = editingSchedule.end_minute || '';
-                
-                document.getElementById('customHours').style.display = 'block';
-                document.getElementById('shiftId').dispatchEvent(new Event('change'));
-            }, 100);
-        } else {
-            document.getElementById('modalTitle').textContent = '📋 Đăng ký ca làm việc';
-            document.getElementById('submitBtn').textContent = '✅ Đăng ký ca';
-        }
-        
-        document.getElementById('shiftModal').classList.add('active');
-    }
-
-    function closeModal() {
-        document.getElementById('shiftModal').classList.remove('active');
-    }
-
-    function showDetailModal(dateStr) {
+    function showDetailModalById(scheduleId) {
         const allSchedules = [...allSchedulesData.approved, ...allSchedulesData.pending];
-        const schedule = allSchedules.find(s => s.date === dateStr);
+        const schedule = allSchedules.find(s => s.id == scheduleId);
 
         if (!schedule) return;
 
@@ -1101,7 +1270,7 @@
 
         const statusText = schedule.status === 'approved' ? '✅ Đã duyệt' : '⏳ Chờ duyệt';
         const statusColor = schedule.status === 'approved' ? '#10b981' : '#f59e0b';
-        const date = new Date(dateStr + 'T00:00:00').toLocaleDateString('vi-VN');
+        const date = new Date(schedule.date + 'T00:00:00').toLocaleDateString('vi-VN');
 
         const html = `
             <div class="detail-item">
@@ -1123,7 +1292,97 @@
         `;
 
         document.getElementById('detailContent').innerHTML = html;
+        
+        const deleteBtn = document.getElementById('deleteScheduleBtn');
+        if (schedule.status === 'pending') {
+            deleteBtn.style.display = 'block';
+        } else {
+            deleteBtn.style.display = 'none';
+        }
+        
         document.getElementById('detailModal').classList.add('active');
+    }
+
+    function deleteScheduleRequest() {
+        if (!editingSchedule) {
+            alert('Không tìm thấy thông tin ca làm việc');
+            return;
+        }
+
+        if (editingSchedule.status !== 'pending') {
+            alert('❌ Chỉ có thể hủy các đơn đang chờ duyệt');
+            return;
+        }
+
+        if (confirm('Bạn chắc chắn muốn hủy đăng ký ca này?')) {
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = "{{ url('doctor/schedule') }}/" + editingSchedule.id;
+            form.innerHTML = `@csrf @method('DELETE')`;
+            document.body.appendChild(form);
+            form.submit();
+        }
+    }
+
+    function populateHours() {
+        const startHour = document.getElementById('startHour');
+        const startMinute = document.getElementById('startMinute');
+        const endHour = document.getElementById('endHour');
+        const endMinute = document.getElementById('endMinute');
+        
+        startHour.innerHTML = '<option value="">Chọn giờ</option>';
+        endHour.innerHTML = '<option value="">Chọn giờ</option>';
+        startMinute.innerHTML = '<option value="">Chọn phút</option>';
+        endMinute.innerHTML = '<option value="">Chọn phút</option>';
+
+        for (let i = 0; i <= 23; i++) {
+            const opt1 = document.createElement('option');
+            opt1.value = i;
+            opt1.textContent = `${String(i).padStart(2, '0')}h`;
+            startHour.appendChild(opt1);
+
+            const opt2 = document.createElement('option');
+            opt2.value = i;
+            opt2.textContent = `${String(i).padStart(2, '0')}h`;
+            endHour.appendChild(opt2);
+        }
+        
+        for (let i = 0; i < 60; i++) {
+            const opt1 = document.createElement('option');
+            opt1.value = i;
+            opt1.textContent = `${String(i).padStart(2, '0')} phút`;
+            startMinute.appendChild(opt1);
+
+            const opt2 = document.createElement('option');
+            opt2.value = i;
+            opt2.textContent = `${String(i).padStart(2, '0')} phút`;
+            endMinute.appendChild(opt2);
+        }
+    }
+
+    function quickRegister(dateStr, shiftId, shiftName) {
+        selectedDate = dateStr;
+        document.getElementById('workDate').value = dateStr;
+        document.getElementById('shiftId').value = shiftId;
+        document.getElementById('methodInput').value = 'POST';
+        document.getElementById('shiftForm').action = "{{ route('doctor.schedule.store') }}";
+        document.getElementById('modalTitle').textContent = '✏️ Đăng ký ca: ' + shiftName;
+        document.getElementById('submitBtn').textContent = '✅ Đăng ký ca';
+        
+        const shiftType = getShiftTypeById(shiftId);
+        document.getElementById('shiftTypeSelect').value = shiftType;
+        document.getElementById('shiftTypeFormGroup').style.display = 'none';
+        
+        onShiftTypeChange();
+        document.getElementById('shiftModal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('shiftTypeFormGroup').style.display = 'block';
+        document.getElementById('shiftTypeSelect').value = '';
+        document.getElementById('customHoursHeader').classList.remove('active');
+        document.getElementById('hourInputs').classList.remove('active');
+        document.getElementById('shiftModal').classList.remove('active');
     }
 
     function closeDetailModal() {
@@ -1139,13 +1398,41 @@
         closeDetailModal();
         
         setTimeout(() => {
-            openModal(editingSchedule.date, true);
+            selectedDate = editingSchedule.date;
+            document.getElementById('workDate').value = editingSchedule.date;
+            
+            const shiftId = editingSchedule.shift_id || '';
+            document.getElementById('shiftId').value = shiftId;
+            console.log('✏️ Edit mode - shift_id:', shiftId);
+            
+            document.getElementById('startHour').value = editingSchedule.start_hour || '';
+            document.getElementById('startMinute').value = editingSchedule.start_minute || '';
+            document.getElementById('endHour').value = editingSchedule.end_hour || '';
+            document.getElementById('endMinute').value = editingSchedule.end_minute || '';
+            document.getElementById('methodInput').value = 'PUT';
+            
+            if (shiftId) {
+                const shiftType = getShiftTypeById(shiftId);
+                document.getElementById('shiftTypeSelect').value = shiftType;
+            } else {
+                document.getElementById('shiftTypeSelect').value = 'custom';
+            }
+            
+            document.getElementById('shiftTypeFormGroup').style.display = 'block';
+            document.getElementById('customHoursHeader').classList.add('active');
+            document.getElementById('hourInputs').classList.add('active');
+            onShiftTypeChange();
+            
+            document.getElementById('shiftForm').action = "{{ url('doctor/schedule') }}/" + editingSchedule.id;
+            document.getElementById('modalTitle').textContent = '✏️ Cập nhật ca làm việc';
+            document.getElementById('submitBtn').textContent = '✅ Cập nhật ca';
+            
+            document.getElementById('shiftModal').classList.add('active');
         }, 100);
     }
 
-    function editOffDay(id, startDate, endDate, reason) {
+    function editOffDay(id, startDate, reason) {
         document.getElementById('editStartDate').value = startDate;
-        document.getElementById('editEndDate').value = endDate;
         document.getElementById('editReason').value = reason;
         document.getElementById('editOffdayForm').action = "{{ url('doctor/schedule/off-day') }}/" + id;
         document.getElementById('editOffdayModal').classList.add('active');
@@ -1160,94 +1447,160 @@
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = "{{ url('doctor/schedule/off-day') }}/" + id;
-            form.innerHTML = `
-                @csrf
-                @method('DELETE')
-            `;
+            form.innerHTML = `@csrf @method('DELETE')`;
             document.body.appendChild(form);
             form.submit();
         }
     }
 
-    // Character counter for reason field
     const reasonField = document.getElementById('reason');
     if (reasonField) {
         reasonField.addEventListener('input', function() {
             const counter = this.parentElement.querySelector('.char-counter');
-            if (counter) {
-                counter.textContent = this.value.length + ' / 200 ký tự';
-            }
+            if (counter) counter.textContent = this.value.length + ' / 200 ký tự';
         });
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        const shiftId = document.getElementById('shiftId');
-        const customHours = document.getElementById('customHours');
-
-        if (shiftId) {
-            shiftId.addEventListener('change', function() {
-                const option = this.options[this.selectedIndex];
-                
-                if (option.value && option.dataset.startHour) {
-                    document.getElementById('startHour').value = option.dataset.startHour;
-                    document.getElementById('startMinute').value = option.dataset.startMinute;
-                    document.getElementById('endHour').value = option.dataset.endHour;
-                    document.getElementById('endMinute').value = option.dataset.endMinute;
-                    customHours.style.display = 'block';
-                } else if (!option.value) {
-                    customHours.style.display = 'none';
-                }
-            });
-        }
-
+        const weekStartStr = document.getElementById('weekDisplay').getAttribute('data-week-start');
+        document.getElementById('weekPicker').value = weekStartStr;
+        document.getElementById('weekPicker').addEventListener('change', function() {
+            jumpToWeek(this.value);
+        });
         populateHours();
-    });
-
-    document.getElementById('prevMonth').addEventListener('click', () => {
-        currentMonth--;
-        if (currentMonth < 0) {
-            currentMonth = 11;
-            currentYear--;
-        }
-        renderCalendar();
-    });
-
-    document.getElementById('nextMonth').addEventListener('click', () => {
-        currentMonth++;
-        if (currentMonth > 11) {
-            currentMonth = 0;
-            currentYear++;
-        }
-        renderCalendar();
+        rebuildCalendarGrid(currentWeekStart, new Date(currentWeekStart.getTime() + 6*24*60*60*1000), allSchedulesData.pending, allSchedulesData.approved);
     });
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.addEventListener('click', function() {
             const tabId = this.getAttribute('data-tab');
-            
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            
-            document.querySelectorAll('.tab-btn').forEach(b => {
-                b.classList.remove('active');
-            });
-            
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
             this.classList.add('active');
         });
     });
 
     window.addEventListener('click', (e) => {
-        const modal = document.getElementById('shiftModal');
-        const detailModal = document.getElementById('detailModal');
-        const editOffdayModal = document.getElementById('editOffdayModal');
-        if (e.target === modal) closeModal();
-        if (e.target === detailModal) closeDetailModal();
-        if (e.target === editOffdayModal) closeEditOffdayModal();
+        if (e.target === document.getElementById('shiftModal')) closeModal();
+        if (e.target === document.getElementById('detailModal')) closeDetailModal();
+        if (e.target === document.getElementById('editOffdayModal')) closeEditOffdayModal();
     });
 
-    renderCalendar();
+    // ✅ FIX: LUÔN update shift_id trước khi submit (không chỉ khi trống)
+    document.getElementById('shiftForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const startHour = document.getElementById('startHour').value;
+        const endHour = document.getElementById('endHour').value;
+        
+        if (!startHour || !endHour) {
+            alert('Vui lòng chọn giờ bắt đầu và giờ kết thúc');
+            return;
+        }
+        
+        // ✅ FIX: LUÔN update shift_id trước khi submit
+        const shiftType = document.getElementById('shiftTypeSelect').value;
+        if (shiftType === 'morning' || shiftType === 'evening') {
+            const shiftId = getShiftIdByType(shiftType);
+            document.getElementById('shiftId').value = shiftId;
+            console.log('✅ shift_id UPDATED to:', shiftId);
+        } else if (shiftType === 'custom') {
+            console.log('✅ Custom - keeping shift_id:', document.getElementById('shiftId').value);
+        } else {
+            alert('Vui lòng chọn loại ca');
+            return;
+        }
+        
+        console.log('📤 Submitting form WITH UPDATED SHIFT_ID:', {
+            action: this.action,
+            shift_id: document.getElementById('shiftId').value,
+            method: document.getElementById('methodInput').value
+        });
+        
+        const formData = new FormData(this);
+        const submitBtn = document.getElementById('submitBtn');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = '⏳ Đang xử lý...';
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'}
+        })
+        .then(r => {
+            if (!r.ok) return r.json().then(d => { throw new Error(d.message || 'Lỗi'); });
+            return r.json();
+        })
+        .then(data => {
+            closeModal();
+            console.log('✅ Shift form submitted, reloading week data...');
+            loadWeek(currentWeekStart);
+        })
+        .catch(err => alert('❌ ' + err.message))
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        });
+    });
+
+    document.getElementById('offdayForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const submitBtn = this.querySelector('[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = '⏳ Đang xử lý...';
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'}
+        })
+        .then(r => {
+            if (!r.ok) return r.json().then(d => { throw new Error(d.message || 'Lỗi'); });
+            return r.json();
+        })
+        .then(() => {
+            this.reset();
+            document.querySelector('.char-counter').textContent = '0 / 200 ký tự';
+            location.reload();
+        })
+        .catch(err => alert('❌ ' + err.message))
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        });
+    });
+
+    document.getElementById('editOffdayForm')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const submitBtn = this.querySelector('[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.disabled = true;
+        submitBtn.textContent = '⏳ Đang xử lý...';
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: formData,
+            headers: {'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json'}
+        })
+        .then(r => {
+            if (!r.ok) return r.json().then(d => { throw new Error(d.message || 'Lỗi'); });
+            return r.json();
+        })
+        .then(() => {
+            closeEditOffdayModal();
+            location.reload();
+        })
+        .catch(err => alert('❌ ' + err.message))
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        });
+    });
 </script>
 
 @endsection

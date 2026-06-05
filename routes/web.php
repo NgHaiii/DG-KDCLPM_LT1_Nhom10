@@ -98,7 +98,10 @@ Route::middleware('auth')->group(function () {
             Route::post('store', [AdminDutyController::class, 'store'])->name('store');
             Route::put('{shiftAssignment}', [AdminDutyController::class, 'update'])->name('update');
             Route::delete('{shiftAssignment}', [AdminDutyController::class, 'destroy'])->name('destroy');
-            Route::get('api/schedule-grid', [AdminDutyController::class, 'getScheduleGrid'])->name('api.schedule-grid');
+            
+            // API AJAX
+            Route::get('api/calendar', [AdminDutyController::class, 'getCalendarBySpecialty'])->name('api.calendar');
+            Route::get('api/doctors-by-date', [AdminDutyController::class, 'getDoctorsByDate'])->name('api.doctors-by-date');
         });
     });
 
@@ -142,23 +145,41 @@ Route::middleware('auth')->group(function () {
 
         // ✅ LỊCH LÀM VIỆC & NGÀY NGHỈ
         Route::prefix('schedule')->name('schedule.')->group(function () {
+            // ✅ PAGE VIEW
             Route::get('/', [DoctorScheduleController::class, 'create'])->name('create');
             Route::get('official', [DoctorScheduleController::class, 'officialSchedule'])->name('official');
+            
+            // ✅ SCHEDULE REQUEST - CRUD (AJAX)
             Route::post('/', [DoctorScheduleController::class, 'store'])->name('store');
             Route::put('{scheduleRequest}', [DoctorScheduleController::class, 'updateSchedule'])->name('update');
             Route::delete('{scheduleRequest}', [DoctorScheduleController::class, 'cancel'])->name('cancel');
-            Route::post('request-off-day', [DoctorScheduleController::class, 'requestOffDay'])->name('request-off-day');
             
-            // ✅ OFF-DAY ROUTES (Xin ngày nghỉ)
+            // ✅ OFF-DAY REQUEST - CRUD (AJAX)
+            Route::post('request-off-day', [DoctorScheduleController::class, 'requestOffDay'])->name('request-off-day');
             Route::put('off-day/{offDay}', [DoctorScheduleController::class, 'updateOffDay'])->name('off-day.update');
             Route::delete('off-day/{offDay}', [DoctorScheduleController::class, 'destroyOffDay'])->name('off-day.destroy');
             
+            // ✅ API ROUTES - AJAX DATA FETCHING
+            Route::get('get-week-data', [DoctorScheduleController::class, 'getWeekData'])->name('get-week-data');
+            Route::get('work-schedules', [DoctorScheduleController::class, 'getDoctorWorkSchedules'])->name('work-schedules');
+            
+            // ✅ LEGACY REDIRECTS
             Route::get('approved', function () {
                 return redirect(route('doctor.schedule.create'));
             })->name('approved');
             Route::get('off-days', function () {
                 return redirect(route('doctor.schedule.create'));
             })->name('off-days');
+        });
+
+        // ✅ LỊCH TRỰC (DUTY SCHEDULE) - Xem ca trực được giao
+        Route::prefix('duty')->name('duty.')->group(function () {
+            Route::get('/', function () {
+                return view('doctor.duty');
+            })->name('index');
+            
+            // ✅ API ROUTE - AJAX DATA FETCHING
+            Route::get('duties', [DoctorScheduleController::class, 'getDoctorDuties'])->name('get-duties');
         });
     });
 

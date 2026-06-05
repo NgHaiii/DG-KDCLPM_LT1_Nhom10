@@ -4,112 +4,263 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title') - DentalCare</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
     <style>
+        :root {
+            --font-title: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+            /* Theme color: Sky Blue */
+            --primary: #0ea5e9;
+            --primary-hover: #0284c7;
+            --primary-light: #e0f2fe;
+            --primary-gradient: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
+            --primary-glow: rgba(14, 165, 233, 0.4);
+
+            --success: #10b981;
+            --success-light: #d1fae5;
+            --success-dark: #065f46;
+
+            --error: #ef4444;
+            --error-light: #fee2e2;
+            --error-dark: #991b1b;
+
+            --info: #3b82f6;
+            --info-light: #dbeafe;
+            --info-dark: #1e3a8a;
+
+            --bg-color: #f8fafc;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --sidebar-bg: linear-gradient(180deg, #082f49 0%, #0c4a6e 100%);
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: rgba(226, 232, 240, 0.8);
+
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-full: 9999px;
+
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+            --shadow-lg: 0 10px 30px -5px rgba(15, 23, 42, 0.12);
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background: #f5f7fa;
+
+        body {
+            font-family: var(--font-body);
+            background: var(--bg-color);
+            color: var(--text-main);
             display: flex;
             min-height: 100vh;
+            overflow-x: hidden;
+            background-image:
+                radial-gradient(at 0% 0%, rgba(14, 165, 233, 0.05) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.05) 0px, transparent 50%);
         }
 
         /* Sidebar Navigation */
         .sidebar {
             width: 280px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--sidebar-bg);
             color: white;
-            padding: 30px 20px;
+            padding: 28px 16px;
             overflow-y: auto;
             position: fixed;
             left: 0;
             top: 0;
             height: 100vh;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 5px 0 30px rgba(17, 12, 36, 0.3);
             z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .sidebar-logo {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 30px;
+            font-family: var(--font-title);
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 32px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+            padding: 0 8px;
+            text-decoration: none;
+        }
+
+        .sidebar-logo-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: var(--primary-gradient);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4);
+        }
+
+        .sidebar-logo-text {
+            background: linear-gradient(135deg, #7dd3fc 0%, #38bdf8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
         }
 
         .nav-menu {
             list-style: none;
+            flex-grow: 1;
         }
 
         .nav-item {
-            margin: 8px 0;
+            margin: 3px 0;
         }
 
         .nav-link {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 12px 15px;
-            border-radius: 8px;
-            color: white;
+            gap: 11px;
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            color: rgba(255, 255, 255, 0.65);
             text-decoration: none;
-            transition: all 0.3s ease;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             cursor: pointer;
             font-size: 14px;
+            font-weight: 500;
+            border: 1px solid transparent;
         }
 
         .nav-link:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateX(5px);
+            background: rgba(255, 255, 255, 0.07);
+            color: white;
+            transform: translateX(3px);
+            border-color: rgba(255, 255, 255, 0.05);
         }
 
         .nav-link.active {
-            background: rgba(255, 255, 255, 0.3);
+            background: var(--primary-gradient);
+            color: white;
             font-weight: 600;
-            border-left: 3px solid white;
-            padding-left: 12px;
+            box-shadow: 0 4px 15px var(--primary-glow);
+            border-color: rgba(255, 255, 255, 0.1);
         }
 
         .nav-icon {
             font-size: 18px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            flex-shrink: 0;
         }
 
-        /* Menu group header */
-        .menu-group-title {
-            font-size: 12px;
+        .nav-group-title {
+            font-family: var(--font-title);
+            font-size: 10px;
             font-weight: 700;
             text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.6);
-            margin-top: 20px;
-            margin-bottom: 10px;
-            padding-left: 15px;
+            color: rgba(255, 255, 255, 0.35);
+            margin-top: 22px;
+            margin-bottom: 6px;
+            padding-left: 14px;
+            letter-spacing: 1.5px;
+        }
+
+        /* User Profile Panel */
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px;
+            margin-top: 16px;
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: var(--radius-lg);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            transition: all 0.3s ease;
+        }
+
+        .user-profile:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: 700;
+            box-shadow: 0 0 14px rgba(14, 165, 233, 0.35);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            flex-shrink: 0;
+        }
+
+        .user-profile-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .user-profile-info h4 {
+            font-family: var(--font-title);
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user-profile-info p {
+            font-size: 11px;
+            margin-top: 1px;
+            color: rgba(255, 255, 255, 0.45);
+            font-weight: 500;
+            text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
-        .divider {
-            height: 1px;
-            background: rgba(255, 255, 255, 0.1);
-            margin: 15px 0;
+        .logout-icon-btn {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            background: rgba(239, 68, 68, 0.15);
+            color: rgba(239, 68, 68, 0.8);
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            flex-shrink: 0;
         }
 
-        /* Badge */
-        .badge {
-            display: inline-block;
-            background: #ff6b6b;
-            color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            font-weight: bold;
-            margin-left: auto;
+        .logout-icon-btn:hover {
+            background: rgba(239, 68, 68, 0.25);
+            color: #ef4444;
         }
 
         /* Main Content */
         .main-content {
             flex: 1;
             margin-left: 280px;
-            padding: 30px;
+            padding: 36px 40px;
             overflow-y: auto;
+            min-height: 100vh;
         }
 
         .container {
@@ -121,197 +272,165 @@
         .header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
+            align-items: flex-start;
+            margin-bottom: 32px;
+            gap: 20px;
         }
 
         .header-left h1 {
-            font-size: 28px;
-            color: #333;
-            margin-bottom: 5px;
+            font-family: var(--font-title);
+            font-size: 30px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
         }
 
         .header-subtitle {
-            color: #999;
+            color: var(--text-muted);
             font-size: 14px;
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .header-subtitle i {
+            color: var(--primary);
+            font-size: 15px;
         }
 
         .header-right {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             align-items: center;
         }
 
+        /* Buttons */
         .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
             padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
+            border: 1px solid transparent;
+            border-radius: var(--radius-md);
             cursor: pointer;
+            font-family: var(--font-body);
             font-size: 14px;
             font-weight: 600;
-            transition: all 0.3s ease;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            text-decoration: none;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--primary-gradient);
             color: white;
+            box-shadow: 0 4px 14px rgba(14, 165, 233, 0.3);
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(14, 165, 233, 0.45);
         }
 
         .btn-secondary {
-            background: #e5e7eb;
-            color: #333;
+            background: white;
+            color: var(--text-main);
+            border-color: var(--border-color);
+            box-shadow: var(--shadow-sm);
         }
 
         .btn-secondary:hover {
-            background: #d1d5db;
+            background: #f8fafc;
+            border-color: #cbd5e1;
         }
 
         .btn-danger {
-            background: #ef4444;
+            background: var(--error);
             color: white;
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
         }
 
         .btn-danger:hover {
             background: #dc2626;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45);
         }
 
         .btn-sm {
-            padding: 8px 15px;
+            padding: 7px 14px;
             font-size: 13px;
+            border-radius: var(--radius-sm);
         }
 
         /* Alert */
         .alert {
-            padding: 15px 20px;
-            margin-bottom: 20px;
-            border-radius: 8px;
+            padding: 14px 18px;
+            margin-bottom: 22px;
+            border-radius: var(--radius-lg);
             display: none;
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.5;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid transparent;
         }
 
         .alert.success {
-            background: #d1fae5;
-            color: #065f46;
-            border: 1px solid #6ee7b7;
-            display: block;
+            background: var(--success-light);
+            color: var(--success-dark);
+            border-color: rgba(16, 185, 129, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         .alert.error {
-            background: #fee2e2;
-            color: #991b1b;
-            border: 1px solid #fca5a5;
-            display: block;
-        }
-
-        .alert.info {
-            background: #dbeafe;
-            color: #0c4a6e;
-            border: 1px solid #93c5fd;
-            display: block;
+            background: var(--error-light);
+            color: var(--error-dark);
+            border-color: rgba(239, 68, 68, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         /* Card */
         .card {
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-            padding: 25px;
-            margin-bottom: 30px;
+            background: var(--card-bg);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 28px;
+            margin-bottom: 28px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
-        /* User Profile */
-        .user-profile {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 15px;
-            margin-top: auto;
-            margin-bottom: 20px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-        }
-
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-        }
-
-        .user-info h4 {
-            font-size: 13px;
-            margin: 0;
-            font-weight: 600;
-        }
-
-        .user-info p {
-            font-size: 11px;
-            margin: 2px 0 0 0;
-            opacity: 0.8;
+        .card:hover {
+            box-shadow: var(--shadow-lg);
         }
 
         /* Responsive */
-        @media (max-width: 768px) {
-            .sidebar {
-                width: 200px;
-                padding: 20px 15px;
-                z-index: 1000;
-            }
-
-            .sidebar-logo {
-                font-size: 16px;
-                margin-bottom: 20px;
-            }
-
-            .main-content {
-                margin-left: 200px;
-                padding: 20px;
-            }
-
-            .header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
-
-            .header h1 {
-                font-size: 22px;
-            }
-
-            .badge {
-                display: none;
-            }
+        @media (max-width: 1024px) {
+            .sidebar { width: 240px; padding: 20px 12px; }
+            .main-content { margin-left: 240px; padding: 28px; }
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 768px) {
             .sidebar {
-                width: 150px;
-                z-index: 1000;
+                width: 72px;
+                padding: 20px 8px;
+                align-items: center;
             }
-
-            .main-content {
-                margin-left: 150px;
-            }
-
-            .nav-link {
-                padding: 10px 12px;
-            }
-
-            .nav-icon {
-                font-size: 16px;
-            }
-
-            .menu-group-title {
-                display: none;
-            }
+            .sidebar-logo-text, .nav-group-title { display: none; }
+            .sidebar-logo { padding: 0; justify-content: center; margin-bottom: 24px; }
+            .main-content { margin-left: 72px; padding: 20px; }
+            .nav-link { padding: 11px; justify-content: center; }
+            .nav-link span:not(.nav-icon) { display: none; }
+            .user-profile { padding: 8px; justify-content: center; }
+            .user-profile-info, .logout-icon-btn { display: none; }
         }
     </style>
     @yield('styles')
@@ -319,54 +438,57 @@
 <body>
     <!-- Sidebar Navigation -->
     <aside class="sidebar">
-        <div class="sidebar-logo">
-            <span class="nav-icon">🦷</span>
-            <span>DentalCare</span>
-        </div>
+        <a href="{{ route('doctor.dashboard') }}" class="sidebar-logo">
+            <div class="sidebar-logo-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C9.5 2 7.5 3.5 6.5 5.5C5.5 4.5 4 4 3 5C1.5 6.5 2 9 3 10.5C4 12 5 13 5.5 15C6 17 6 20 7.5 21.5C8.5 22.5 10 22 10.5 20.5L12 16L13.5 20.5C14 22 15.5 22.5 16.5 21.5C18 20 18 17 18.5 15C19 13 20 12 21 10.5C22 9 22.5 6.5 21 5C20 4 18.5 4.5 17.5 5.5C16.5 3.5 14.5 2 12 2Z" fill="white" opacity="0.9"/>
+                    <path d="M11 9H13M12 8V10" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.7"/>
+                </svg>
+            </div>
+            <span class="sidebar-logo-text">DentalCare</span>
+        </a>
 
         <ul class="nav-menu">
-            <!-- Dashboard -->
             <li class="nav-item">
                 <a href="{{ route('doctor.dashboard') }}" class="nav-link @if(request()->routeIs('doctor.dashboard')) active @endif">
-                    <span class="nav-icon">📊</span>
+                    <i class="nav-icon ri-dashboard-3-line"></i>
                     <span>Dashboard</span>
                 </a>
             </li>
 
-            <!-- ========== QUẢN LÝ CA LÀM VIỆC & NGÀY NGHỈ ========== -->
-            <div class="menu-group-title">📅 Lịch làm việc</div>
+            <div class="nav-group-title">📅 Lịch làm việc</div>
 
             <li class="nav-item">
                 <a href="{{ route('doctor.schedule.create') }}" class="nav-link @if(request()->routeIs('doctor.schedule.create')) active @endif">
-                    <span class="nav-icon">✏️</span>
+                    <i class="nav-icon ri-edit-line"></i>
                     <span>Đăng ký ca & Nghỉ</span>
                 </a>
             </li>
 
-<li class="nav-item">
-    <a href="{{ route('doctor.schedule.official') }}" class="nav-link @if(request()->routeIs('doctor.schedule.official')) active @endif">
-        <span class="nav-icon">📋</span>
-        <span>Lịch chính thức</span>
-    </a>
-</li>
+            <li class="nav-item">
+                <a href="{{ route('doctor.schedule.official') }}" class="nav-link @if(request()->routeIs('doctor.schedule.official')) active @endif">
+                    <i class="nav-icon ri-calendar-2-line"></i>
+                    <span>Lịch chính thức</span>
+                </a>
+            </li>
 
-           
+            <a href="{{ route('doctor.duty.index') }}" class="nav-link @if(request()->routeIs('doctor.duty.*')) active @endif">
+    <i class="nav-icon ri-alarm-warning-line"></i>
+    <span>Lịch trực</span>
+</a>
 
-            <div class="divider"></div>
-
-            <!-- ========== CÀI ĐẶT ========== -->
-            <div class="menu-group-title">⚙️ Cài đặt</div>
+            <div class="nav-group-title">⚙️ Cài đặt</div>
 
             <li class="nav-item">
                 <a href="{{ route('doctor.settings') }}" class="nav-link @if(request()->routeIs('doctor.settings')) active @endif">
-                    <span class="nav-icon">👤</span>
+                    <i class="nav-icon ri-user-settings-line"></i>
                     <span>Cài đặt cá nhân</span>
                 </a>
             </li>
 
             <li class="nav-item">
                 <a href="{{ route('logout') }}" class="nav-link" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                    <span class="nav-icon">🚪</span>
+                    <i class="nav-icon ri-logout-box-r-line"></i>
                     <span>Đăng xuất</span>
                 </a>
                 <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
@@ -381,10 +503,13 @@
             <div class="user-avatar">
                 {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
             </div>
-            <div class="user-info">
+            <div class="user-profile-info">
                 <h4>{{ Auth::user()->name }}</h4>
                 <p>Bác sĩ</p>
             </div>
+            <button class="logout-icon-btn" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" title="Đăng xuất">
+                <i class="ri-logout-box-r-line"></i>
+            </button>
         </div>
         @endauth
     </aside>
@@ -406,35 +531,34 @@
             <!-- Alerts -->
             @if(session('success'))
                 <div class="alert success">
-                    {!! session('success') !!}
+                    <i class="ri-check-line"></i>
+                    <span>{!! session('success') !!}</span>
                 </div>
             @endif
 
             @if(session('error'))
                 <div class="alert error">
-                    {!! session('error') !!}
+                    <i class="ri-error-warning-line"></i>
+                    <span>{!! session('error') !!}</span>
                 </div>
             @endif
 
             @if(session('info'))
                 <div class="alert info">
-                    {!! session('info') !!}
+                    <i class="ri-information-line"></i>
+                    <span>{!! session('info') !!}</span>
                 </div>
             @endif
 
-            <!-- Errors & Messages Display -->
+            <!-- Errors Display -->
             @if ($errors->any())
-                <div style="background: #fee2e2; border: 2px solid #dc2626; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-                    <h4 style="color: #991b1b; margin: 0 0 0.5rem 0;">❌ Lỗi:</h4>
-                    @foreach ($errors->all() as $error)
-                        <p style="color: #991b1b; margin: 0.25rem 0;">{{ $error }}</p>
-                    @endforeach
-                </div>
-            @endif
-
-            @if (session('success'))
-                <div style="background: #dcfce7; border: 2px solid #16a34a; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem;">
-                    <p style="color: #15803d; margin: 0;">✅ {{ session('success') }}</p>
+                <div class="alert error">
+                    <i class="ri-error-warning-line"></i>
+                    <div>
+                        @foreach ($errors->all() as $error)
+                            <p>{{ $error }}</p>
+                        @endforeach
+                    </div>
                 </div>
             @endif
 

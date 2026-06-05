@@ -20,130 +20,132 @@ class AdminDutyController extends Controller
     }
 
     /**
-     * 📋 Hiển thị giao diện chính: Danh mục chuyên khoa + Bảng lịch
+     * 📋 Hiển thị giao diện chính: Danh sách chuyên khoa
      */
     public function index()
     {
         // Lấy tất cả chuyên khoa từ bác sĩ
         $specialties = Employee::where('is_doctor', true)
-            ->distinct('specialization')
+            ->whereNotNull('specialization')
+            ->distinct()
             ->pluck('specialization')
-            ->filter()
             ->sort()
             ->values();
 
-        // Lấy specialty đầu tiên làm mặc định (hoặc từ query)
-        $selectedSpecialty = request('specialty') ?? $specialties->first();
-        
-        $startDate = now()->startOfWeek(1); // Thứ 2
-        $endDate = now()->endOfWeek(1);     // Chủ nhật
-
-        // Lấy dữ liệu lịch làm theo chuyên khoa & tuần
-        $scheduleData = [];
-        if ($selectedSpecialty) {
-            // Bác sĩ trong chuyên khoa
-            $doctors = Employee::where('is_doctor', true)
-                ->where('specialization', $selectedSpecialty)
-                ->with(['user'])
-                ->get();
-
-            // Lấy lịch làm (assignment_type = 'work')
-            $schedules = ScheduleRequest::where('assignment_type', 'work')
-                ->whereIn('employee_id', $doctors->pluck('id'))
-                ->whereBetween('work_date', [$startDate, $endDate])
-                ->with(['employee', 'shift'])
-                ->get();
-
-            // Nhóm lịch theo bác sĩ & ngày
-            foreach ($doctors as $doctor) {
-                $scheduleData[$doctor->id] = [
-                    'doctor' => $doctor,
-                    'schedules' => $schedules->filter(fn($s) => $s->employee_id == $doctor->id)
-                        ->groupBy(fn($s) => $s->work_date->format('Y-m-d'))
-                ];
-            }
+        // Đếm số bác sĩ per chuyên khoa
+        $specialtyStats = [];
+        foreach ($specialties as $specialty) {
+            $count = Employee::where('is_doctor', true)
+                ->where('specialization', $specialty)
+                ->count();
+            $specialtyStats[$specialty] = $count;
         }
 
-        // Danh sách ca làm việc
-        $shifts = CustomShift::where('is_active', true)
-            ->where('is_for_doctor', true)
-            ->get();
-
-        return view('admin.duty.index', compact(
-            'specialties',
-            'selectedSpecialty',
-            'scheduleData',
-            'shifts',
-            'startDate',
-            'endDate'
-        ));
+        return view('admin.duty.index', compact('specialties', 'specialtyStats'));
     }
 
     /**
-     * 🎯 API: Lấy bảng lịch theo chuyên khoa + tuần (AJAX)
+     * 📅 Lấy bảng lịch tháng theo chuyên khoa (AJAX)
      */
-    public function getScheduleGrid()
+    public function getCalendarBySpecialty()
     {
         $specialty = request('specialty');
-        $weekStart = request('week_start'); // Format: YYYY-MM-DD
+        $month = request('month', now()->month);
+        $year = request('year', now()->year);
 
-        if (!$specialty || !$weekStart) {
-            return response()->json(['error' => 'Missing parameters'], 400);
+        if (!$specialty) {
+            return response()->json(['error' => 'Missing specialty'], 400);
         }
 
-        $startDate = Carbon::parse($weekStart)->startOfWeek(1);
-        $endDate = $startDate->copy()->endOfWeek(1);
-
-        // Bác sĩ trong chuyên khoa
+        // Lấy bác sĩ trong chuyên khoa
         $doctors = Employee::where('is_doctor', true)
             ->where('specialization', $specialty)
-            ->with(['user'])
-            ->get();
+            ->pluck('id')
+            ->toArray();
 
-        // Lịch làm
+        // Lấy lịch làm trong tháng
+        $startDate = Carbon::createFromDate($year, $month, 1);
+        $endDate = $startDate->copy()->endOfMonth();
+
         $schedules = ScheduleRequest::where('assignment_type', 'work')
-            ->whereIn('employee_id', $doctors->pluck('id'))
+            ->whereIn('employee_id', $doctors)
             ->whereBetween('work_date', [$startDate, $endDate])
             ->with(['employee', 'shift'])
             ->get();
 
-        // Dữ liệu grid
-        $grid = [];
-        foreach ($doctors as $doctor) {
-            $doctorRow = [
-                'doctor_id' => $doctor->id,
-                'doctor_name' => $doctor->user->name ?? $doctor->phone,
-                'days' => []
+        // Nhóm theo ngày
+        $calendarData = [];
+        for ($d = $startDate->copy(); $d <= $endDate; $d->addDay()) {
+            $dateStr = $d->format('Y-m-d');
+            $daySchedules = $schedules->filter(fn($s) => $s->work_date->format('Y-m-d') == $dateStr);
+            
+            $calendarData[$dateStr] = [
+                'date' => $dateStr,
+                'day' => $d->format('d'),
+                'dayOfWeek' => $d->format('l'),
+                'hasSchedule' => $daySchedules->count() > 0,
+                'scheduleCount' => $daySchedules->count(),
             ];
-
-            // Mỗi ngày trong tuần
-            for ($d = $startDate->copy(); $d <= $endDate; $d->addDay()) {
-                $dateStr = $d->format('Y-m-d');
-                $daySchedules = $schedules->filter(function($s) use ($doctor, $dateStr) {
-                    return $s->employee_id == $doctor->id && $s->work_date->format('Y-m-d') == $dateStr;
-                })->values();
-
-                $doctorRow['days'][] = [
-                    'date' => $dateStr,
-                    'day_name' => $d->format('l'), // Monday, Tuesday, ...
-                    'day_num' => $d->format('d/m'),
-                    'schedules' => $daySchedules->map(fn($s) => [
-                        'id' => $s->id,
-                        'shift_name' => $s->shift->name ?? 'N/A',
-                        'time' => ($s->start_hour ? str_pad($s->start_hour, 2, '0', STR_PAD_LEFT) . ':' . str_pad($s->start_minute, 2, '0', STR_PAD_LEFT) : '') . ' - ' . 
-                                  ($s->end_hour ? str_pad($s->end_hour, 2, '0', STR_PAD_LEFT) . ':' . str_pad($s->end_minute, 2, '0', STR_PAD_LEFT) : ''),
-                    ])
-                ];
-            }
-
-            $grid[] = $doctorRow;
         }
 
         return response()->json([
             'success' => true,
-            'data' => $grid,
-            'week_start' => $startDate->format('d/m/Y'),
-            'week_end' => $endDate->format('d/m/Y'),
+            'specialty' => $specialty,
+            'month' => $month,
+            'year' => $year,
+            'calendar' => $calendarData,
+            'monthName' => $startDate->format('m/Y'),
+        ]);
+    }
+
+    /**
+     * 👨‍⚕️ Lấy danh sách bác sĩ + lịch theo ngày (AJAX)
+     */
+    public function getDoctorsByDate()
+    {
+        $specialty = request('specialty');
+        $date = request('date');
+
+        if (!$specialty || !$date) {
+            return response()->json(['error' => 'Missing parameters'], 400);
+        }
+
+        // Bác sĩ trong chuyên khoa
+        $doctors = Employee::where('is_doctor', true)
+            ->where('specialization', $specialty)
+            ->with('user')
+            ->get();
+
+        // Lịch làm của bác sĩ trong ngày
+        $schedules = ScheduleRequest::where('assignment_type', 'work')
+            ->whereIn('employee_id', $doctors->pluck('id'))
+            ->whereDate('work_date', $date)
+            ->with(['employee', 'shift'])
+            ->get();
+
+        $doctorData = [];
+        foreach ($doctors as $doctor) {
+            $daySchedules = $schedules->filter(fn($s) => $s->employee_id == $doctor->id);
+            
+            $doctorData[] = [
+                'doctor_id' => $doctor->id,
+                'doctor_name' => $doctor->user->name ?? $doctor->phone,
+                'specialization' => $doctor->specialization,
+                'schedules' => $daySchedules->map(fn($s) => [
+                    'shift_name' => $s->shift->name ?? 'N/A',
+                    'start_time' => ($s->start_hour ? str_pad($s->start_hour, 2, '0', STR_PAD_LEFT) : '00') . ':' . 
+                                   str_pad($s->start_minute ?? 0, 2, '0', STR_PAD_LEFT),
+                    'end_time' => ($s->end_hour ? str_pad($s->end_hour, 2, '0', STR_PAD_LEFT) : '00') . ':' . 
+                                 str_pad($s->end_minute ?? 0, 2, '0', STR_PAD_LEFT),
+                ])->toArray(),
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'date' => $date,
+            'dateFormatted' => Carbon::parse($date)->format('d/m/Y'),
+            'doctors' => $doctorData,
         ]);
     }
 
@@ -183,13 +185,13 @@ class AdminDutyController extends Controller
             ShiftAssignment::create([
                 'employee_id' => $doctor->id,
                 'work_date' => $validated['work_date'],
-                'shift_id' => null, // Không cần shift nếu tuỳ chỉnh giờ
+                'shift_id' => null,
                 'start_hour' => $validated['start_hour'],
                 'start_minute' => $validated['start_minute'],
                 'end_hour' => $validated['end_hour'],
                 'end_minute' => $validated['end_minute'],
                 'assignment_type' => 'duty',
-                'status' => 'approved', // Tự động approved
+                'status' => 'approved',
                 'notes' => $validated['notes'] ?? '',
                 'assigned_by' => auth()->id(),
             ]);
