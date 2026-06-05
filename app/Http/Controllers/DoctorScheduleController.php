@@ -455,26 +455,49 @@ class DoctorScheduleController extends Controller
     /**
      * ✅ GET /doctor/schedule/official - Hiển thị lịch chính thức
      * 🔒 BẢO MẬT: Chỉ hiển thị dữ liệu của bác sĩ hiện tại
+     * ✅ UPDATED: Pass shifts data và tuần hiện tại
      */
     public function officialSchedule()
     {
         try {
             $doctor = $this->getDoctor();
             
+            // ✅ Lấy shifts để hiển thị calendar
+            $shifts = CustomShift::where('is_active', 1)
+                ->orderBy('start_hour', 'asc')
+                ->get();
+            
+            // ✅ Xác định tuần hiện tại
+            if (request('week_start')) {
+                try {
+                    $weekStart = Carbon::createFromFormat('Y-m-d', request('week_start'))->startOfWeek(Carbon::MONDAY);
+                } catch (\Exception $e) {
+                    $weekStart = now()->startOfWeek(Carbon::MONDAY);
+                }
+            } else {
+                $weekStart = now()->startOfWeek(Carbon::MONDAY);
+            }
+            $weekEnd = $weekStart->copy()->endOfWeek(Carbon::SUNDAY);
+            
+            // ✅ Lấy lịch được duyệt cho tuần hiện tại
             $approvedSchedules = ScheduleRequest::where('employee_id', $doctor->id)
                 ->where('status', 'approved')
+                ->whereBetween('work_date', [$weekStart, $weekEnd])
+                ->with('shift')
                 ->orderBy('work_date', 'asc')
                 ->get();
             
             $approvedDuties = ShiftAssignment::where('employee_id', $doctor->id)
                 ->where('assignment_type', 'duty')
                 ->where('status', 'approved')
+                ->whereBetween('work_date', [$weekStart, $weekEnd])
                 ->with('shift')
                 ->orderBy('work_date', 'asc')
                 ->get();
             
             $approvedOffDays = OffDay::where('employee_id', $doctor->id)
                 ->where('status', 'approved')
+                ->whereBetween('date', [$weekStart, $weekEnd])
                 ->orderBy('date', 'asc')
                 ->get();
 
@@ -482,10 +505,87 @@ class DoctorScheduleController extends Controller
                 'approvedSchedules',
                 'approvedDuties',
                 'approvedOffDays',
-                'doctor'
+                'shifts',
+                'doctor',
+                'weekStart'
             ));
         } catch (\Exception $e) {
             return back()->withErrors(['error' => '❌ Lỗi: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * ✅ GET /doctor/official-schedule/get-week-data - Lấy dữ liệu tuần lịch chính thức (AJAX)
+     * 🔒 BẢO MẬT: Chỉ trả về dữ liệu của bác sĩ hiện tại
+     * ✅ MỚI: Dành cho lịch chính thức
+     * ✅ UPDATED: Thêm shifts vào response
+     */
+    public function getOfficialWeekData(Request $request)
+    {
+        try {
+            $doctor = $this->getDoctor();
+            
+            // ✅ Xác định tuần
+            $weekStart = $request->has('week_start') 
+                ? Carbon::createFromFormat('Y-m-d', $request->week_start)->startOfWeek(Carbon::MONDAY)
+                : now()->startOfWeek(Carbon::MONDAY);
+            $weekEnd = $weekStart->copy()->endOfWeek(Carbon::SUNDAY);
+
+            // ✅ Lấy tất cả shifts
+            $shifts = CustomShift::where('is_active', 1)
+                ->orderBy('start_hour', 'asc')
+                ->get();
+
+            // ✅ Lấy lịch được duyệt
+            $approvedSchedules = ScheduleRequest::where('employee_id', $doctor->id)
+                ->where('status', 'approved')
+                ->whereBetween('work_date', [$weekStart, $weekEnd])
+                ->with('shift')
+                ->get()
+                ->map(function($s) {
+                    return [
+                        'id' => $s->id,
+                        'date' => $s->work_date->format('Y-m-d'),
+                        'name' => optional($s->shift)->name ?? 'Ca làm việc',
+                        'time' => sprintf('%02d:%02d', $s->start_hour ?? 0, $s->start_minute ?? 0) . ' - ' . sprintf('%02d:%02d', $s->end_hour ?? 0, $s->end_minute ?? 0),
+                        'shift_id' => $s->shift_id,
+                        'start_hour' => $s->start_hour,
+                        'start_minute' => $s->start_minute,
+                        'end_hour' => $s->end_hour,
+                        'end_minute' => $s->end_minute,
+                    ];
+                });
+
+            // ✅ Lấy ngày nghỉ được duyệt
+            $approvedOffDays = OffDay::where('employee_id', $doctor->id)
+                ->where('status', 'approved')
+                ->whereBetween('date', [$weekStart, $weekEnd])
+                ->get()
+                ->map(function($o) {
+                    return [
+                        'id' => $o->id,
+                        'date' => $o->date->format('Y-m-d'),
+                        'reason' => $o->reason ?? 'Ngày nghỉ',
+                    ];
+                });
+
+            // ✅ THÊM 'shifts' vào response
+            return response()->json([
+                'week_start' => $weekStart->format('Y-m-d'),
+                'week_end' => $weekEnd->format('Y-m-d'),
+                'shifts' => $shifts->map(function($s) {
+                    return [
+                        'id' => $s->id,
+                        'name' => $s->name,
+                        'start_hour' => $s->start_hour,
+                        'end_hour' => $s->end_hour
+                    ];
+                }),
+                'schedules' => $approvedSchedules,
+                'off_days' => $approvedOffDays,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => '❌ ' . $e->getMessage()], 500);
         }
     }
 

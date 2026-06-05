@@ -7,6 +7,7 @@ use App\Models\Employee;
 use App\Models\OffDay;
 use App\Models\ScheduleRequest;
 use App\Services\ScheduleRequestService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class EmployeeScheduleController extends Controller
@@ -100,7 +101,7 @@ class EmployeeScheduleController extends Controller
                 ->orderBy('work_date', 'asc')
                 ->get();
             
-            // Lấy ngày nghỉ được duyệt, sắp xếp theo ngày (FIX: 'off_date' -> 'date')
+            // Lấy ngày nghỉ được duyệt, sắp xếp theo ngày
             $approvedOffDays = OffDay::where('employee_id', $employee->id)
                 ->where('status', 'approved')
                 ->orderBy('date', 'asc')
@@ -334,5 +335,101 @@ class EmployeeScheduleController extends Controller
     public function destroyOffDay(OffDay $offDay)
     {
         return $this->cancelOffDay($offDay);
+    }
+
+    /**
+     * ✅ GET /employees/schedule/get-week-data - AJAX: Lấy dữ liệu tuần (shifts + schedules + counts)
+     * Dùng cho frontend load week data via AJAX
+     */
+    public function getWeekData(Request $request)
+    {
+        try {
+            $employee = $this->getEmployee();
+            
+            // ✅ FIX: Dùng MONDAY để tuần bắt đầu từ thứ 2
+            $weekStart = $request->has('week_start') 
+                ? Carbon::createFromFormat('Y-m-d', $request->week_start)->startOfWeek(Carbon::MONDAY)
+                : now()->startOfWeek(Carbon::MONDAY);
+            $weekEnd = $weekStart->copy()->endOfWeek(Carbon::SUNDAY);
+
+            // ✅ THÊM: Lấy tất cả shifts áp dụng cho nhân viên
+            $shifts = CustomShift::where('is_for_employee', 1)
+                ->where('is_active', 1)
+                ->orderBy('start_hour', 'asc')
+                ->get()
+                ->map(function($s) {
+                    return [
+                        'id' => $s->id,
+                        'name' => strtolower($s->name),
+                        'start_hour' => $s->start_hour,
+                        'end_hour' => $s->end_hour
+                    ];
+                });
+
+            $pendingRequests = ScheduleRequest::where('employee_id', $employee->id)
+                ->where('status', 'pending')
+                ->whereBetween('work_date', [$weekStart, $weekEnd])
+                ->with('shift')
+                ->get()
+                ->map(function($r) {
+                    return [
+                        'id' => $r->id,
+                        'date' => $r->work_date->format('Y-m-d'),
+                        'name' => optional($r->shift)->name ?? 'Ca làm việc',
+                        'time' => sprintf('%02d:%02d', $r->start_hour ?? 0, $r->start_minute ?? 0) . ' - ' . sprintf('%02d:%02d', $r->end_hour ?? 0, $r->end_minute ?? 0),
+                        'shift_id' => $r->shift_id,
+                        'status' => 'pending',
+                        'start_hour' => $r->start_hour,
+                        'start_minute' => $r->start_minute,
+                        'end_hour' => $r->end_hour,
+                        'end_minute' => $r->end_minute
+                    ];
+                });
+
+            $approvedRequests = ScheduleRequest::where('employee_id', $employee->id)
+                ->where('status', 'approved')
+                ->whereBetween('work_date', [$weekStart, $weekEnd])
+                ->with('shift')
+                ->get()
+                ->map(function($s) {
+                    return [
+                        'id' => $s->id,
+                        'date' => $s->work_date->format('Y-m-d'),
+                        'name' => optional($s->shift)->name ?? 'Ca làm việc',
+                        'time' => sprintf('%02d:%02d', $s->start_hour ?? 0, $s->start_minute ?? 0) . ' - ' . sprintf('%02d:%02d', $s->end_hour ?? 0, $s->end_minute ?? 0),
+                        'shift_id' => $s->shift_id,
+                        'status' => 'approved',
+                        'start_hour' => $s->start_hour,
+                        'start_minute' => $s->start_minute,
+                        'end_hour' => $s->end_hour,
+                        'end_minute' => $s->end_minute
+                    ];
+                });
+
+            $pendingCount = ScheduleRequest::where('employee_id', $employee->id)
+                ->where('status', 'pending')
+                ->count();
+
+            $approvedCount = ScheduleRequest::where('employee_id', $employee->id)
+                ->where('status', 'approved')
+                ->count();
+
+            $approvedOffDaysCount = OffDay::where('employee_id', $employee->id)
+                ->where('status', 'approved')
+                ->count();
+
+            return response()->json([
+                'week_start' => $weekStart->format('Y-m-d'),
+                'week_end' => $weekEnd->format('Y-m-d'),
+                'shifts' => $shifts,
+                'pending_requests' => $pendingRequests,
+                'approved_requests' => $approvedRequests,
+                'pending_count' => $pendingCount,
+                'approved_count' => $approvedCount,
+                'approved_off_days' => $approvedOffDaysCount,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => '❌ ' . $e->getMessage()], 500);
+        }
     }
 }

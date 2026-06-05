@@ -163,6 +163,9 @@ Route::middleware('auth')->group(function () {
             Route::get('get-week-data', [DoctorScheduleController::class, 'getWeekData'])->name('get-week-data');
             Route::get('work-schedules', [DoctorScheduleController::class, 'getDoctorWorkSchedules'])->name('work-schedules');
             
+            // ✅ OFFICIAL SCHEDULE API - Lấy dữ liệu lịch chính thức
+            Route::get('official-schedule/get-week-data', [DoctorScheduleController::class, 'getOfficialWeekData'])->name('official-schedule.get-week-data');
+            
             // ✅ LEGACY REDIRECTS
             Route::get('approved', function () {
                 return redirect(route('doctor.schedule.create'));
@@ -199,8 +202,14 @@ Route::middleware('auth')->group(function () {
 
         // LỊCH LÀM VIỆC & NGÀY NGHỈ
         Route::prefix('schedule')->name('schedule.')->group(function () {
+            // ✅ PAGE VIEW
             Route::get('/', [EmployeeScheduleController::class, 'create'])->name('create');
             Route::get('official', [EmployeeScheduleController::class, 'officialSchedule'])->name('official');
+            
+            // ✅ API ROUTES - AJAX DATA FETCHING
+            Route::get('get-week-data', [EmployeeScheduleController::class, 'getWeekData'])->name('get-week-data');
+            
+            // ✅ SCHEDULE REQUEST - CRUD (AJAX)
             Route::post('/', [EmployeeScheduleController::class, 'store'])->name('store');
             Route::put('{scheduleRequest}', [EmployeeScheduleController::class, 'updateSchedule'])->name('update');
             Route::delete('{scheduleRequest}', [EmployeeScheduleController::class, 'cancel'])->name('cancel');
@@ -210,6 +219,7 @@ Route::middleware('auth')->group(function () {
             Route::put('off-day/{offDay}', [EmployeeScheduleController::class, 'updateOffDay'])->name('off-day.update');
             Route::delete('off-day/{offDay}', [EmployeeScheduleController::class, 'cancelOffDay'])->name('off-day.cancel');
             
+            // ✅ LEGACY REDIRECTS
             Route::get('approved', function () {
                 return redirect(route('employees.schedule.create'));
             })->name('approved');
