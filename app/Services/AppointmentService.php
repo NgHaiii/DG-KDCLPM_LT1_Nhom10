@@ -7,229 +7,260 @@ use App\Models\Employee;
 use App\Models\Service;
 use App\Models\ShiftAssignment;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 
 class AppointmentService
 {
-    /**
-     * ✅ Lấy danh sách bác sĩ có chuyên khoa + dịch vụ cần thiết
-     * 
-     * @param int $serviceId - ID dịch vụ
-     * @param string $date - Ngày cần khám (Y-m-d)
-     * @return Collection - Danh sách bác sĩ
-     */
+    private const SLOT_DURATION = 30;
+    private const ACTIVE_EMPLOYEE_STATUSES = ['active', 'Hoạt động'];
+
     public function getAvailableDoctorsByService($serviceId, $date)
     {
-        $service = Service::findOrFail($serviceId);
-        $serviceType = $service->type; // ví dụ: "Khám tổng quát", "Khám định kỳ"
+        try {
+            $service = Service::findOrFail($serviceId);
 
-        // Lấy bác sĩ có chuyên khoa phù hợp
-        $doctors = Employee::where('is_doctor', 1)
-            ->where('status', 'active')
-            ->where('specialization', 'LIKE', "%{$serviceType}%")
-            ->get();
-
-        $availableDoctors = [];
-
-        foreach ($doctors as $doctor) {
-            // Kiểm tra bác sĩ có ca trực vào ngày này không
-            if ($this->hasDoctorShiftOnDate($doctor->id, $date)) {
-                // Kiểm tra slot trống
-                $availableSlots = $this->getAvailableSlotsForDoctor($doctor->id, $date);
-                
-                if (count($availableSlots) >= $service->slots_required) {
-                    $availableDoctors[] = [
-                        'doctor' => $doctor,
-                        'available_slots' => $availableSlots,
-                        'slots_needed' => $service->slots_required,
-                    ];
-                }
+            if (empty($service->required_specialization)) {
+                Log::warning("Service {$serviceId} has no required_specialization assigned");
+                return collect();
             }
-        }
 
-        return collect($availableDoctors);
+            $durationMinutes = $this->getServiceDurationMinutes($service);
+            $slotsNeeded = $this->getSlotsNeeded($durationMinutes);
+            $availableDoctors = [];
+
+            foreach ($this->getEligibleDoctorsForService($service) as $doctor) {
+                if (!$this->hasAnyAvailablePeriodForDoctor($doctor->id, $date, $durationMinutes)) {
+                    continue;
+                }
+
+                $availableDoctors[] = [
+                    'doctor' => $doctor,
+                    'available_slots' => $this->getAvailableSlotsForDoctor($doctor->id, $date),
+                    'slots_needed' => $slotsNeeded,
+                ];
+            }
+
+            return collect($availableDoctors);
+        } catch (\Exception $e) {
+            Log::error('Error in getAvailableDoctorsByService: ' . $e->getMessage());
+            return collect();
+        }
     }
 
-    /**
-     * ✅ Kiểm tra bác sĩ có ca trực vào ngày cụ thể không
-     * 
-     * @param int $doctorId - ID bác sĩ
-     * @param string $date - Ngày cần kiểm tra (Y-m-d)
-     * @return bool
-     */
-    public function hasDoctorShiftOnDate($doctorId, $date)
+    public function getAvailableTimesByService($serviceId, $date): array
+    {
+        try {
+            $service = Service::findOrFail($serviceId);
+
+            if (empty($service->required_specialization)) {
+                return [];
+            }
+
+            $durationMinutes = $this->getServiceDurationMinutes($service);
+            $availableTimes = [];
+
+            foreach ($this->getEligibleDoctorsForService($service) as $doctor) {
+                $shifts = ShiftAssignment::where('employee_id', $doctor->id)
+                    ->whereDate('work_date', $date)
+                    ->where('status', 'approved')
+                    ->orderBy('start_hour')
+                    ->orderBy('start_minute')
+                    ->get();
+
+                foreach ($shifts as $shift) {
+                    $shiftStart = ((int) $shift->start_hour * 60) + (int) $shift->start_minute;
+                    $shiftEnd = ((int) $shift->end_hour * 60) + (int) $shift->end_minute;
+
+                    if ($shiftEnd <= $shiftStart) {
+                        continue;
+                    }
+
+                    for ($minute = $shiftStart; $minute + $durationMinutes <= $shiftEnd; $minute += self::SLOT_DURATION) {
+                        $startTime = $this->minutesToTime($minute);
+                        $endTime = $this->minutesToTime($minute + $durationMinutes);
+
+                        if (!$this->isDoctorAvailableForPeriod($doctor->id, $date, $startTime, $durationMinutes)) {
+                            continue;
+                        }
+
+                        if (!isset($availableTimes[$startTime])) {
+                            $availableTimes[$startTime] = [
+                                'start_time' => $startTime,
+                                'end_time' => $endTime,
+                                'doctor_count' => 0,
+                            ];
+                        }
+
+                        $availableTimes[$startTime]['doctor_count']++;
+                    }
+                }
+            }
+
+            return collect($availableTimes)
+                ->sortBy('start_time')
+                ->values()
+                ->all();
+        } catch (\Exception $e) {
+            Log::error('Error in getAvailableTimesByService: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function getAvailableDoctorsByServiceAndTime($serviceId, $date, $startTime): array
+    {
+        try {
+            $service = Service::findOrFail($serviceId);
+
+            if (empty($service->required_specialization)) {
+                return [];
+            }
+
+            $durationMinutes = $this->getServiceDurationMinutes($service);
+
+            return $this->getEligibleDoctorsForService($service)
+                ->filter(function ($doctor) use ($date, $startTime, $durationMinutes) {
+                    return $this->isDoctorAvailableForPeriod($doctor->id, $date, $startTime, $durationMinutes);
+                })
+                ->map(function ($doctor) {
+                    return [
+                        'id' => $doctor->id,
+                        'name' => $doctor->name,
+                        'specialization' => $doctor->specialization ?? 'N/A',
+                        'phone' => $doctor->phone ?? '',
+                        'email' => $doctor->email ?? '',
+                    ];
+                })
+                ->values()
+                ->all();
+        } catch (\Exception $e) {
+            Log::error('Error in getAvailableDoctorsByServiceAndTime: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function hasDoctorShiftOnDate($doctorId, $date): bool
     {
         return ShiftAssignment::where('employee_id', $doctorId)
-            ->where('work_date', $date)
+            ->whereDate('work_date', $date)
             ->where('status', 'approved')
             ->exists();
     }
 
-    /**
-     * ✅ Lấy tất cả slot trống của bác sĩ trong ngày
-     * Mỗi slot = 30 phút
-     * 
-     * @param int $doctorId - ID bác sĩ
-     * @param string $date - Ngày cần kiểm tra (Y-m-d)
-     * @return array - Mảng các slot trống [[start_time, end_time], ...]
-     */
-    public function getAvailableSlotsForDoctor($doctorId, $date)
+    public function getAvailableSlotsForDoctor($doctorId, $date): array
     {
-        $SLOT_DURATION = 30; // 30 phút/slot
-
-        // Lấy ca trực của bác sĩ
-        $shift = ShiftAssignment::where('employee_id', $doctorId)
-            ->where('work_date', $date)
+        $shifts = ShiftAssignment::where('employee_id', $doctorId)
+            ->whereDate('work_date', $date)
             ->where('status', 'approved')
-            ->first();
+            ->orderBy('start_hour')
+            ->orderBy('start_minute')
+            ->get();
 
-        if (!$shift) {
+        if ($shifts->isEmpty()) {
             return [];
         }
 
-        // Chuyển đổi giờ làm việc thành phút
-        $workStart = $shift->start_hour * 60 + $shift->start_minute;
-        $workEnd = $shift->end_hour * 60 + $shift->end_minute;
-
-        // Tạo danh sách tất cả slot trong ngày làm việc
         $allSlots = [];
-        for ($time = $workStart; $time < $workEnd; $time += $SLOT_DURATION) {
-            $allSlots[] = $time;
-        }
 
-        // Lấy tất cả lịch hẹn đã xác nhận của bác sĩ trong ngày
-        $bookedAppointments = Appointment::where('doctor_id', $doctorId)
-            ->where('status', 'confirmed')
-            ->whereDate('appointment_date', $date)
-            ->get();
+        foreach ($shifts as $shift) {
+            $workStart = ((int) $shift->start_hour * 60) + (int) $shift->start_minute;
+            $workEnd = ((int) $shift->end_hour * 60) + (int) $shift->end_minute;
 
-        // Tạo bộ slot bị chiếm
-        $bookedSlots = new \SplFixedArray(count($allSlots));
-        foreach ($bookedSlots as $key => $value) {
-            $bookedSlots[$key] = false;
-        }
+            if ($workEnd <= $workStart) {
+                continue;
+            }
 
-        foreach ($bookedAppointments as $appointment) {
-            $appointmentStart = $appointment->appointment_date->hour * 60 + $appointment->appointment_date->minute;
-            $duration = $appointment->duration_minutes;
-
-            // Đánh dấu các slot bị chiếm
-            for ($i = 0; $i < count($allSlots); $i++) {
-                $slotTime = $allSlots[$i];
-                if ($slotTime >= $appointmentStart && $slotTime < $appointmentStart + $duration) {
-                    $bookedSlots[$i] = true;
-                }
+            for ($time = $workStart; $time + self::SLOT_DURATION <= $workEnd; $time += self::SLOT_DURATION) {
+                $allSlots[] = $time;
             }
         }
 
-        // Lấy danh sách slot trống
+        $allSlots = collect($allSlots)->unique()->sort()->values()->all();
+
         $availableSlots = [];
-        for ($i = 0; $i < count($allSlots); $i++) {
-            if (!$bookedSlots[$i]) {
-                $minutes = $allSlots[$i];
-                $hours = intdiv($minutes, 60);
-                $mins = $minutes % 60;
-                $startTime = str_pad($hours, 2, '0', STR_PAD_LEFT) . ':' . str_pad($mins, 2, '0', STR_PAD_LEFT);
-                
-                $endMinutes = $minutes + $SLOT_DURATION;
-                $endHours = intdiv($endMinutes, 60);
-                $endMins = $endMinutes % 60;
-                $endTime = str_pad($endHours, 2, '0', STR_PAD_LEFT) . ':' . str_pad($endMins, 2, '0', STR_PAD_LEFT);
-                
-                $availableSlots[] = [
-                    'start_time' => $startTime,
-                    'end_time' => $endTime,
-                    'slot_index' => $i,
-                ];
+
+        foreach ($allSlots as $index => $slotStart) {
+            $slotEnd = $slotStart + self::SLOT_DURATION;
+
+            if ($this->hasAppointmentOverlap($doctorId, $date, $slotStart, $slotEnd)) {
+                continue;
             }
+
+            $availableSlots[] = [
+                'start_time' => $this->minutesToTime($slotStart),
+                'end_time' => $this->minutesToTime($slotEnd),
+                'slot_index' => $index,
+            ];
         }
 
         return $availableSlots;
     }
 
-    /**
-     * ✅ Kiểm tra bác sĩ có đủ slot liên tục không
-     * 
-     * @param int $doctorId - ID bác sĩ
-     * @param string $date - Ngày khám (Y-m-d)
-     * @param string $startTime - Giờ bắt đầu (H:i)
-     * @param int $slotsNeeded - Số slot cần (ví dụ: 2)
-     * @return bool
-     */
-    public function checkDoctorAvailability($doctorId, $date, $startTime, $slotsNeeded)
+    public function checkDoctorAvailability($doctorId, $date, $startTime, $slotsNeeded): bool
     {
-        $availableSlots = $this->getAvailableSlotsForDoctor($doctorId, $date);
+        $durationMinutes = max((int) $slotsNeeded, 1) * self::SLOT_DURATION;
 
-        // Tìm slot bắt đầu
-        $startSlotIndex = null;
-        foreach ($availableSlots as $index => $slot) {
-            if ($slot['start_time'] === $startTime) {
-                $startSlotIndex = $index;
-                break;
-            }
-        }
-
-        if ($startSlotIndex === null) {
-            return false;
-        }
-
-        // Kiểm tra có đủ slot liên tục không
-        if ($startSlotIndex + $slotsNeeded > count($availableSlots)) {
-            return false;
-        }
-
-        // Kiểm tra các slot liên tiếp có liên tục không
-        for ($i = $startSlotIndex; $i < $startSlotIndex + $slotsNeeded; $i++) {
-            if ($i >= count($availableSlots)) {
-                return false;
-            }
-        }
-
-        return true;
+        return $this->isDoctorAvailableForPeriod($doctorId, $date, $startTime, $durationMinutes);
     }
 
-    /**
-     * ✅ Tạo lịch hẹn mới
-     * 
-     * @param array $data - ['patient_id', 'doctor_id', 'service_id', 'appointment_date', 'notes']
-     * @return Appointment|null
-     */
     public function createAppointment($data)
     {
-        $service = Service::find($data['service_id']);
-        if (!$service) {
-            throw new \Exception('Dịch vụ không tồn tại');
+        try {
+            $service = Service::find($data['service_id']);
+
+            if (!$service) {
+                throw new \Exception('Dịch vụ không tồn tại');
+            }
+
+            if (empty($service->required_specialization)) {
+                throw new \Exception('Dịch vụ chưa được gán chuyên khoa. Vui lòng liên hệ quản trị viên.');
+            }
+
+            $doctor = Employee::where('id', $data['doctor_id'])
+                ->where('is_doctor', 1)
+                ->whereIn('status', self::ACTIVE_EMPLOYEE_STATUSES)
+                ->first();
+
+            if (!$doctor) {
+                throw new \Exception('Bác sĩ không tồn tại hoặc không còn hoạt động');
+            }
+
+            if (trim((string) $doctor->specialization) !== trim((string) $service->required_specialization)) {
+                throw new \Exception('Bác sĩ không đúng chuyên khoa của dịch vụ đã chọn');
+            }
+
+            $date = Carbon::parse($data['appointment_date'])->format('Y-m-d');
+            $time = Carbon::parse($data['appointment_date'])->format('H:i');
+            $durationMinutes = $this->getServiceDurationMinutes($service);
+            $slotsNeeded = $this->getSlotsNeeded($durationMinutes);
+
+            if (!$this->hasDoctorShiftOnDate($data['doctor_id'], $date)) {
+                throw new \Exception('Bác sĩ không có ca trực vào ngày này');
+            }
+
+            if (!$this->isDoctorAvailableForPeriod($data['doctor_id'], $date, $time, $durationMinutes)) {
+                throw new \Exception('Bác sĩ không rảnh hoặc không đủ thời lượng liên tục trong khoảng thời gian này');
+            }
+
+            $appointment = Appointment::create([
+                'patient_id' => $data['patient_id'],
+                'doctor_id' => $data['doctor_id'],
+                'service_id' => $data['service_id'],
+                'appointment_date' => $data['appointment_date'],
+                'slots_used' => $slotsNeeded,
+                'duration_minutes' => $durationMinutes,
+                'status' => 'pending',
+                'notes' => $data['notes'] ?? null,
+            ]);
+
+            Log::info("Appointment created: ID={$appointment->id}, Patient={$data['patient_id']}, Doctor={$data['doctor_id']}");
+
+            return $appointment;
+        } catch (\Exception $e) {
+            Log::error('Error creating appointment: ' . $e->getMessage());
+            throw $e;
         }
-
-        // Kiểm tra bác sĩ có slot trống không
-        $date = Carbon::parse($data['appointment_date'])->format('Y-m-d');
-        $time = Carbon::parse($data['appointment_date'])->format('H:i');
-
-        if (!$this->checkDoctorAvailability($data['doctor_id'], $date, $time, $service->slots_required)) {
-            throw new \Exception('Bác sĩ không rảnh trong khoảng thời gian này');
-        }
-
-        // Tạo lịch hẹn
-        $appointment = Appointment::create([
-            'patient_id' => $data['patient_id'],
-            'doctor_id' => $data['doctor_id'],
-            'service_id' => $data['service_id'],
-            'appointment_date' => $data['appointment_date'],
-            'slots_used' => $service->slots_required,
-            'duration_minutes' => $service->actual_duration ?? ($service->slots_required * 30),
-            'status' => 'pending',
-            'notes' => $data['notes'] ?? null,
-        ]);
-
-        return $appointment;
     }
 
-    /**
-     * ✅ Lấy lịch hẹn sắp tới của bệnh nhân
-     * 
-     * @param int $patientId - ID bệnh nhân
-     * @return Collection
-     */
     public function getUpcomingAppointments($patientId)
     {
         return Appointment::where('patient_id', $patientId)
@@ -240,22 +271,153 @@ class AppointmentService
             ->get();
     }
 
-    /**
-     * ✅ Hủy lịch hẹn
-     * 
-     * @param int $appointmentId - ID lịch hẹn
-     * @return bool
-     */
     public function cancelAppointment($appointmentId)
     {
-        $appointment = Appointment::findOrFail($appointmentId);
-        
-        // Chỉ có thể hủy nếu chưa quá 24 tiếng trước lịch
-        if ($appointment->appointment_date->diffInHours(now()) < 24) {
-            throw new \Exception('Không thể hủy lịch hẹn ít hơn 24 tiếng trước');
+        try {
+            $appointment = Appointment::findOrFail($appointmentId);
+
+            if ($appointment->appointment_date->diffInHours(now()) < 24) {
+                throw new \Exception('Không thể hủy lịch hẹn ít hơn 24 tiếng trước');
+            }
+
+            $appointment->update(['status' => 'cancelled']);
+
+            Log::info("Appointment {$appointmentId} cancelled by patient {$appointment->patient_id}");
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Error cancelling appointment: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    private function getEligibleDoctorsForService(Service $service)
+    {
+        $requiredSpecialization = trim((string) $service->required_specialization);
+
+        return Employee::where('is_doctor', 1)
+            ->whereIn('status', self::ACTIVE_EMPLOYEE_STATUSES)
+            ->whereNotNull('specialization')
+            ->orderBy('name', 'asc')
+            ->get()
+            ->filter(function ($doctor) use ($requiredSpecialization) {
+                return trim((string) $doctor->specialization) === $requiredSpecialization;
+            })
+            ->values();
+    }
+
+    private function getServiceDurationMinutes(Service $service): int
+    {
+        $duration = (int) ($service->actual_duration ?? 0);
+
+        if ($duration <= 0) {
+            $duration = (int) ($service->duration_minutes ?? 0);
         }
 
-        $appointment->update(['status' => 'cancelled']);
-        return true;
+        if ($duration <= 0) {
+            $duration = max((int) ($service->slots_required ?? 1), 1) * self::SLOT_DURATION;
+        }
+
+        return max($duration, self::SLOT_DURATION);
+    }
+
+    private function getSlotsNeeded(int $durationMinutes): int
+    {
+        return (int) ceil($durationMinutes / self::SLOT_DURATION);
+    }
+
+    private function hasAnyAvailablePeriodForDoctor($doctorId, $date, int $durationMinutes): bool
+    {
+        $shifts = ShiftAssignment::where('employee_id', $doctorId)
+            ->whereDate('work_date', $date)
+            ->where('status', 'approved')
+            ->orderBy('start_hour')
+            ->orderBy('start_minute')
+            ->get();
+
+        foreach ($shifts as $shift) {
+            $shiftStart = ((int) $shift->start_hour * 60) + (int) $shift->start_minute;
+            $shiftEnd = ((int) $shift->end_hour * 60) + (int) $shift->end_minute;
+
+            if ($shiftEnd <= $shiftStart) {
+                continue;
+            }
+
+            for ($minute = $shiftStart; $minute + $durationMinutes <= $shiftEnd; $minute += self::SLOT_DURATION) {
+                if ($this->isDoctorAvailableForPeriod($doctorId, $date, $this->minutesToTime($minute), $durationMinutes)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private function isDoctorAvailableForPeriod($doctorId, $date, string $startTime, int $durationMinutes): bool
+    {
+        $startMinutes = $this->timeToMinutes($startTime);
+        $endMinutes = $startMinutes + $durationMinutes;
+
+        if (!$this->isInsideApprovedShift($doctorId, $date, $startMinutes, $endMinutes)) {
+            return false;
+        }
+
+        return !$this->hasAppointmentOverlap($doctorId, $date, $startMinutes, $endMinutes);
+    }
+
+    private function isInsideApprovedShift($doctorId, $date, int $startMinutes, int $endMinutes): bool
+    {
+        $shifts = ShiftAssignment::where('employee_id', $doctorId)
+            ->whereDate('work_date', $date)
+            ->where('status', 'approved')
+            ->get();
+
+        foreach ($shifts as $shift) {
+            $shiftStart = ((int) $shift->start_hour * 60) + (int) $shift->start_minute;
+            $shiftEnd = ((int) $shift->end_hour * 60) + (int) $shift->end_minute;
+
+            if ($shiftStart <= $startMinutes && $shiftEnd >= $endMinutes) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function hasAppointmentOverlap($doctorId, $date, int $startMinutes, int $endMinutes): bool
+    {
+        $appointments = Appointment::where('doctor_id', $doctorId)
+            ->whereDate('appointment_date', $date)
+            ->whereIn('status', ['pending', 'confirmed'])
+            ->get();
+
+        foreach ($appointments as $appointment) {
+            $appointmentStart = ($appointment->appointment_date->hour * 60) + $appointment->appointment_date->minute;
+            $appointmentDuration = (int) ($appointment->duration_minutes ?? self::SLOT_DURATION);
+            $appointmentEnd = $appointmentStart + $appointmentDuration;
+
+            if ($appointmentStart < $endMinutes && $appointmentEnd > $startMinutes) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function timeToMinutes(string $time): int
+    {
+        [$hour, $minute] = explode(':', $time);
+
+        return ((int) $hour * 60) + (int) $minute;
+    }
+
+    private function minutesToTime(int $minutes): string
+    {
+        $hours = intdiv($minutes, 60);
+        $mins = $minutes % 60;
+
+        return str_pad($hours, 2, '0', STR_PAD_LEFT)
+            . ':'
+            . str_pad($mins, 2, '0', STR_PAD_LEFT);
     }
 }

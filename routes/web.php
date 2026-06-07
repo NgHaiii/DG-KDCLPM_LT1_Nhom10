@@ -10,6 +10,7 @@ use App\Http\Controllers\EmployeeScheduleController;
 use App\Http\Controllers\ScheduleApprovalController;
 use App\Http\Controllers\AdminDutyController;
 use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\ServiceSpecializationController;
 
 // ==================== ROUTE CHÍNH ====================
 Route::get('/', function () {
@@ -66,11 +67,16 @@ Route::middleware('auth')->group(function () {
         // Quản lý ca làm việc
         Route::resource('shifts', ShiftManagementController::class)->names('shifts');
 
+        // ========== QUẢN LÝ DỊCH VỤ & GIÁ ==========
         // Quản lý dịch vụ
         Route::get('services', [ServiceController::class, 'index'])->name('services.index');
         Route::post('services', [ServiceController::class, 'store'])->name('services.store');
         Route::patch('services/{service}', [ServiceController::class, 'update'])->name('services.update');
         Route::delete('services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
+
+        // ✅ GÁN CHUYÊN KHOA DỊCH VỤ
+        Route::get('services/specializations', [ServiceSpecializationController::class, 'index'])->name('service-specialization.index');
+        Route::put('services/{id}/specialization', [ServiceSpecializationController::class, 'update'])->name('service-specialization.update');
 
         // Quản lý giá
         Route::get('prices', [PriceController::class, 'index'])->name('prices.index');
@@ -281,12 +287,25 @@ Route::middleware('auth')->group(function () {
         });
 
         // ✅ API ENDPOINTS - AJAX Data
-        Route::get('api/doctors-by-service', [AppointmentController::class, 'getDoctorsByService'])->name('api.doctors-by-service');
-        Route::get('api/available-slots', [AppointmentController::class, 'getAvailableSlots'])->name('api.available-slots');
+Route::get('api/service-categories', [AppointmentController::class, 'getServiceCategories'])
+    ->name('api.service-categories');
 
+Route::get('api/services-by-category', [AppointmentController::class, 'getServicesByCategory'])
+    ->name('api.services-by-category');
 
-        Route::get('api/service-categories', [AppointmentController::class, 'getServiceCategories'])->name('api.service-categories');
-        Route::get('api/services-by-category', [AppointmentController::class, 'getServicesByCategory'])->name('api.services-by-category');
+// API cũ vẫn giữ lại để không ảnh hưởng phần khác
+Route::get('api/doctors-by-service', [AppointmentController::class, 'getDoctorsByService'])
+    ->name('api.doctors-by-service');
+
+Route::get('api/available-slots', [AppointmentController::class, 'getAvailableSlots'])
+    ->name('api.available-slots');
+
+// API mới: bệnh nhân chọn giờ trước, sau đó hệ thống tìm bác sĩ rảnh
+Route::get('api/available-times', [AppointmentController::class, 'getAvailableTimes'])
+    ->name('api.available-times');
+
+Route::get('api/doctors-by-time', [AppointmentController::class, 'getDoctorsByTime'])
+    ->name('api.doctors-by-time');
 
         // ✅ HỒ SƠ SỨC KHỎE
         Route::get('medical-records', function () {

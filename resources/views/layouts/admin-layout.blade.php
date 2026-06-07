@@ -500,6 +500,12 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a href="{{ route('admin.service-specialization.index') }}" class="nav-link @if(request()->routeIs('admin.service-specialization.index')) active @endif">
+                    <i class="nav-icon ri-links-line"></i>
+                    <span>Gán chuyên khoa dịch vụ</span>
+                </a>
+            </li>
+            <li class="nav-item">
                 <a href="{{ route('admin.prices.index') }}" class="nav-link @if(request()->routeIs('admin.prices.index')) active @endif">
                     <i class="nav-icon ri-price-tag-3-line"></i>
                     <span>Quản lý giá</span>

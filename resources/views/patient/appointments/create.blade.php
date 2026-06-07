@@ -3,14 +3,11 @@
 @section('title', 'Đặt Lịch Khám - DentalCare')
 
 @section('page-title', 'Đặt Lịch Khám Bệnh')
-@section('page-subtitle', 'Vui lòng chọn dịch vụ, bác sĩ và thời gian phù hợp')
+@section('page-subtitle', 'Vui lòng chọn dịch vụ, thời gian và bác sĩ phù hợp')
 
 @section('styles')
 <style>
-    .appointment-container {
-        max-width: 700px;
-        margin: 0 auto;
-    }
+    .appointment-container { max-width: 700px; margin: 0 auto; }
 
     .card {
         border: 1px solid var(--border-color);
@@ -20,13 +17,8 @@
         box-shadow: var(--shadow-md);
     }
 
-    .form-section {
-        margin-bottom: 32px;
-    }
-
-    .form-section:last-child {
-        margin-bottom: 0;
-    }
+    .form-section { margin-bottom: 32px; }
+    .form-section:last-child { margin-bottom: 0; }
 
     .section-title {
         font-family: var(--font-title);
@@ -39,18 +31,10 @@
         gap: 10px;
     }
 
-    .section-title i {
-        color: var(--primary);
-        font-size: 20px;
-    }
+    .section-title i { color: var(--primary); font-size: 20px; }
 
-    .form-group {
-        margin-bottom: 16px;
-    }
-
-    .form-group:last-child {
-        margin-bottom: 0;
-    }
+    .form-group { margin-bottom: 16px; }
+    .form-group:last-child { margin-bottom: 0; }
 
     .form-group label {
         display: block;
@@ -81,9 +65,7 @@
     }
 
     .form-group input:hover,
-    .form-group select:hover {
-        border-color: #cbd5e1;
-    }
+    .form-group select:hover { border-color: #cbd5e1; }
 
     .form-group input:focus,
     .form-group select:focus,
@@ -132,14 +114,11 @@
         font-size: 13px;
         color: var(--text-muted);
         margin-top: 8px;
-        display: flex;
         align-items: center;
         gap: 8px;
     }
 
-    .loading-state.show {
-        display: flex;
-    }
+    .loading-state.show { display: flex; }
 
     .spinner {
         display: inline-block;
@@ -151,9 +130,7 @@
         animation: spin 0.6s linear infinite;
     }
 
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     .error-text {
         color: var(--error);
@@ -178,9 +155,7 @@
         border-top: 1px solid var(--border-color);
     }
 
-    .form-actions .btn {
-        flex: 1;
-    }
+    .form-actions .btn { flex: 1; }
 
     .divider {
         height: 1px;
@@ -248,32 +223,20 @@
         font-weight: 500;
         color: var(--text-muted);
         text-align: center;
-        max-width: 80px;
+        max-width: 90px;
     }
 
     @media (max-width: 768px) {
-        .card {
-            padding: 24px;
-        }
-
-        .form-actions {
-            flex-direction: column-reverse;
-        }
-
-        .step-indicator {
-            margin-bottom: 24px;
-        }
-
-        .step-label {
-            display: none;
-        }
+        .card { padding: 24px; }
+        .form-actions { flex-direction: column-reverse; }
+        .step-indicator { margin-bottom: 24px; }
+        .step-label { display: none; }
     }
 </style>
 @endsection
 
 @section('content')
 <div class="appointment-container">
-    <!-- Step Indicator -->
     <div class="step-indicator">
         <div class="step active" id="step1">
             <div class="step-number">1</div>
@@ -281,32 +244,30 @@
         </div>
         <div class="step" id="step2">
             <div class="step-number">2</div>
-            <div class="step-label">Dịch vụ cụ thể</div>
+            <div class="step-label">Dịch vụ</div>
         </div>
         <div class="step" id="step3">
             <div class="step-number">3</div>
-            <div class="step-label">Ngày & bác sĩ</div>
+            <div class="step-label">Ngày & giờ</div>
         </div>
         <div class="step" id="step4">
             <div class="step-number">4</div>
-            <div class="step-label">Xác nhận</div>
+            <div class="step-label">Bác sĩ</div>
         </div>
     </div>
 
-    <!-- Form Card -->
     <div class="card">
-        <!-- Info Box -->
         <div class="info-box">
             <i class="ri-lightbulb-flash-line"></i>
             <div>
-                <strong>Cách thức đặt lịch:</strong> Loại dịch vụ → Dịch vụ cụ thể → Chọn ngày → Chọn bác sĩ → Chọn thời gian → Xác nhận
+                <strong>Cách thức đặt lịch:</strong>
+                Loại dịch vụ -> Dịch vụ cụ thể -> Chọn ngày -> Chọn thời gian -> Chọn bác sĩ còn rảnh -> Xác nhận.
             </div>
         </div>
 
         <form id="appointmentForm" method="POST" action="{{ route('patient.appointment.store') }}" onsubmit="return validateForm()">
             @csrf
 
-            <!-- 1. Service Category Selection -->
             <div class="form-section">
                 <div class="section-title">
                     <i class="ri-folders-line"></i> 1. Loại Dịch Vụ
@@ -328,7 +289,6 @@
 
             <div class="divider"></div>
 
-            <!-- 2. Specific Service Selection -->
             <div class="form-section">
                 <div class="section-title">
                     <i class="ri-hospital-line"></i> 2. Dịch Vụ Cụ Thể
@@ -344,7 +304,7 @@
                     </div>
                     <div class="help-text">
                         <i class="ri-information-line" style="font-size: 12px;"></i>
-                        Mỗi dịch vụ có thời lượng khác nhau
+                        Dịch vụ cần được gán chuyên khoa để hệ thống tìm đúng bác sĩ.
                     </div>
                     @error('service_id')
                         <div class="error-text"><i class="ri-error-warning-fill"></i>{{ $message }}</div>
@@ -354,58 +314,31 @@
 
             <div class="divider"></div>
 
-            <!-- 3. Date & Doctor Selection -->
             <div class="form-section">
-                <!-- Date -->
-                <div class="form-section">
-                    <div class="section-title">
-                        <i class="ri-calendar-line"></i> 3. Chọn Ngày Khám
-                    </div>
-                    <div class="form-group">
-                        <label for="appointment_date_only" class="required">Ngày khám</label>
-                        <input type="date" 
-                            id="appointment_date_only" 
-                            name="appointment_date_only" 
-                            required 
-                            disabled
-                            min="{{ date('Y-m-d') }}"
-                            onchange="onDateChange()">
-                        <div class="help-text">Chọn ngày khám trong tương lai</div>
-                        @error('appointment_date')
-                            <div class="error-text"><i class="ri-error-warning-fill"></i>{{ $message }}</div>
-                        @enderror
-                    </div>
+                <div class="section-title">
+                    <i class="ri-calendar-line"></i> 3. Chọn Ngày Khám
                 </div>
-
-                <div class="divider"></div>
-
-                <!-- Doctor -->
-                <div class="form-section">
-                    <div class="section-title">
-                        <i class="ri-user-doctor-line"></i> 4. Chọn Bác Sĩ
-                    </div>
-                    <div class="form-group">
-                        <label for="doctor_id" class="required">Bác sĩ</label>
-                        <select id="doctor_id" name="doctor_id" required disabled onchange="onDoctorChange()">
-                            <option value="">-- Chọn bác sĩ --</option>
-                        </select>
-                        <div class="loading-state" id="doctorLoading">
-                            <span class="spinner"></span>
-                            <span>Đang tìm bác sĩ rảnh...</span>
-                        </div>
-                        @error('doctor_id')
-                            <div class="error-text"><i class="ri-error-warning-fill"></i>{{ $message }}</div>
-                        @enderror
-                    </div>
+                <div class="form-group">
+                    <label for="appointment_date_only" class="required">Ngày khám</label>
+                    <input type="date"
+                           id="appointment_date_only"
+                           name="appointment_date_only"
+                           required
+                           disabled
+                           min="{{ date('Y-m-d') }}"
+                           onchange="onDateChange()">
+                    <div class="help-text">Sau khi chọn ngày, hệ thống sẽ lấy các giờ còn bác sĩ rảnh trong khung 08:00 - 22:00.</div>
+                    @error('appointment_date')
+                        <div class="error-text"><i class="ri-error-warning-fill"></i>{{ $message }}</div>
+                    @enderror
                 </div>
             </div>
 
             <div class="divider"></div>
 
-            <!-- 5. Time Slot Selection -->
             <div class="form-section">
                 <div class="section-title">
-                    <i class="ri-time-line"></i> 5. Chọn Thời Gian
+                    <i class="ri-time-line"></i> 4. Chọn Thời Gian
                 </div>
                 <div class="form-group">
                     <label for="time_slot" class="required">Thời gian khám</label>
@@ -414,31 +347,50 @@
                     </select>
                     <div class="loading-state" id="timeLoading">
                         <span class="spinner"></span>
-                        <span>Đang tải...</span>
+                        <span>Đang tìm khung giờ còn bác sĩ rảnh...</span>
                     </div>
+                    <div class="help-text">Mỗi mốc giờ cách nhau 30 phút và chỉ hiển thị khi có bác sĩ đúng chuyên khoa còn trống.</div>
                 </div>
             </div>
 
             <div class="divider"></div>
 
-            <!-- 6. Notes -->
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="ri-user-doctor-line"></i> 5. Chọn Bác Sĩ
+                </div>
+                <div class="form-group">
+                    <label for="doctor_id" class="required">Bác sĩ</label>
+                    <select id="doctor_id" name="doctor_id" required disabled onchange="onDoctorChange()">
+                        <option value="">-- Chọn bác sĩ --</option>
+                    </select>
+                    <div class="loading-state" id="doctorLoading">
+                        <span class="spinner"></span>
+                        <span>Đang lọc bác sĩ theo giờ đã chọn...</span>
+                    </div>
+                    @error('doctor_id')
+                        <div class="error-text"><i class="ri-error-warning-fill"></i>{{ $message }}</div>
+                    @enderror
+                </div>
+            </div>
+
+            <div class="divider"></div>
+
             <div class="form-section">
                 <div class="section-title">
                     <i class="ri-edit-2-line"></i> 6. Ghi Chú Thêm (Tùy Chọn)
                 </div>
                 <div class="form-group">
                     <label for="notes">Mô tả triệu chứng</label>
-                    <textarea id="notes" 
-                        name="notes" 
-                        placeholder="Vui lòng mô tả triệu chứng hoặc bất kỳ thông tin quan trọng nào bạn muốn chia sẻ với bác sĩ..."></textarea>
+                    <textarea id="notes"
+                              name="notes"
+                              placeholder="Vui lòng mô tả triệu chứng hoặc thông tin quan trọng bạn muốn chia sẻ với bác sĩ..."></textarea>
                     <div class="help-text">Tối đa 500 ký tự</div>
                 </div>
             </div>
 
-            <!-- Hidden input -->
             <input type="hidden" id="appointment_date" name="appointment_date" />
 
-            <!-- Form Actions -->
             <div class="form-actions">
                 <a href="{{ route('patient.dashboard') }}" class="btn btn-secondary">
                     <i class="ri-arrow-left-line"></i> Quay Lại
@@ -452,7 +404,8 @@
 </div>
 
 <script>
-    // Load danh sách loại dịch vụ khi page load
+    let selectedServiceDuration = 30;
+
     document.addEventListener('DOMContentLoaded', function() {
         loadCategories();
     });
@@ -464,25 +417,27 @@
         categoryLoading.classList.add('show');
 
         fetch('/patient/api/service-categories')
-            .then(response => response.json())
+            .then(handleJsonResponse)
             .then(categories => {
                 categoryLoading.classList.remove('show');
 
-                if (!categories || categories.length === 0) {
-                    categorySelect.innerHTML = '<option value="" disabled>❌ Không có loại dịch vụ nào</option>';
+                if (!Array.isArray(categories) || categories.length === 0) {
+                    categorySelect.innerHTML = '<option value="" disabled>Không có loại dịch vụ nào</option>';
                     return;
                 }
 
                 let html = '<option value="">-- Vui lòng chọn loại dịch vụ --</option>';
+
                 categories.forEach(category => {
-                    html += `<option value="${category}">${category}</option>`;
+                    html += `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`;
                 });
+
                 categorySelect.innerHTML = html;
             })
             .catch(error => {
                 console.error('Error:', error);
                 categoryLoading.classList.remove('show');
-                categorySelect.innerHTML = '<option value="" disabled>⚠️ Lỗi khi tải loại dịch vụ</option>';
+                categorySelect.innerHTML = '<option value="" disabled>Lỗi khi tải loại dịch vụ</option>';
             });
     }
 
@@ -490,23 +445,18 @@
         const category = document.getElementById('service_category').value;
         const serviceSelect = document.getElementById('service_id');
         const dateInput = document.getElementById('appointment_date_only');
-        const step2 = document.getElementById('step2');
-        const step3 = document.getElementById('step3');
+
+        resetAfterCategory();
 
         if (!category) {
             serviceSelect.disabled = true;
-            serviceSelect.innerHTML = '<option value="">-- Chọn dịch vụ --</option>';
             dateInput.disabled = true;
-            dateInput.value = '';
-            resetDoctorAndTime();
-            step2.classList.remove('active', 'completed');
-            step3.classList.remove('active');
-            document.getElementById('step1').classList.remove('completed');
-        } else {
-            loadServices(category);
-            document.getElementById('step1').classList.add('completed');
-            step2.classList.add('active');
+            setStepState(1);
+            return;
         }
+
+        loadServices(category);
+        setStepState(2);
     }
 
     function loadServices(category) {
@@ -514,151 +464,112 @@
         const serviceLoading = document.getElementById('serviceLoading');
 
         serviceSelect.disabled = true;
-        serviceLoading.classList.add('show');
         serviceSelect.innerHTML = '<option value="">-- Đang tải dịch vụ... --</option>';
+        serviceLoading.classList.add('show');
 
         fetch(`/patient/api/services-by-category?category=${encodeURIComponent(category)}`)
-            .then(response => response.json())
+            .then(handleJsonResponse)
             .then(services => {
                 serviceLoading.classList.remove('show');
                 serviceSelect.disabled = false;
 
-                if (!services || services.length === 0) {
-                    serviceSelect.innerHTML = '<option value="" disabled>❌ Không có dịch vụ nào trong loại này</option>';
+                if (!Array.isArray(services) || services.length === 0) {
+                    serviceSelect.innerHTML = '<option value="" disabled>Không có dịch vụ nào trong loại này</option>';
                     return;
                 }
 
                 let html = '<option value="">-- Chọn dịch vụ --</option>';
+
                 services.forEach(service => {
-                    html += `<option value="${service.id}" 
-                        data-slots="${service.slots_required}" 
-                        data-duration="${service.actual_duration || (service.slots_required * 30)}">
-                        ${service.name} (${service.slots_required} slot, ${service.actual_duration || (service.slots_required * 30)} phút)
+                    const slots = Number(service.slots_required || 1);
+                    const duration = Number(service.actual_duration || service.duration_minutes || (slots * 30));
+
+                    html += `<option value="${service.id}" data-duration="${duration}">
+                        ${escapeHtml(service.name)} (${duration} phút)
                     </option>`;
                 });
+
                 serviceSelect.innerHTML = html;
             })
             .catch(error => {
                 console.error('Error:', error);
                 serviceLoading.classList.remove('show');
                 serviceSelect.disabled = false;
-                serviceSelect.innerHTML = '<option value="" disabled>⚠️ Lỗi khi tải dịch vụ</option>';
+                serviceSelect.innerHTML = '<option value="" disabled>Lỗi khi tải dịch vụ</option>';
             });
     }
 
     function onServiceChange() {
-        const serviceId = document.getElementById('service_id').value;
+        const serviceSelect = document.getElementById('service_id');
+        const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
         const dateInput = document.getElementById('appointment_date_only');
-        const step2 = document.getElementById('step2');
 
-        if (!serviceId) {
+        resetAfterService();
+
+        if (!serviceSelect.value) {
             dateInput.disabled = true;
-            dateInput.value = '';
-            resetDoctorAndTime();
-            step2.classList.remove('completed');
-        } else {
-            dateInput.disabled = false;
-            step2.classList.add('completed');
+            setStepState(2);
+            return;
         }
+
+        selectedServiceDuration = Number(selectedOption.dataset.duration || 30);
+
+        dateInput.disabled = false;
+        setStepState(3);
     }
 
     function onDateChange() {
         const serviceId = document.getElementById('service_id').value;
         const date = document.getElementById('appointment_date_only').value;
 
+        resetTimeAndDoctor();
+
         if (!serviceId || !date) {
-            resetDoctorAndTime();
             return;
         }
 
-        loadDoctors(serviceId, date);
+        loadTimeSlotsForDate(serviceId, date);
     }
 
-    function loadDoctors(serviceId, date) {
-        const doctorSelect = document.getElementById('doctor_id');
-        const doctorLoading = document.getElementById('doctorLoading');
-        const timeSlotSelect = document.getElementById('time_slot');
-
-        doctorSelect.disabled = true;
-        doctorLoading.classList.add('show');
-        doctorSelect.innerHTML = '<option value="">-- Đang tải danh sách bác sĩ... --</option>';
-        timeSlotSelect.innerHTML = '<option value="">-- Chọn thời gian --</option>';
-        timeSlotSelect.disabled = true;
-
-        fetch(`/patient/api/doctors-by-service?service_id=${serviceId}&date=${date}`)
-            .then(response => response.json())
-            .then(doctors => {
-                doctorLoading.classList.remove('show');
-                doctorSelect.disabled = false;
-
-                if (!doctors || doctors.length === 0) {
-                    doctorSelect.innerHTML = '<option value="" disabled>❌ Không có bác sĩ nào rảnh vào ngày này</option>';
-                    return;
-                }
-
-                let html = '<option value="">-- Chọn bác sĩ --</option>';
-                doctors.forEach(doctor => {
-                    html += `<option value="${doctor.id}" data-slots="${doctor.available_slots_count}">
-                        ${doctor.name} • ${doctor.specialization} (${doctor.available_slots_count} slot)
-                    </option>`;
-                });
-                doctorSelect.innerHTML = html;
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                doctorLoading.classList.remove('show');
-                doctorSelect.disabled = false;
-                doctorSelect.innerHTML = '<option value="" disabled>⚠️ Lỗi khi tải danh sách bác sĩ</option>';
-            });
-    }
-
-    function onDoctorChange() {
-        const doctorId = document.getElementById('doctor_id').value;
-        const date = document.getElementById('appointment_date_only').value;
-
-        if (!doctorId || !date) {
-            document.getElementById('time_slot').innerHTML = '<option value="">-- Chọn thời gian --</option>';
-            document.getElementById('time_slot').disabled = true;
-            return;
-        }
-
-        loadTimeSlots(doctorId, date);
-    }
-
-    function loadTimeSlots(doctorId, date) {
+    function loadTimeSlotsForDate(serviceId, date) {
         const timeSlotSelect = document.getElementById('time_slot');
         const timeLoading = document.getElementById('timeLoading');
-        const step4 = document.getElementById('step4');
 
         timeSlotSelect.disabled = true;
+        timeSlotSelect.innerHTML = '<option value="">-- Đang tải khung giờ... --</option>';
         timeLoading.classList.add('show');
-        timeSlotSelect.innerHTML = '<option value="">-- Đang tải slot thời gian... --</option>';
 
-        fetch(`/patient/api/available-slots?doctor_id=${doctorId}&date=${date}`)
-            .then(response => response.json())
-            .then(slots => {
+        fetch(`/patient/api/available-times?service_id=${encodeURIComponent(serviceId)}&date=${encodeURIComponent(date)}`)
+            .then(handleJsonResponse)
+            .then(times => {
                 timeLoading.classList.remove('show');
-                timeSlotSelect.disabled = false;
-                step4.classList.add('active');
 
-                if (!slots || slots.length === 0) {
-                    timeSlotSelect.innerHTML = '<option value="" disabled>❌ Không có slot nào trống</option>';
+                if (!Array.isArray(times) || times.length === 0) {
+                    timeSlotSelect.disabled = false;
+                    timeSlotSelect.innerHTML = '<option value="" disabled>Không có khung giờ còn bác sĩ rảnh</option>';
                     return;
                 }
 
                 let html = '<option value="">-- Chọn thời gian --</option>';
-                slots.forEach(slot => {
-                    html += `<option value="${slot.start_time}">
-                        ${slot.start_time} - ${slot.end_time}
+
+                times.forEach(slot => {
+                    const startTime = normalizeTime(slot.start_time);
+                    const endTime = normalizeTime(slot.end_time);
+                    const doctorCount = Number(slot.doctor_count || 0);
+
+                    html += `<option value="${startTime}">
+                        ${startTime} - ${endTime} (${doctorCount} bác sĩ rảnh)
                     </option>`;
                 });
+
                 timeSlotSelect.innerHTML = html;
+                timeSlotSelect.disabled = false;
             })
             .catch(error => {
                 console.error('Error:', error);
                 timeLoading.classList.remove('show');
                 timeSlotSelect.disabled = false;
-                timeSlotSelect.innerHTML = '<option value="" disabled>⚠️ Lỗi khi tải slot</option>';
+                timeSlotSelect.innerHTML = '<option value="" disabled>Lỗi khi tải khung giờ</option>';
             });
     }
 
@@ -666,51 +577,170 @@
         const time = document.getElementById('time_slot').value;
         const date = document.getElementById('appointment_date_only').value;
 
-        if (time && date) {
-            document.getElementById('appointment_date').value = `${date} ${time}`;
-            document.getElementById('submitBtn').disabled = false;
+        resetDoctorOnly();
+
+        if (!time || !date) {
+            document.getElementById('appointment_date').value = '';
+            setStepState(3);
+            return;
+        }
+
+        document.getElementById('appointment_date').value = `${date} ${normalizeTime(time)}`;
+        loadDoctorsForSelectedTime(normalizeTime(time));
+        setStepState(4);
+    }
+
+    function loadDoctorsForSelectedTime(time) {
+        const doctorSelect = document.getElementById('doctor_id');
+        const doctorLoading = document.getElementById('doctorLoading');
+        const serviceId = document.getElementById('service_id').value;
+        const date = document.getElementById('appointment_date_only').value;
+
+        doctorSelect.disabled = true;
+        doctorSelect.innerHTML = '<option value="">-- Đang lọc bác sĩ... --</option>';
+        doctorLoading.classList.add('show');
+
+        fetch(`/patient/api/doctors-by-time?service_id=${encodeURIComponent(serviceId)}&date=${encodeURIComponent(date)}&start_time=${encodeURIComponent(time)}`)
+            .then(handleJsonResponse)
+            .then(doctors => {
+                doctorLoading.classList.remove('show');
+                doctorSelect.disabled = false;
+
+                if (!Array.isArray(doctors) || doctors.length === 0) {
+                    doctorSelect.innerHTML = '<option value="" disabled>Không có bác sĩ rảnh vào giờ này</option>';
+                    return;
+                }
+
+                let html = '<option value="">-- Chọn bác sĩ --</option>';
+
+                doctors.forEach(doctor => {
+                    html += `<option value="${doctor.id}">
+                        ${escapeHtml(doctor.name)} - ${escapeHtml(doctor.specialization || 'N/A')}
+                    </option>`;
+                });
+
+                doctorSelect.innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                doctorLoading.classList.remove('show');
+                doctorSelect.disabled = false;
+                doctorSelect.innerHTML = '<option value="" disabled>Lỗi khi tải bác sĩ</option>';
+            });
+    }
+
+    function onDoctorChange() {
+        const doctorId = document.getElementById('doctor_id').value;
+
+        document.getElementById('submitBtn').disabled = !doctorId;
+
+        if (doctorId) {
+            document.getElementById('step4').classList.add('completed');
         } else {
-            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('step4').classList.remove('completed');
         }
     }
 
     function validateForm() {
         const category = document.getElementById('service_category').value;
         const serviceId = document.getElementById('service_id').value;
+        const date = document.getElementById('appointment_date_only').value;
+        const time = document.getElementById('time_slot').value;
         const doctorId = document.getElementById('doctor_id').value;
         const appointmentDate = document.getElementById('appointment_date').value;
 
         if (!category) {
-            alert('❌ Vui lòng chọn loại dịch vụ');
+            alert('Vui lòng chọn loại dịch vụ');
             return false;
         }
 
         if (!serviceId) {
-            alert('❌ Vui lòng chọn dịch vụ');
+            alert('Vui lòng chọn dịch vụ');
+            return false;
+        }
+
+        if (!date) {
+            alert('Vui lòng chọn ngày khám');
+            return false;
+        }
+
+        if (!time || !appointmentDate) {
+            alert('Vui lòng chọn thời gian khám');
             return false;
         }
 
         if (!doctorId) {
-            alert('❌ Vui lòng chọn bác sĩ');
-            return false;
-        }
-
-        if (!appointmentDate) {
-            alert('❌ Vui lòng chọn thời gian khám');
+            alert('Vui lòng chọn bác sĩ');
             return false;
         }
 
         return true;
     }
 
-    function resetDoctorAndTime() {
-        document.getElementById('doctor_id').disabled = true;
-        document.getElementById('doctor_id').innerHTML = '<option value="">-- Chọn bác sĩ --</option>';
+    function resetAfterCategory() {
+        document.getElementById('service_id').disabled = true;
+        document.getElementById('service_id').innerHTML = '<option value="">-- Chọn dịch vụ --</option>';
+        document.getElementById('appointment_date_only').disabled = true;
+        document.getElementById('appointment_date_only').value = '';
+        selectedServiceDuration = 30;
+        resetTimeAndDoctor();
+    }
+
+    function resetAfterService() {
+        document.getElementById('appointment_date_only').value = '';
+        resetTimeAndDoctor();
+    }
+
+    function resetTimeAndDoctor() {
         document.getElementById('time_slot').disabled = true;
         document.getElementById('time_slot').innerHTML = '<option value="">-- Chọn thời gian --</option>';
+        document.getElementById('appointment_date').value = '';
+        resetDoctorOnly();
+        setStepState(3);
+    }
+
+    function resetDoctorOnly() {
+        document.getElementById('doctor_id').disabled = true;
+        document.getElementById('doctor_id').innerHTML = '<option value="">-- Chọn bác sĩ --</option>';
         document.getElementById('submitBtn').disabled = true;
-        document.getElementById('step3').classList.remove('active');
-        document.getElementById('step4').classList.remove('active');
+        document.getElementById('step4').classList.remove('active', 'completed');
+    }
+
+    function setStepState(activeStep) {
+        for (let i = 1; i <= 4; i++) {
+            const step = document.getElementById(`step${i}`);
+
+            step.classList.remove('active', 'completed');
+
+            if (i < activeStep) {
+                step.classList.add('completed');
+            }
+
+            if (i === activeStep) {
+                step.classList.add('active');
+            }
+        }
+    }
+
+    function normalizeTime(time) {
+        return String(time || '').slice(0, 5);
+    }
+
+    function handleJsonResponse(response) {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        return response.json();
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
     }
 </script>
 @endsection

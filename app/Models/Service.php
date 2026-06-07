@@ -13,6 +13,7 @@ class Service extends Model
         'name',
         'description',
         'type',
+        'required_specialization',  // ✅ THÊM CỘT NÀY
         'is_active',
         'slots_required',
         'duration_minutes',

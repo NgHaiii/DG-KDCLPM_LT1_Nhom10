@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->string('name')->unique();
             $table->string('type')->nullable();
+            $table->string('required_specialization')->nullable();  // ✅ THÊM CỘT NÀY
             $table->text('description')->nullable();
             $table->boolean('is_active')->default(true);
             $table->integer('slots_required');  // Xóa ->default(1)
