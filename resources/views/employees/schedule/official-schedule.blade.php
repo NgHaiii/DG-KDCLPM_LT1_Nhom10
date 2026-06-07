@@ -7,167 +7,329 @@
 
 @section('content')
 
+@php
+    if (request('week_start')) {
+        try {
+            $weekStart = \Carbon\Carbon::createFromFormat('Y-m-d', request('week_start'))->startOfWeek(\Carbon\Carbon::MONDAY);
+        } catch (\Exception $e) {
+            $weekStart = now()->startOfWeek(\Carbon\Carbon::MONDAY);
+        }
+    } else {
+        $weekStart = now()->startOfWeek(\Carbon\Carbon::MONDAY);
+    }
+
+    $weekEnd = $weekStart->copy()->endOfWeek(\Carbon\Carbon::SUNDAY);
+@endphp
+
 <style>
-    .official-calendar {
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
         background: white;
         border-radius: 12px;
-        padding: 2rem;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        border-left: 5px solid;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-card.schedule { border-left-color: #0284c7; }
+    .stat-card.offday { border-left-color: #ec4899; }
+
+    .stat-card p:first-child {
+        font-size: 0.875rem;
+        color: #6b7280;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-card p:last-child {
+        font-size: 2.25rem;
+        font-weight: 700;
+    }
+
+    .stat-card.schedule p:last-child { color: #0284c7; }
+    .stat-card.offday p:last-child { color: #ec4899; }
+
+    .calendar-container {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
         box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
         margin-bottom: 2rem;
     }
 
-    .calendar-controls {
+    .calendar-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
         margin-bottom: 2rem;
-    }
-
-    .calendar-title {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #111827;
-    }
-
-    .calendar-nav {
-        display: flex;
         gap: 1rem;
+        flex-wrap: wrap;
     }
 
-    .btn-nav {
-        padding: 0.5rem 1rem;
+    .week-navigation {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .week-nav-btn {
         background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
         color: white;
         border: none;
-        border-radius: 6px;
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
         cursor: pointer;
         font-weight: 600;
+        font-size: 0.9rem;
         transition: all 0.3s ease;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
     }
 
-    .btn-nav:hover {
+    .week-nav-btn:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     }
 
-    /* Calendar Grid */
-    .calendar-weekdays {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 0.5rem;
-        margin-bottom: 1rem;
+    .week-display {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #111827;
+        min-width: 200px;
+        text-align: center;
+        padding: 0.5rem 1rem;
+        background: #f0f4ff;
+        border-radius: 8px;
+        border-left: 4px solid #0284c7;
     }
 
-    .weekday {
+    .legend-section {
+        display: flex;
+        gap: 1.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+    }
+
+    .legend-dot.approved { background: #0284c7; }
+    .legend-dot.offday-dot { background: #ec4899; }
+
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: 150px repeat(7, 1fr);
+        gap: 1px;
+        background: #d1d5db;
+        padding: 1px;
+        border-radius: 8px;
+        overflow-x: auto;
+        transition: opacity 0.3s ease;
+    }
+
+    .grid-time-header {
+        background: #f3f4f6;
+        padding: 1rem 0.75rem;
+        font-weight: 700;
+        font-size: 0.85rem;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        min-height: 110px;
+    }
+
+    .grid-time-icon { font-size: 1.8rem; }
+
+    .grid-time-label {
+        color: #111827;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+    }
+
+    .grid-time-hours {
+        font-size: 0.7rem;
+        color: #6b7280;
+    }
+
+    .grid-day-header {
+        background: #dbeafe;
+        padding: 1rem 0.75rem;
         text-align: center;
         font-weight: 700;
-        color: #6b7280;
-        padding: 0.75rem;
-        background: #f3f4f6;
-        border-radius: 6px;
-        font-size: 0.9rem;
-    }
-
-    .calendar-days {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 0.5rem;
-    }
-
-    .calendar-day {
-        aspect-ratio: 1;
-        padding: 1rem;
-        border: 2px solid #e5e7eb;
-        border-radius: 8px;
-        text-align: center;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        background: white;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        position: relative;
+        gap: 0.3rem;
         min-height: 100px;
     }
 
-    .calendar-day:hover {
-        border-color: #3b82f6;
-        background: #f0f9ff;
-        transform: scale(1.05);
+    .grid-day-header.today {
+        background: #0284c7;
+        color: white;
     }
 
-    .calendar-day.other-month {
-        color: #d1d5db;
-        background: #f9fafb;
-        cursor: not-allowed;
-        border-color: #f3f4f6;
+    .grid-day-header.sunday {
+        background: #fee2e2;
     }
 
-    .calendar-day.other-month:hover {
-        transform: none;
-        background: #f9fafb;
-        border-color: #f3f4f6;
+    .grid-day-header.sunday .day-name,
+    .grid-day-header.sunday .day-number {
+        color: #dc2626;
     }
 
-    .calendar-day.today {
-        background: #dbeafe;
-        border-color: #3b82f6;
-        font-weight: 700;
-    }
-
-    /* Approved Schedule */
-    .calendar-day.has-schedule {
-        background: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%);
-        border-color: #10b981;
+    .day-name {
+        font-size: 0.7rem;
+        color: #0284c7;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
         font-weight: 600;
     }
 
-    .calendar-day.has-schedule:hover {
-        background: linear-gradient(135deg, #c6f6d5 0%, #e6fffa 100%);
-        border-color: #059669;
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
-    }
-
-    /* Approved Off-Day */
-    .calendar-day.has-offday {
-        background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
-        border-color: #ec4899;
-        font-weight: 600;
-    }
-
-    .calendar-day.has-offday:hover {
-        background: linear-gradient(135deg, #fbcfe8 0%, #f9a8d4 100%);
-        border-color: #be185d;
-        box-shadow: 0 4px 12px rgba(236, 72, 153, 0.2);
+    .grid-day-header.today .day-name {
+        color: white;
     }
 
     .day-number {
-        font-size: 1.25rem;
-        font-weight: 700;
-        margin-bottom: 0.25rem;
+        font-size: 1.4rem;
+        color: #0284c7;
     }
 
-    .day-content {
-        font-size: 0.7rem;
-        font-weight: 600;
+    .grid-day-header.today .day-number {
+        color: white;
+    }
+
+    .grid-cell {
+        background: white;
+        padding: 0.6rem;
         display: flex;
-        gap: 0.25rem;
+        align-items: center;
         justify-content: center;
+        min-height: 110px;
+        cursor: pointer;
+        transition: all 0.3s ease;
     }
 
-    .day-badge {
-        width: 6px;
-        height: 6px;
+    .grid-cell:hover {
+        background: #f0fdf4;
+    }
+
+    .shift-card {
+        width: 100%;
+        height: 100%;
+        border-radius: 8px;
+        padding: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border: 2px solid;
+        line-height: 1.3;
+    }
+
+    .shift-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .shift-card.approved {
+        background: #dbeafe;
+        border-color: #0284c7;
+        color: #0c4a6e;
+    }
+
+    .shift-card.offday {
+        background: #fce7f3;
+        border-color: #ec4899;
+        color: #9d174d;
+    }
+
+    .shift-card.empty {
+        background: white;
+        border: 2px dashed #d1d5db;
+        color: #9ca3af;
+        opacity: 0.5;
+        cursor: default;
+    }
+
+    .shift-card.empty:hover {
+        transform: none;
+        box-shadow: none;
+    }
+
+    .loading-spinner {
+        display: none;
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .spinner {
+        border: 4px solid #e5e7eb;
+        border-top: 4px solid #0284c7;
         border-radius: 50%;
-        background: #10b981;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
     }
 
-    .day-badge.offday {
-        background: #ec4899;
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
     }
 
-    /* Modal */
+    .loading-text {
+        margin-top: 1rem;
+        color: #6b7280;
+        font-weight: 600;
+    }
+
+    #weekPicker {
+        padding: 0.6rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 600;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+    #weekPicker:hover {
+        border-color: #0284c7;
+        box-shadow: 0 2px 8px rgba(2, 132, 199, 0.1);
+    }
+
     .modal {
         display: none;
         position: fixed;
@@ -193,17 +355,14 @@
         width: 90%;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         animation: slideIn 0.3s ease;
+        position: relative;
+        max-height: 90vh;
+        overflow-y: auto;
     }
 
     @keyframes slideIn {
-        from {
-            transform: translateY(-50px);
-            opacity: 0;
-        }
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
+        from { transform: translateY(-50px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
     }
 
     .modal-header {
@@ -226,8 +385,8 @@
 
     .detail-item {
         padding: 0.75rem;
-        background: #f0f9ff;
-        border-left: 4px solid #0ea5e9;
+        background: #dbeafe;
+        border-left: 4px solid #0284c7;
         margin-bottom: 0.75rem;
         border-radius: 4px;
     }
@@ -239,7 +398,7 @@
 
     .detail-item label {
         font-weight: 600;
-        color: #0c4a6e;
+        color: #0284c7;
         font-size: 0.85rem;
         display: block;
         margin-bottom: 0.25rem;
@@ -251,7 +410,7 @@
 
     .detail-item p {
         margin: 0;
-        color: #0c4a6e;
+        color: #0284c7;
         font-size: 0.9rem;
     }
 
@@ -259,281 +418,360 @@
         color: #9d174d;
     }
 
-    .legend {
-        display: flex;
-        gap: 2rem;
-        margin-bottom: 2rem;
-        flex-wrap: wrap;
+    .btn-cancel {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        border: 2px solid #e5e7eb;
+        background: white;
+        color: #6b7280;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 1rem;
+        transition: all 0.3s ease;
     }
 
-    .legend-item {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .legend-color {
-        width: 20px;
-        height: 20px;
-        border-radius: 4px;
-        border: 2px solid;
-    }
-
-    .legend-schedule {
-        background: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%);
-        border-color: #10b981;
-    }
-
-    .legend-offday {
-        background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
-        border-color: #ec4899;
+    .btn-cancel:hover {
+        border-color: #6b7280;
+        color: #374151;
     }
 
     @media (max-width: 768px) {
-        .official-calendar {
-            padding: 1rem;
-        }
-
-        .calendar-day {
-            min-height: 80px;
-            padding: 0.75rem;
-        }
-
-        .day-number {
-            font-size: 1rem;
-        }
-
-        .day-content {
-            font-size: 0.6rem;
-        }
-
-        .calendar-controls {
-            flex-direction: column;
-            gap: 1rem;
-        }
+        .calendar-grid { grid-template-columns: 80px repeat(7, 1fr); }
+        .modal-content { max-width: 90vw; }
+        .calendar-header { flex-direction: column; align-items: flex-start; }
+        .week-navigation { flex-direction: column; width: 100%; }
+        .week-display { width: 100%; }
     }
 </style>
 
-<div class="official-calendar">
-    <!-- Legend -->
-    <div class="legend">
-        <div class="legend-item">
-            <div class="legend-color legend-schedule"></div>
-            <span style="font-size: 0.9rem; font-weight: 600; color: #10b981;">📋 Ca làm việc được duyệt</span>
-        </div>
-        <div class="legend-item">
-            <div class="legend-color legend-offday"></div>
-            <span style="font-size: 0.9rem; font-weight: 600; color: #ec4899;">🏖️ Ngày nghỉ được duyệt</span>
-        </div>
+<div class="stats-container">
+    <div class="stat-card schedule">
+        <p>📋 Ca làm việc được duyệt</p>
+        <p id="scheduleCount">0</p>
     </div>
 
-    <!-- Calendar Controls -->
-    <div class="calendar-controls">
-        <h2 class="calendar-title" id="monthYear">Tháng 5 - 2026</h2>
-        <div class="calendar-nav">
-            <button class="btn-nav" onclick="previousMonth()">← Tháng trước</button>
-            <button class="btn-nav" onclick="nextMonth()">Tháng sau →</button>
-        </div>
-    </div>
-
-    <!-- Calendar -->
-    <div>
-        <!-- Weekdays -->
-        <div class="calendar-weekdays">
-            <div class="weekday">Thứ Hai</div>
-            <div class="weekday">Thứ Ba</div>
-            <div class="weekday">Thứ Tư</div>
-            <div class="weekday">Thứ Năm</div>
-            <div class="weekday">Thứ Sáu</div>
-            <div class="weekday">Thứ Bảy</div>
-            <div class="weekday">Chủ Nhật</div>
-        </div>
-
-        <!-- Days -->
-        <div class="calendar-days" id="calendarDays"></div>
+    <div class="stat-card offday">
+        <p>🏖️ Ngày nghỉ được duyệt</p>
+        <p id="offDayCount">0</p>
     </div>
 </div>
 
-<!-- Detail Modal -->
+<div class="calendar-container">
+    <div class="calendar-header">
+        <div class="week-navigation">
+            <button type="button" class="week-nav-btn" onclick="previousWeek()">← Tuần trước</button>
+            <div class="week-display" id="weekDisplay" data-week-start="{{ $weekStart->format('Y-m-d') }}">
+                {{ $weekStart->format('d/m') }} - {{ $weekEnd->format('d/m/Y') }}
+            </div>
+            <button type="button" class="week-nav-btn" onclick="nextWeek()">Tuần sau →</button>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <input type="date" id="weekPicker" title="Chọn ngày để đi đến tuần đó">
+            <div class="legend-section">
+                <div class="legend-item">
+                    <div class="legend-dot approved"></div>
+                    <span>✅ Đã duyệt</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-dot offday-dot"></div>
+                    <span>🏖️ Ngày nghỉ</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingSpinner" class="loading-spinner">
+        <div class="spinner"></div>
+        <p class="loading-text">⏳ Đang tải lịch...</p>
+    </div>
+
+    <div class="calendar-grid" id="calendarGrid"></div>
+</div>
+
 <div id="detailModal" class="modal">
     <div class="modal-content">
-        <button class="modal-close" onclick="closeModal()">✕</button>
-        <div class="modal-header">📅 Chi tiết ngày</div>
-        <div id="modalContent"></div>
+        <button type="button" class="modal-close" onclick="closeDetailModal()">✕</button>
+        <div class="modal-header">📋 Chi tiết ca làm việc</div>
+        <div id="detailContent"></div>
+        <button type="button" class="btn-cancel" onclick="closeDetailModal()">Đóng</button>
     </div>
 </div>
 
 <script>
-    let currentMonth = new Date().getMonth();
-    let currentYear = new Date().getFullYear();
+    let currentWeekStart = new Date("{{ $weekStart->format('Y-m-d') }}" + 'T00:00:00');
 
-    const scheduleData = {
-        schedules: {!! json_encode($approvedSchedules->map(function($s) {
-            return [
-                'date' => $s->work_date->format('Y-m-d'),
-                'name' => optional($s->shift)->name ?? 'Ca làm việc',
-                'time' => $s->time_range,
-            ];
-        })) !!},
-        offDays: {!! json_encode($approvedOffDays->map(function($o) {
-            return [
-                'date' => optional($o->date)->format('Y-m-d') ?? $o->date,
-                'reason' => $o->reason ?? 'Xin nghỉ',
-            ];
-        })) !!}
+    let allSchedulesData = {
+        schedules: [],
+        offDays: []
     };
 
-    function renderCalendar() {
-        const firstDay = new Date(currentYear, currentMonth, 1);
-        const lastDay = new Date(currentYear, currentMonth + 1, 0);
-        const today = new Date();
-        const todayDate = formatDate(today.getFullYear(), today.getMonth(), today.getDate());
+    let shiftsData = [];
 
-        const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 
-                           'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+    function formatLocalDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
 
-        document.getElementById('monthYear').textContent = `${monthNames[currentMonth]} - ${currentYear}`;
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
 
-        const calendarDays = document.getElementById('calendarDays');
-        calendarDays.innerHTML = '';
+    function findMorningShift() {
+        return shiftsData.find(s => Number(s.start_hour) < 12 || String(s.name || '').includes('sáng'));
+    }
 
-        const prevLastDay = new Date(currentYear, currentMonth, 0).getDate();
-        const firstDayOfWeek = firstDay.getDay() || 7;
+    function findEveningShift() {
+        return shiftsData.find(s => Number(s.start_hour) >= 12 || String(s.name || '').includes('tối'));
+    }
 
-        // Ngày tháng trước
-        for (let i = prevLastDay - firstDayOfWeek + 2; i <= prevLastDay; i++) {
-            const day = document.createElement('div');
-            day.className = 'calendar-day other-month';
-            day.innerHTML = `<div class="day-number">${i}</div>`;
-            calendarDays.appendChild(day);
+    function rebuildCalendarGrid(weekStart, weekEnd, schedules, offDays) {
+        let html = '<div style="background: white;"></div>';
+
+        const morningShift = findMorningShift();
+        const eveningShift = findEveningShift();
+
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(weekStart);
+            date.setDate(date.getDate() + i);
+
+            const dateStr = formatLocalDate(date);
+            const isToday = dateStr === formatLocalDate(new Date());
+            const isSunday = i === 6;
+            const dayNum = String(date.getDate()).padStart(2, '0');
+            const dayName = i === 6 ? 'TCN' : 'T' + (i + 2);
+
+            html += `<div class="grid-day-header ${isToday ? 'today' : ''} ${isSunday ? 'sunday' : ''}">
+                <div class="day-name">${dayName}</div>
+                <div class="day-number">${dayNum}</div>
+            </div>`;
         }
 
-        // Ngày tháng hiện tại
-        for (let i = 1; i <= lastDay.getDate(); i++) {
-            const day = document.createElement('div');
-            const dateStr = formatDate(currentYear, currentMonth, i);
+        html += renderShiftRow(weekStart, morningShift, '☀️', 'SÁNG', '08:00 - 17:00', schedules);
+        html += renderShiftRow(weekStart, eveningShift, '🌙', 'TỐI', '14:00 - 22:00', schedules);
+        html += renderOffDayRow(weekStart, offDays);
 
-            day.className = 'calendar-day';
+        document.getElementById('calendarGrid').innerHTML = html;
+    }
 
-            if (dateStr === todayDate) {
-                day.classList.add('today');
+    function renderShiftRow(weekStart, shift, icon, label, hours, schedules) {
+        let html = `<div class="grid-time-header">
+            <div class="grid-time-icon">${icon}</div>
+            <div class="grid-time-label">${label}</div>
+            <div class="grid-time-hours">${hours}</div>
+        </div>`;
+
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(weekStart);
+            date.setDate(date.getDate() + i);
+
+            const dateStr = formatLocalDate(date);
+
+            if (!shift) {
+                html += '<div class="grid-cell"><div class="shift-card empty">—</div></div>';
+                continue;
             }
 
-            const schedule = scheduleData.schedules.find(s => s.date === dateStr);
-            const offDay = scheduleData.offDays.find(o => o.date === dateStr);
+            const schedule = schedules.find(s => s.date === dateStr && String(s.shift_id) === String(shift.id));
 
-            let html = `<div class="day-number">${i}</div><div class="day-content">`;
-
-            if (schedule || offDay) {
-                if (schedule) {
-                    day.classList.add('has-schedule');
-                    html += `<div class="day-badge"></div>`;
-                }
-                if (offDay) {
-                    day.classList.add('has-offday');
-                    html += `<div class="day-badge offday"></div>`;
-                }
+            if (schedule) {
+                html += `<div class="grid-cell">
+                    <div class="shift-card approved" onclick="showDetailModalById(${schedule.id})">
+                        ✅ Duyệt
+                        <br>
+                        <small>${escapeHtml(schedule.name)}</small>
+                    </div>
+                </div>`;
+            } else {
+                html += '<div class="grid-cell"><div class="shift-card empty">—</div></div>';
             }
-
-            html += `</div>`;
-            day.innerHTML = html;
-
-            day.style.cursor = 'pointer';
-            day.onclick = () => {
-                if (schedule || offDay) {
-                    showModal(dateStr, schedule, offDay);
-                }
-            };
-
-            calendarDays.appendChild(day);
         }
 
-        // Ngày tháng sau
-        const totalCells = calendarDays.children.length;
-        const nextDaysCount = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
-
-        for (let i = 1; i <= nextDaysCount; i++) {
-            const day = document.createElement('div');
-            day.className = 'calendar-day other-month';
-            day.innerHTML = `<div class="day-number">${i}</div>`;
-            calendarDays.appendChild(day);
-        }
+        return html;
     }
 
-    function formatDate(year, month, day) {
-        const m = String(month + 1).padStart(2, '0');
-        const d = String(day).padStart(2, '0');
-        return `${year}-${m}-${d}`;
+    function renderOffDayRow(weekStart, offDays) {
+        let html = `<div class="grid-time-header">
+            <div class="grid-time-icon">🏖️</div>
+            <div class="grid-time-label">NGHỈ</div>
+            <div class="grid-time-hours">Ngày nghỉ</div>
+        </div>`;
+
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(weekStart);
+            date.setDate(date.getDate() + i);
+
+            const dateStr = formatLocalDate(date);
+            const offDay = offDays.find(o => o.date === dateStr);
+
+            if (offDay) {
+                html += `<div class="grid-cell">
+                    <div class="shift-card offday" onclick="showOffDayModalById(${offDay.id})">
+                        🏖️ Nghỉ
+                        <br>
+                        <small>${escapeHtml(offDay.reason)}</small>
+                    </div>
+                </div>`;
+            } else {
+                html += '<div class="grid-cell"><div class="shift-card empty">—</div></div>';
+            }
+        }
+
+        return html;
     }
 
-    function previousMonth() {
-        currentMonth--;
-        if (currentMonth < 0) {
-            currentMonth = 11;
-            currentYear--;
-        }
-        renderCalendar();
+    function loadWeek(date) {
+        currentWeekStart = date;
+        const dateStr = formatLocalDate(date);
+
+        document.getElementById('loadingSpinner').style.display = 'block';
+        document.getElementById('calendarGrid').style.opacity = '0.5';
+
+        const url = new URL(window.location);
+        url.searchParams.set('week_start', dateStr);
+        window.history.pushState(null, '', url);
+
+        fetch('{{ route("employees.schedule.official-schedule.get-week-data") }}?week_start=' + dateStr, {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+            .then(r => r.json())
+            .then(data => {
+                shiftsData = data.shifts || [];
+                allSchedulesData.schedules = data.schedules || [];
+                allSchedulesData.offDays = data.off_days || [];
+
+                document.getElementById('scheduleCount').textContent = allSchedulesData.schedules.length;
+                document.getElementById('offDayCount').textContent = allSchedulesData.offDays.length;
+
+                const weekStart = new Date(data.week_start + 'T00:00:00');
+                const weekEnd = new Date(data.week_end + 'T00:00:00');
+
+                rebuildCalendarGrid(weekStart, weekEnd, allSchedulesData.schedules, allSchedulesData.offDays);
+
+                const displayEl = document.getElementById('weekDisplay');
+                displayEl.setAttribute('data-week-start', data.week_start);
+                displayEl.textContent =
+                    String(weekStart.getDate()).padStart(2, '0') + '/' +
+                    String(weekStart.getMonth() + 1).padStart(2, '0') + ' - ' +
+                    String(weekEnd.getDate()).padStart(2, '0') + '/' +
+                    String(weekEnd.getMonth() + 1).padStart(2, '0') + '/' +
+                    weekEnd.getFullYear();
+
+                document.getElementById('weekPicker').value = data.week_start;
+            })
+            .catch(e => {
+                console.error('Fetch error:', e);
+                alert('Lỗi tải dữ liệu lịch chính thức!');
+            })
+            .finally(() => {
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('calendarGrid').style.opacity = '1';
+            });
     }
 
-    function nextMonth() {
-        currentMonth++;
-        if (currentMonth > 11) {
-            currentMonth = 0;
-            currentYear++;
-        }
-        renderCalendar();
+    function previousWeek() {
+        const newDate = new Date(currentWeekStart);
+        newDate.setDate(newDate.getDate() - 7);
+        loadWeek(newDate);
     }
 
-    function showModal(dateStr, schedule, offDay) {
-        const date = new Date(dateStr + 'T00:00:00').toLocaleDateString('vi-VN');
-        let html = `<p style="font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: #111827;">📅 ${date}</p>`;
+    function nextWeek() {
+        const newDate = new Date(currentWeekStart);
+        newDate.setDate(newDate.getDate() + 7);
+        loadWeek(newDate);
+    }
 
-        if (schedule) {
-            html += `
-                <div class="detail-item">
-                    <label>⏰ Ca làm việc</label>
-                    <p>${schedule.name}</p>
-                </div>
-                <div class="detail-item">
-                    <label>🕐 Thời gian</label>
-                    <p>${schedule.time}</p>
-                </div>
-                <div class="detail-item">
-                    <label>✅ Trạng thái</label>
-                    <p>Đã được phê duyệt</p>
-                </div>
-            `;
-        }
+    function jumpToWeek(dateStr) {
+        if (!dateStr) return;
+        loadWeek(new Date(dateStr + 'T00:00:00'));
+    }
 
-        if (offDay) {
-            html += `
-                <div class="detail-item offday">
-                    <label>🏖️ Ngày nghỉ</label>
-                    <p>${offDay.reason}</p>
-                </div>
-                <div class="detail-item offday">
-                    <label>✅ Trạng thái</label>
-                    <p>Đã được phê duyệt</p>
-                </div>
-            `;
-        }
+    function showDetailModalById(scheduleId) {
+        const schedule = allSchedulesData.schedules.find(s => String(s.id) === String(scheduleId));
 
-        document.getElementById('modalContent').innerHTML = html;
+        if (!schedule) return;
+
+        const date = new Date(schedule.date + 'T00:00:00').toLocaleDateString('vi-VN');
+
+        const html = `
+            <div class="detail-item">
+                <label>📅 Ngày làm việc</label>
+                <p>${date}</p>
+            </div>
+            <div class="detail-item">
+                <label>⏰ Ca làm việc</label>
+                <p>${escapeHtml(schedule.name)}</p>
+            </div>
+            <div class="detail-item">
+                <label>🕐 Thời gian</label>
+                <p>${escapeHtml(schedule.time)}</p>
+            </div>
+            <div class="detail-item">
+                <label>✅ Trạng thái</label>
+                <p>Đã được phê duyệt</p>
+            </div>
+        `;
+
+        document.getElementById('detailContent').innerHTML = html;
         document.getElementById('detailModal').classList.add('active');
     }
 
-    function closeModal() {
+    function showOffDayModalById(offDayId) {
+        const offDay = allSchedulesData.offDays.find(o => String(o.id) === String(offDayId));
+
+        if (!offDay) return;
+
+        const date = new Date(offDay.date + 'T00:00:00').toLocaleDateString('vi-VN');
+
+        const html = `
+            <div class="detail-item offday">
+                <label>📅 Ngày</label>
+                <p>${date}</p>
+            </div>
+            <div class="detail-item offday">
+                <label>🏖️ Lý do</label>
+                <p>${escapeHtml(offDay.reason)}</p>
+            </div>
+            <div class="detail-item offday">
+                <label>✅ Trạng thái</label>
+                <p>Đã được phê duyệt</p>
+            </div>
+        `;
+
+        document.getElementById('detailContent').innerHTML = html;
+        document.getElementById('detailModal').classList.add('active');
+    }
+
+    function closeDetailModal() {
         document.getElementById('detailModal').classList.remove('active');
     }
 
-    window.addEventListener('click', (e) => {
-        const modal = document.getElementById('detailModal');
-        if (e.target === modal) {
-            closeModal();
-        }
+    document.addEventListener('DOMContentLoaded', function() {
+        const weekStartStr = document.getElementById('weekDisplay').getAttribute('data-week-start');
+        document.getElementById('weekPicker').value = weekStartStr;
+
+        document.getElementById('weekPicker').addEventListener('change', function() {
+            jumpToWeek(this.value);
+        });
+
+        loadWeek(currentWeekStart);
     });
 
-    renderCalendar();
+    window.addEventListener('click', (e) => {
+        if (e.target === document.getElementById('detailModal')) closeDetailModal();
+    });
 </script>
 
 @endsection

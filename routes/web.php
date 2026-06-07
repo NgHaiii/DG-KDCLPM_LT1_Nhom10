@@ -9,6 +9,7 @@ use App\Http\Controllers\DoctorScheduleController;
 use App\Http\Controllers\EmployeeScheduleController;
 use App\Http\Controllers\ScheduleApprovalController;
 use App\Http\Controllers\AdminDutyController;
+use App\Http\Controllers\AppointmentController;
 
 // ==================== ROUTE CHÍNH ====================
 Route::get('/', function () {
@@ -196,6 +197,7 @@ Route::middleware('auth')->group(function () {
         Route::get('dashboard', function () {
             return view('employees.dashboard');
         })->name('dashboard');
+        
         Route::get('reception', function () {
             return view('employees.reception');
         })->name('reception');
@@ -205,24 +207,28 @@ Route::middleware('auth')->group(function () {
             // ✅ PAGE VIEW
             Route::get('/', [EmployeeScheduleController::class, 'create'])->name('create');
             Route::get('official', [EmployeeScheduleController::class, 'officialSchedule'])->name('official');
-            
+
             // ✅ API ROUTES - AJAX DATA FETCHING
             Route::get('get-week-data', [EmployeeScheduleController::class, 'getWeekData'])->name('get-week-data');
-            
+
+            // ✅ OFFICIAL SCHEDULE API - Lấy dữ liệu lịch chính thức
+            Route::get('official-schedule/get-week-data', [EmployeeScheduleController::class, 'getOfficialWeekData'])->name('official-schedule.get-week-data');
+
             // ✅ SCHEDULE REQUEST - CRUD (AJAX)
             Route::post('/', [EmployeeScheduleController::class, 'store'])->name('store');
             Route::put('{scheduleRequest}', [EmployeeScheduleController::class, 'updateSchedule'])->name('update');
             Route::delete('{scheduleRequest}', [EmployeeScheduleController::class, 'cancel'])->name('cancel');
-            
+
             // ✅ OFF-DAY ROUTES (Xin ngày nghỉ)
             Route::post('off-day', [EmployeeScheduleController::class, 'requestOffDay'])->name('off-day.store');
             Route::put('off-day/{offDay}', [EmployeeScheduleController::class, 'updateOffDay'])->name('off-day.update');
             Route::delete('off-day/{offDay}', [EmployeeScheduleController::class, 'cancelOffDay'])->name('off-day.cancel');
-            
+
             // ✅ LEGACY REDIRECTS
             Route::get('approved', function () {
                 return redirect(route('employees.schedule.create'));
             })->name('approved');
+
             Route::get('off-days', function () {
                 return redirect(route('employees.schedule.create'));
             })->name('off-days');
@@ -231,16 +237,20 @@ Route::middleware('auth')->group(function () {
         Route::get('appointment', function () {
             return view('employees.appointment');
         })->name('appointment');
+        
         Route::get('payment', function () {
             return view('employees.payment');
         })->name('payment');
+        
         Route::get('invoice', function () {
             return view('employees.invoice');
         })->name('invoice');
+        
         Route::get('services', function () {
             $services = \App\Models\Service::with('currentPrice')->get();
             return view('employees.services', compact('services'));
         })->name('services');
+        
         Route::get('settings', function () {
             return view('employees.settings');
         })->name('settings');
@@ -252,20 +262,33 @@ Route::middleware('auth')->group(function () {
             return view('patient.dashboard');
         })->name('dashboard');
 
-        // LỊCH KHÁM
-        Route::prefix('appointment')->name('appointment.')->group(function () {
-            Route::get('list', function () {
-                return view('patient.appointments');
-            })->name('list');
-            Route::get('create', function () {
-                return view('patient.appointments-create');
-            })->name('create');
-            Route::get('{id}', function ($id) {
-                return view('patient.appointments-view');
-            })->name('show');
+        // ✅ LỊCH HẸN KHÁM (APPOINTMENTS) - Đặt lịch & Danh sách
+        Route::get('appointments', [AppointmentController::class, 'index'])->name('appointment.list');
+        Route::get('appointments/create', [AppointmentController::class, 'create'])->name('appointment.create');
+        Route::post('appointments', [AppointmentController::class, 'store'])->name('appointment.store');
+        Route::get('appointments/{id}', [AppointmentController::class, 'show'])->name('appointment.show');
+        Route::post('appointments/{id}/cancel', [AppointmentController::class, 'cancel'])->name('appointment.cancel');
+
+        // ✅ REDIRECT ROUTES (singular → plural) - FIX 404
+        Route::get('appointment', function () {
+            return redirect()->route('patient.appointment.list');
+        });
+        Route::get('appointment/create', function () {
+            return redirect()->route('patient.appointment.create');
+        });
+        Route::get('appointment/{id}', function ($id) {
+            return redirect()->route('patient.appointment.show', $id);
         });
 
-        // HỒ SƠ BỆNH NHÂN
+        // ✅ API ENDPOINTS - AJAX Data
+        Route::get('api/doctors-by-service', [AppointmentController::class, 'getDoctorsByService'])->name('api.doctors-by-service');
+        Route::get('api/available-slots', [AppointmentController::class, 'getAvailableSlots'])->name('api.available-slots');
+
+
+        Route::get('api/service-categories', [AppointmentController::class, 'getServiceCategories'])->name('api.service-categories');
+        Route::get('api/services-by-category', [AppointmentController::class, 'getServicesByCategory'])->name('api.services-by-category');
+
+        // ✅ HỒ SƠ SỨC KHỎE
         Route::get('medical-records', function () {
             return view('patient.medical-records');
         })->name('medical-records');
@@ -274,7 +297,7 @@ Route::middleware('auth')->group(function () {
             return view('patient.health-profile');
         })->name('health-profile');
 
-        // TÀI CHÍNH
+        // ✅ HÓA ĐƠN & THANH TOÁN
         Route::get('invoices', function () {
             return view('patient.invoices');
         })->name('invoices');
@@ -283,13 +306,12 @@ Route::middleware('auth')->group(function () {
             return view('patient.payments');
         })->name('payments');
 
-        // DỊCH VỤ
+        // ✅ DỊCH VỤ & GIÁ
         Route::get('services', function () {
-            $services = \App\Models\Service::with('currentPrice')->get();
-            return view('patient.services', compact('services'));
+            return view('patient.services');
         })->name('services');
 
-        // CÀI ĐẶT
+        // ✅ CÀI ĐẶT CÁ NHÂN
         Route::get('settings', function () {
             return view('patient.settings');
         })->name('settings');
