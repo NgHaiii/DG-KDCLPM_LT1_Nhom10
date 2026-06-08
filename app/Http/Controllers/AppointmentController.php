@@ -282,11 +282,27 @@ class AppointmentController extends Controller
     {
         try {
             $validated = $request->validate([
+                'patient_name' => 'required|string|max:100',
+                'patient_phone' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-\s]{8,20}$/'],
+                'patient_email' => 'nullable|email|max:255',
+                'patient_dob' => 'nullable|date|before_or_equal:today',
+                'patient_gender' => 'nullable|in:Nam,Nữ,Khác',
+                'patient_address' => 'nullable|string|max:255',
+                'emergency_phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s]{8,20}$/'],
+
                 'doctor_id' => 'required|exists:employees,id',
                 'service_id' => 'required|exists:services,id',
                 'appointment_date' => 'required|date_format:Y-m-d H:i',
                 'notes' => 'nullable|string|max:500',
             ], [
+                'patient_name.required' => 'Vui lòng nhập họ và tên',
+                'patient_phone.required' => 'Vui lòng nhập số điện thoại',
+                'patient_phone.regex' => 'Số điện thoại không hợp lệ',
+                'patient_email.email' => 'Email không hợp lệ',
+                'patient_dob.before_or_equal' => 'Ngày sinh không hợp lệ',
+                'patient_gender.in' => 'Giới tính không hợp lệ',
+                'emergency_phone.regex' => 'Số điện thoại người thân không hợp lệ',
+
                 'doctor_id.required' => 'Vui lòng chọn bác sĩ',
                 'service_id.required' => 'Vui lòng chọn dịch vụ',
                 'appointment_date.required' => 'Vui lòng chọn ngày giờ',
@@ -306,7 +322,7 @@ class AppointmentController extends Controller
                 'doctor_id' => $validated['doctor_id'],
                 'service_id' => $validated['service_id'],
                 'appointment_date' => $validated['appointment_date'],
-                'notes' => $validated['notes'] ?? null,
+                'notes' => $this->buildAppointmentNotes($validated),
             ]);
 
             Log::info('Appointment created successfully: ID=' . $appointment->id . ', Patient=' . Auth::id());
@@ -318,6 +334,7 @@ class AppointmentController extends Controller
 
             return back()
                 ->withInput()
+                ->withErrors($e->errors())
                 ->with('error', 'Dữ liệu không hợp lệ');
         } catch (\Exception $e) {
             Log::error('Error in store: ' . $e->getMessage());
@@ -382,5 +399,42 @@ class AppointmentController extends Controller
 
             return back()->with('error', 'Lỗi: ' . $e->getMessage());
         }
+    }
+
+    private function buildAppointmentNotes(array $validated): string
+    {
+        $lines = [
+            'THÔNG TIN BỆNH NHÂN',
+            'Họ tên: ' . $validated['patient_name'],
+            'SĐT: ' . $validated['patient_phone'],
+        ];
+
+        if (!empty($validated['patient_email'])) {
+            $lines[] = 'Email: ' . $validated['patient_email'];
+        }
+
+        if (!empty($validated['patient_dob'])) {
+            $lines[] = 'Ngày sinh: ' . $validated['patient_dob'];
+        }
+
+        if (!empty($validated['patient_gender'])) {
+            $lines[] = 'Giới tính: ' . $validated['patient_gender'];
+        }
+
+        if (!empty($validated['patient_address'])) {
+            $lines[] = 'Địa chỉ: ' . $validated['patient_address'];
+        }
+
+        if (!empty($validated['emergency_phone'])) {
+            $lines[] = 'SĐT người thân: ' . $validated['emergency_phone'];
+        }
+
+        if (!empty($validated['notes'])) {
+            $lines[] = '';
+            $lines[] = 'TRIỆU CHỨNG / GHI CHÚ';
+            $lines[] = $validated['notes'];
+        }
+
+        return trim(implode("\n", $lines));
     }
 }

@@ -3,11 +3,11 @@
 @section('title', 'Đặt Lịch Khám - DentalCare')
 
 @section('page-title', 'Đặt Lịch Khám Bệnh')
-@section('page-subtitle', 'Vui lòng chọn dịch vụ, thời gian và bác sĩ phù hợp')
+@section('page-subtitle', 'Vui lòng nhập thông tin cá nhân, chọn dịch vụ, thời gian và bác sĩ phù hợp')
 
 @section('styles')
 <style>
-    .appointment-container { max-width: 700px; margin: 0 auto; }
+    .appointment-container { max-width: 820px; margin: 0 auto; }
 
     .card {
         border: 1px solid var(--border-color);
@@ -33,8 +33,17 @@
 
     .section-title i { color: var(--primary); font-size: 20px; }
 
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+    }
+
     .form-group { margin-bottom: 16px; }
+    .form-grid .form-group { margin-bottom: 0; }
     .form-group:last-child { margin-bottom: 0; }
+
+    .form-group.full-width { grid-column: 1 / -1; }
 
     .form-group label {
         display: block;
@@ -227,7 +236,9 @@
     }
 
     @media (max-width: 768px) {
+        .appointment-container { max-width: 100%; }
         .card { padding: 24px; }
+        .form-grid { grid-template-columns: 1fr; }
         .form-actions { flex-direction: column-reverse; }
         .step-indicator { margin-bottom: 24px; }
         .step-label { display: none; }
@@ -240,7 +251,7 @@
     <div class="step-indicator">
         <div class="step active" id="step1">
             <div class="step-number">1</div>
-            <div class="step-label">Loại dịch vụ</div>
+            <div class="step-label">Thông tin</div>
         </div>
         <div class="step" id="step2">
             <div class="step-number">2</div>
@@ -261,7 +272,7 @@
             <i class="ri-lightbulb-flash-line"></i>
             <div>
                 <strong>Cách thức đặt lịch:</strong>
-                Loại dịch vụ -> Dịch vụ cụ thể -> Chọn ngày -> Chọn thời gian -> Chọn bác sĩ còn rảnh -> Xác nhận.
+                Nhập thông tin cá nhân -> Chọn dịch vụ -> Chọn ngày -> Chọn thời gian -> Chọn bác sĩ còn rảnh -> Xác nhận.
             </div>
         </div>
 
@@ -270,7 +281,85 @@
 
             <div class="form-section">
                 <div class="section-title">
-                    <i class="ri-folders-line"></i> 1. Loại Dịch Vụ
+                    <i class="ri-user-heart-line"></i> 1. Thông Tin Cá Nhân
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="patient_name" class="required">Họ và tên</label>
+                        <input type="text"
+                               id="patient_name"
+                               name="patient_name"
+                               value="{{ old('patient_name', Auth::user()->name ?? '') }}"
+                               placeholder="Nhập họ và tên"
+                               required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="patient_phone" class="required">Số điện thoại</label>
+                        <input type="tel"
+                               id="patient_phone"
+                               name="patient_phone"
+                               value="{{ old('patient_phone') }}"
+                               placeholder="Ví dụ: 0987654321"
+                               required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="patient_email">Email</label>
+                        <input type="email"
+                               id="patient_email"
+                               name="patient_email"
+                               value="{{ old('patient_email', Auth::user()->email ?? '') }}"
+                               placeholder="email@example.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="patient_dob">Ngày sinh</label>
+                        <input type="date"
+                               id="patient_dob"
+                               name="patient_dob"
+                               value="{{ old('patient_dob') }}"
+                               max="{{ date('Y-m-d') }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="patient_gender">Giới tính</label>
+                        <select id="patient_gender" name="patient_gender">
+                            <option value="">-- Chọn giới tính --</option>
+                            <option value="Nam" @selected(old('patient_gender') === 'Nam')>Nam</option>
+                            <option value="Nữ" @selected(old('patient_gender') === 'Nữ')>Nữ</option>
+                            <option value="Khác" @selected(old('patient_gender') === 'Khác')>Khác</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="emergency_phone">Số điện thoại người thân</label>
+                        <input type="tel"
+                               id="emergency_phone"
+                               name="emergency_phone"
+                               value="{{ old('emergency_phone') }}"
+                               placeholder="Liên hệ khi cần thiết">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="patient_address">Địa chỉ</label>
+                        <input type="text"
+                               id="patient_address"
+                               name="patient_address"
+                               value="{{ old('patient_address') }}"
+                               placeholder="Nhập địa chỉ liên hệ">
+                    </div>
+                </div>
+
+                <div class="help-text">Thông tin này giúp phòng khám liên hệ và tiếp đón bệnh nhân chính xác hơn.</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="form-section">
+                <div class="section-title">
+                    <i class="ri-folders-line"></i> 2. Loại Dịch Vụ
                 </div>
                 <div class="form-group">
                     <label for="service_category" class="required">Chọn loại dịch vụ</label>
@@ -291,7 +380,7 @@
 
             <div class="form-section">
                 <div class="section-title">
-                    <i class="ri-hospital-line"></i> 2. Dịch Vụ Cụ Thể
+                    <i class="ri-hospital-line"></i> 3. Dịch Vụ Cụ Thể
                 </div>
                 <div class="form-group">
                     <label for="service_id" class="required">Dịch vụ khám</label>
@@ -316,7 +405,7 @@
 
             <div class="form-section">
                 <div class="section-title">
-                    <i class="ri-calendar-line"></i> 3. Chọn Ngày Khám
+                    <i class="ri-calendar-line"></i> 4. Chọn Ngày Khám
                 </div>
                 <div class="form-group">
                     <label for="appointment_date_only" class="required">Ngày khám</label>
@@ -327,7 +416,7 @@
                            disabled
                            min="{{ date('Y-m-d') }}"
                            onchange="onDateChange()">
-                    <div class="help-text">Sau khi chọn ngày, hệ thống sẽ lấy các giờ còn bác sĩ rảnh trong khung 08:00 - 22:00.</div>
+                    <div class="help-text">Sau khi chọn ngày, hệ thống sẽ lấy các giờ còn bác sĩ rảnh theo ca trực.</div>
                     @error('appointment_date')
                         <div class="error-text"><i class="ri-error-warning-fill"></i>{{ $message }}</div>
                     @enderror
@@ -338,7 +427,7 @@
 
             <div class="form-section">
                 <div class="section-title">
-                    <i class="ri-time-line"></i> 4. Chọn Thời Gian
+                    <i class="ri-time-line"></i> 5. Chọn Thời Gian
                 </div>
                 <div class="form-group">
                     <label for="time_slot" class="required">Thời gian khám</label>
@@ -349,7 +438,7 @@
                         <span class="spinner"></span>
                         <span>Đang tìm khung giờ còn bác sĩ rảnh...</span>
                     </div>
-                    <div class="help-text">Mỗi mốc giờ cách nhau 30 phút và chỉ hiển thị khi có bác sĩ đúng chuyên khoa còn trống.</div>
+                    <div class="help-text">Chỉ hiển thị khung giờ có bác sĩ đúng chuyên khoa còn trống.</div>
                 </div>
             </div>
 
@@ -357,7 +446,7 @@
 
             <div class="form-section">
                 <div class="section-title">
-                    <i class="ri-user-doctor-line"></i> 5. Chọn Bác Sĩ
+                    <i class="ri-user-doctor-line"></i> 6. Chọn Bác Sĩ
                 </div>
                 <div class="form-group">
                     <label for="doctor_id" class="required">Bác sĩ</label>
@@ -378,14 +467,14 @@
 
             <div class="form-section">
                 <div class="section-title">
-                    <i class="ri-edit-2-line"></i> 6. Ghi Chú Thêm (Tùy Chọn)
+                    <i class="ri-edit-2-line"></i> 7. Ghi Chú Thêm
                 </div>
                 <div class="form-group">
                     <label for="notes">Mô tả triệu chứng</label>
                     <textarea id="notes"
                               name="notes"
-                              placeholder="Vui lòng mô tả triệu chứng hoặc thông tin quan trọng bạn muốn chia sẻ với bác sĩ..."></textarea>
-                    <div class="help-text">Tối đa 500 ký tự</div>
+                              placeholder="Vui lòng mô tả triệu chứng hoặc thông tin quan trọng bạn muốn chia sẻ với bác sĩ...">{{ old('notes') }}</textarea>
+                    <div class="help-text">Tối đa 500 ký tự nếu dùng validation hiện tại của controller.</div>
                 </div>
             </div>
 
@@ -408,6 +497,7 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         loadCategories();
+        setStepState(1);
     });
 
     function loadCategories() {
@@ -642,12 +732,29 @@
     }
 
     function validateForm() {
+        const patientName = document.getElementById('patient_name').value.trim();
+        const patientPhone = document.getElementById('patient_phone').value.trim();
         const category = document.getElementById('service_category').value;
         const serviceId = document.getElementById('service_id').value;
         const date = document.getElementById('appointment_date_only').value;
         const time = document.getElementById('time_slot').value;
         const doctorId = document.getElementById('doctor_id').value;
         const appointmentDate = document.getElementById('appointment_date').value;
+
+        if (!patientName) {
+            alert('Vui lòng nhập họ và tên');
+            return false;
+        }
+
+        if (!patientPhone) {
+            alert('Vui lòng nhập số điện thoại');
+            return false;
+        }
+
+        if (!/^[0-9+\-\s]{8,15}$/.test(patientPhone)) {
+            alert('Số điện thoại không hợp lệ');
+            return false;
+        }
 
         if (!category) {
             alert('Vui lòng chọn loại dịch vụ');

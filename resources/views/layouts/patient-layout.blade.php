@@ -475,17 +475,15 @@
                 </a>
             </li>
 
-            <div class="divider"></div>
-
             <!-- Hồ sơ sức khỏe -->
             <div class="menu-group-title">Hồ sơ</div>
 
             <li class="nav-item">
-                <a href="{{ route('patient.medical-records') }}" class="nav-link @if(request()->routeIs('patient.medical-records')) active @endif">
-                    <i class="nav-icon ri-file-medical-line"></i>
-                    <span>Lịch sử khám</span>
-                </a>
-            </li>
+    <a href="{{ route('patient.medical-records') }}" class="nav-link @if(request()->routeIs('patient.medical-records')) active @endif">
+        <i class="nav-icon ri-history-line"></i>
+        <span>Lịch sử khám</span>
+    </a>
+</li>
 
             <li class="nav-item">
                 <a href="{{ route('patient.health-profile') }}" class="nav-link @if(request()->routeIs('patient.health-profile')) active @endif">
@@ -493,8 +491,6 @@
                     <span>Hồ sơ sức khỏe</span>
                 </a>
             </li>
-
-            <div class="divider"></div>
 
             <!-- Thanh toán & Hóa đơn -->
             <div class="menu-group-title">Tài chính</div>
@@ -513,8 +509,6 @@
                 </a>
             </li>
 
-            <div class="divider"></div>
-
             <!-- Dịch vụ & Giá -->
             <div class="menu-group-title">Dịch vụ</div>
 
@@ -524,8 +518,6 @@
                     <span>Dịch vụ & Giá</span>
                 </a>
             </li>
-
-            <div class="divider"></div>
 
             <!-- Cài đặt -->
             <div class="menu-group-title">Cài đặt</div>
