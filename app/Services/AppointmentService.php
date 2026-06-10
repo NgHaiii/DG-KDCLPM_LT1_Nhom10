@@ -12,11 +12,26 @@ use Illuminate\Support\Facades\Log;
 class AppointmentService
 {
     private const SLOT_DURATION = 30;
+    private const LUNCH_START_MINUTES = 690; // 11:30
+    private const LUNCH_END_MINUTES = 750;   // 12:30
+
     private const ACTIVE_EMPLOYEE_STATUSES = ['active', 'Hoạt động'];
+
+    private const BLOCKING_APPOINTMENT_STATUSES = [
+        'pending',
+        'confirmed',
+        'checked_in',
+        'waiting',
+        'in_progress',
+    ];
 
     public function getAvailableDoctorsByService($serviceId, $date)
     {
         try {
+            if (!$this->isOnlineBookingDateAllowed($date)) {
+                return collect();
+            }
+
             $service = Service::findOrFail($serviceId);
 
             if (empty($service->required_specialization)) {
@@ -37,10 +52,18 @@ class AppointmentService
                     'doctor' => $doctor,
                     'available_slots' => $this->getAvailableSlotsForDoctor($doctor->id, $date),
                     'slots_needed' => $slotsNeeded,
+                    'load_minutes' => $this->getDoctorOnlineLoadMinutesForDate($doctor->id, $date),
+                    'appointment_count' => $this->getDoctorOnlineAppointmentCountForDate($doctor->id, $date),
                 ];
             }
 
-            return collect($availableDoctors);
+            return collect($availableDoctors)
+                ->sortBy([
+                    ['load_minutes', 'asc'],
+                    ['appointment_count', 'asc'],
+                    fn ($a, $b) => strcmp($a['doctor']->name ?? '', $b['doctor']->name ?? ''),
+                ])
+                ->values();
         } catch (\Exception $e) {
             Log::error('Error in getAvailableDoctorsByService: ' . $e->getMessage());
             return collect();
@@ -50,6 +73,10 @@ class AppointmentService
     public function getAvailableTimesByService($serviceId, $date): array
     {
         try {
+            if (!$this->isOnlineBookingDateAllowed($date)) {
+                return [];
+            }
+
             $service = Service::findOrFail($serviceId);
 
             if (empty($service->required_specialization)) {
@@ -60,16 +87,10 @@ class AppointmentService
             $availableTimes = [];
 
             foreach ($this->getEligibleDoctorsForService($service) as $doctor) {
-                $shifts = ShiftAssignment::where('employee_id', $doctor->id)
-                    ->whereDate('work_date', $date)
-                    ->where('status', 'approved')
-                    ->orderBy('start_hour')
-                    ->orderBy('start_minute')
-                    ->get();
+                $workSchedules = $this->getApprovedWorkSchedulesForDoctor($doctor->id, $date);
 
-                foreach ($shifts as $shift) {
-                    $shiftStart = ((int) $shift->start_hour * 60) + (int) $shift->start_minute;
-                    $shiftEnd = ((int) $shift->end_hour * 60) + (int) $shift->end_minute;
+                foreach ($workSchedules as $schedule) {
+                    [$shiftStart, $shiftEnd] = $this->getScheduleStartEndMinutes($schedule);
 
                     if ($shiftEnd <= $shiftStart) {
                         continue;
@@ -78,6 +99,10 @@ class AppointmentService
                     for ($minute = $shiftStart; $minute + $durationMinutes <= $shiftEnd; $minute += self::SLOT_DURATION) {
                         $startTime = $this->minutesToTime($minute);
                         $endTime = $this->minutesToTime($minute + $durationMinutes);
+
+                        if ($this->overlapsLunchBreak($minute, $minute + $durationMinutes)) {
+                            continue;
+                        }
 
                         if (!$this->isDoctorAvailableForPeriod($doctor->id, $date, $startTime, $durationMinutes)) {
                             continue;
@@ -88,16 +113,24 @@ class AppointmentService
                                 'start_time' => $startTime,
                                 'end_time' => $endTime,
                                 'doctor_count' => 0,
+                                'doctor_ids' => [],
                             ];
                         }
 
-                        $availableTimes[$startTime]['doctor_count']++;
+                        if (!in_array($doctor->id, $availableTimes[$startTime]['doctor_ids'], true)) {
+                            $availableTimes[$startTime]['doctor_ids'][] = $doctor->id;
+                            $availableTimes[$startTime]['doctor_count']++;
+                        }
                     }
                 }
             }
 
             return collect($availableTimes)
                 ->sortBy('start_time')
+                ->map(function ($slot) {
+                    unset($slot['doctor_ids']);
+                    return $slot;
+                })
                 ->values()
                 ->all();
         } catch (\Exception $e) {
@@ -109,6 +142,10 @@ class AppointmentService
     public function getAvailableDoctorsByServiceAndTime($serviceId, $date, $startTime): array
     {
         try {
+            if (!$this->isOnlineBookingDateAllowed($date)) {
+                return [];
+            }
+
             $service = Service::findOrFail($serviceId);
 
             if (empty($service->required_specialization)) {
@@ -121,15 +158,22 @@ class AppointmentService
                 ->filter(function ($doctor) use ($date, $startTime, $durationMinutes) {
                     return $this->isDoctorAvailableForPeriod($doctor->id, $date, $startTime, $durationMinutes);
                 })
-                ->map(function ($doctor) {
+                ->map(function ($doctor) use ($date) {
                     return [
                         'id' => $doctor->id,
                         'name' => $doctor->name,
                         'specialization' => $doctor->specialization ?? 'N/A',
                         'phone' => $doctor->phone ?? '',
                         'email' => $doctor->email ?? '',
+                        'load_minutes' => $this->getDoctorOnlineLoadMinutesForDate($doctor->id, $date),
+                        'appointment_count' => $this->getDoctorOnlineAppointmentCountForDate($doctor->id, $date),
                     ];
                 })
+                ->sortBy([
+                    ['load_minutes', 'asc'],
+                    ['appointment_count', 'asc'],
+                    ['name', 'asc'],
+                ])
                 ->values()
                 ->all();
         } catch (\Exception $e) {
@@ -140,36 +184,35 @@ class AppointmentService
 
     public function hasDoctorShiftOnDate($doctorId, $date): bool
     {
-        return ShiftAssignment::where('employee_id', $doctorId)
-            ->whereDate('work_date', $date)
-            ->where('status', 'approved')
-            ->exists();
+        return $this->getApprovedWorkSchedulesForDoctor($doctorId, $date)->isNotEmpty();
     }
 
     public function getAvailableSlotsForDoctor($doctorId, $date): array
     {
-        $shifts = ShiftAssignment::where('employee_id', $doctorId)
-            ->whereDate('work_date', $date)
-            ->where('status', 'approved')
-            ->orderBy('start_hour')
-            ->orderBy('start_minute')
-            ->get();
+        if (!$this->isOnlineBookingDateAllowed($date)) {
+            return [];
+        }
 
-        if ($shifts->isEmpty()) {
+        $workSchedules = $this->getApprovedWorkSchedulesForDoctor($doctorId, $date);
+
+        if ($workSchedules->isEmpty()) {
             return [];
         }
 
         $allSlots = [];
 
-        foreach ($shifts as $shift) {
-            $workStart = ((int) $shift->start_hour * 60) + (int) $shift->start_minute;
-            $workEnd = ((int) $shift->end_hour * 60) + (int) $shift->end_minute;
+        foreach ($workSchedules as $schedule) {
+            [$workStart, $workEnd] = $this->getScheduleStartEndMinutes($schedule);
 
             if ($workEnd <= $workStart) {
                 continue;
             }
 
             for ($time = $workStart; $time + self::SLOT_DURATION <= $workEnd; $time += self::SLOT_DURATION) {
+                if ($this->overlapsLunchBreak($time, $time + self::SLOT_DURATION)) {
+                    continue;
+                }
+
                 $allSlots[] = $time;
             }
         }
@@ -228,13 +271,25 @@ class AppointmentService
                 throw new \Exception('Bác sĩ không đúng chuyên khoa của dịch vụ đã chọn');
             }
 
-            $date = Carbon::parse($data['appointment_date'])->format('Y-m-d');
-            $time = Carbon::parse($data['appointment_date'])->format('H:i');
+            $appointmentDate = Carbon::parse($data['appointment_date']);
+            $date = $appointmentDate->format('Y-m-d');
+            $time = $appointmentDate->format('H:i');
             $durationMinutes = $this->getServiceDurationMinutes($service);
             $slotsNeeded = $this->getSlotsNeeded($durationMinutes);
 
+            if (!$this->isOnlineBookingDateAllowed($date)) {
+                throw new \Exception('Lịch online cần được đặt trước ít nhất 1 ngày. Vui lòng chọn ngày từ ngày mai trở đi.');
+            }
+
+            $startMinutes = $this->timeToMinutes($time);
+            $endMinutes = $startMinutes + $durationMinutes;
+
+            if ($this->overlapsLunchBreak($startMinutes, $endMinutes)) {
+                throw new \Exception('Phòng khám không nhận lịch online trong khoảng 11:30 - 12:30. Vui lòng chọn khung giờ khác.');
+            }
+
             if (!$this->hasDoctorShiftOnDate($data['doctor_id'], $date)) {
-                throw new \Exception('Bác sĩ không có ca trực vào ngày này');
+                throw new \Exception('Bác sĩ không có lịch làm việc vào ngày này');
             }
 
             if (!$this->isDoctorAvailableForPeriod($data['doctor_id'], $date, $time, $durationMinutes)) {
@@ -248,6 +303,7 @@ class AppointmentService
                 'appointment_date' => $data['appointment_date'],
                 'slots_used' => $slotsNeeded,
                 'duration_minutes' => $durationMinutes,
+                'source' => 'online',
                 'status' => 'pending',
                 'notes' => $data['notes'] ?? null,
             ]);
@@ -267,7 +323,7 @@ class AppointmentService
             ->where('status', '!=', 'cancelled')
             ->where('appointment_date', '>=', now())
             ->orderBy('appointment_date', 'asc')
-            ->with('doctor', 'service')
+            ->with(['doctor', 'service', 'room'])
             ->get();
     }
 
@@ -328,22 +384,20 @@ class AppointmentService
 
     private function hasAnyAvailablePeriodForDoctor($doctorId, $date, int $durationMinutes): bool
     {
-        $shifts = ShiftAssignment::where('employee_id', $doctorId)
-            ->whereDate('work_date', $date)
-            ->where('status', 'approved')
-            ->orderBy('start_hour')
-            ->orderBy('start_minute')
-            ->get();
+        $workSchedules = $this->getApprovedWorkSchedulesForDoctor($doctorId, $date);
 
-        foreach ($shifts as $shift) {
-            $shiftStart = ((int) $shift->start_hour * 60) + (int) $shift->start_minute;
-            $shiftEnd = ((int) $shift->end_hour * 60) + (int) $shift->end_minute;
+        foreach ($workSchedules as $schedule) {
+            [$shiftStart, $shiftEnd] = $this->getScheduleStartEndMinutes($schedule);
 
             if ($shiftEnd <= $shiftStart) {
                 continue;
             }
 
             for ($minute = $shiftStart; $minute + $durationMinutes <= $shiftEnd; $minute += self::SLOT_DURATION) {
+                if ($this->overlapsLunchBreak($minute, $minute + $durationMinutes)) {
+                    continue;
+                }
+
                 if ($this->isDoctorAvailableForPeriod($doctorId, $date, $this->minutesToTime($minute), $durationMinutes)) {
                     return true;
                 }
@@ -355,26 +409,30 @@ class AppointmentService
 
     private function isDoctorAvailableForPeriod($doctorId, $date, string $startTime, int $durationMinutes): bool
     {
+        if (!$this->isOnlineBookingDateAllowed($date)) {
+            return false;
+        }
+
         $startMinutes = $this->timeToMinutes($startTime);
         $endMinutes = $startMinutes + $durationMinutes;
 
-        if (!$this->isInsideApprovedShift($doctorId, $date, $startMinutes, $endMinutes)) {
+        if ($this->overlapsLunchBreak($startMinutes, $endMinutes)) {
+            return false;
+        }
+
+        if (!$this->isInsideApprovedWorkSchedule($doctorId, $date, $startMinutes, $endMinutes)) {
             return false;
         }
 
         return !$this->hasAppointmentOverlap($doctorId, $date, $startMinutes, $endMinutes);
     }
 
-    private function isInsideApprovedShift($doctorId, $date, int $startMinutes, int $endMinutes): bool
+    private function isInsideApprovedWorkSchedule($doctorId, $date, int $startMinutes, int $endMinutes): bool
     {
-        $shifts = ShiftAssignment::where('employee_id', $doctorId)
-            ->whereDate('work_date', $date)
-            ->where('status', 'approved')
-            ->get();
+        $workSchedules = $this->getApprovedWorkSchedulesForDoctor($doctorId, $date);
 
-        foreach ($shifts as $shift) {
-            $shiftStart = ((int) $shift->start_hour * 60) + (int) $shift->start_minute;
-            $shiftEnd = ((int) $shift->end_hour * 60) + (int) $shift->end_minute;
+        foreach ($workSchedules as $schedule) {
+            [$shiftStart, $shiftEnd] = $this->getScheduleStartEndMinutes($schedule);
 
             if ($shiftStart <= $startMinutes && $shiftEnd >= $endMinutes) {
                 return true;
@@ -384,11 +442,46 @@ class AppointmentService
         return false;
     }
 
+    private function getApprovedWorkSchedulesForDoctor($doctorId, $date)
+    {
+        return ShiftAssignment::with('shift')
+            ->where('employee_id', $doctorId)
+            ->whereDate('work_date', $date)
+            ->where('assignment_type', 'work')
+            ->where('status', 'approved')
+            ->orderBy('start_hour')
+            ->orderBy('start_minute')
+            ->get();
+    }
+
+    private function getScheduleStartEndMinutes($schedule): array
+    {
+        $startHour = $schedule->start_hour;
+        $startMinute = $schedule->start_minute;
+        $endHour = $schedule->end_hour;
+        $endMinute = $schedule->end_minute;
+
+        if ($startHour === null && $schedule->shift) {
+            $startHour = $schedule->shift->start_hour;
+            $startMinute = $schedule->shift->start_minute ?? 0;
+        }
+
+        if ($endHour === null && $schedule->shift) {
+            $endHour = $schedule->shift->end_hour;
+            $endMinute = $schedule->shift->end_minute ?? 0;
+        }
+
+        $start = ((int) $startHour * 60) + (int) ($startMinute ?? 0);
+        $end = ((int) $endHour * 60) + (int) ($endMinute ?? 0);
+
+        return [$start, $end];
+    }
+
     private function hasAppointmentOverlap($doctorId, $date, int $startMinutes, int $endMinutes): bool
     {
         $appointments = Appointment::where('doctor_id', $doctorId)
             ->whereDate('appointment_date', $date)
-            ->whereIn('status', ['pending', 'confirmed'])
+            ->whereIn('status', self::BLOCKING_APPOINTMENT_STATUSES)
             ->get();
 
         foreach ($appointments as $appointment) {
@@ -402,6 +495,41 @@ class AppointmentService
         }
 
         return false;
+    }
+
+    private function getDoctorOnlineLoadMinutesForDate($doctorId, $date): int
+    {
+        return (int) Appointment::where('doctor_id', $doctorId)
+            ->whereDate('appointment_date', $date)
+            ->where('source', 'online')
+            ->whereIn('status', self::BLOCKING_APPOINTMENT_STATUSES)
+            ->get()
+            ->sum(function ($appointment) {
+                return (int) ($appointment->duration_minutes ?? self::SLOT_DURATION);
+            });
+    }
+
+    private function getDoctorOnlineAppointmentCountForDate($doctorId, $date): int
+    {
+        return Appointment::where('doctor_id', $doctorId)
+            ->whereDate('appointment_date', $date)
+            ->where('source', 'online')
+            ->whereIn('status', self::BLOCKING_APPOINTMENT_STATUSES)
+            ->count();
+    }
+
+    private function isOnlineBookingDateAllowed($date): bool
+    {
+        $bookingDate = Carbon::parse($date)->startOfDay();
+        $minimumDate = now()->copy()->addDay()->startOfDay();
+
+        return $bookingDate->greaterThanOrEqualTo($minimumDate);
+    }
+
+    private function overlapsLunchBreak(int $startMinutes, int $endMinutes): bool
+    {
+        return $startMinutes < self::LUNCH_END_MINUTES
+            && $endMinutes > self::LUNCH_START_MINUTES;
     }
 
     private function timeToMinutes(string $time): int

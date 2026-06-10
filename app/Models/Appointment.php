@@ -15,25 +15,48 @@ class Appointment extends Model
         'patient_id',
         'doctor_id',
         'service_id',
+        'room_id',
+        'source',
         'appointment_date',
         'slots_used',
         'duration_minutes',
         'status',
+        'confirmed_at',
+        'checked_in_at',
+        'started_at',
+        'estimated_end_at',
+        'completed_at',
+        'actual_used_minutes',
+        'queue_number',
+        'delay_notified_at',
         'notes',
     ];
 
     protected $casts = [
         'appointment_date' => 'datetime',
+        'confirmed_at' => 'datetime',
+        'checked_in_at' => 'datetime',
+        'started_at' => 'datetime',
+        'estimated_end_at' => 'datetime',
+        'completed_at' => 'datetime',
+        'delay_notified_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+
+        'patient_id' => 'integer',
+        'doctor_id' => 'integer',
+        'service_id' => 'integer',
+        'room_id' => 'integer',
         'slots_used' => 'integer',
         'duration_minutes' => 'integer',
+        'actual_used_minutes' => 'integer',
+        'queue_number' => 'integer',
     ];
 
     // ==================== RELATIONSHIPS ====================
-    
+
     /**
-     * Quan hệ: Bệnh nhân (users)
+     * Bệnh nhân đặt lịch.
      */
     public function patient()
     {
@@ -41,7 +64,7 @@ class Appointment extends Model
     }
 
     /**
-     * Quan hệ: Bác sĩ (employees)
+     * Bác sĩ phụ trách lịch hẹn.
      */
     public function doctor()
     {
@@ -49,152 +72,236 @@ class Appointment extends Model
     }
 
     /**
-     * Quan hệ: Dịch vụ
+     * Dịch vụ khám/điều trị.
      */
     public function service()
     {
         return $this->belongsTo(Service::class);
     }
 
+    /**
+     * Phòng khám thực tế được xếp cho lịch hẹn.
+     */
+    public function room()
+    {
+        return $this->belongsTo(Room::class);
+    }
+
     // ==================== SCOPES ====================
 
-    /**
-     * Scope: Lấy lịch hẹn của bệnh nhân hiện tại
-     */
     public function scopeForCurrentPatient($query)
     {
         return $query->where('patient_id', auth()->id());
     }
 
-    /**
-     * Scope: Lấy lịch hẹn đã xác nhận
-     */
     public function scopeConfirmed($query)
     {
         return $query->where('status', 'confirmed');
     }
 
-    /**
-     * Scope: Lấy lịch hẹn chưa xác nhận
-     */
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
     }
 
-    /**
-     * Scope: Lấy lịch hẹn đã hoàn thành
-     */
     public function scopeCompleted($query)
     {
         return $query->where('status', 'completed');
     }
 
-    /**
-     * Scope: Lấy lịch hẹn đã hủy
-     */
     public function scopeCancelled($query)
     {
         return $query->where('status', 'cancelled');
     }
 
-    /**
-     * Scope: Lấy lịch hẹn sắp tới
-     */
+    public function scopeOnline($query)
+    {
+        return $query->where('source', 'online');
+    }
+
+    public function scopeOffline($query)
+    {
+        return $query->where('source', 'offline');
+    }
+
+    public function scopeActiveFlow($query)
+    {
+        return $query->whereIn('status', [
+            'pending',
+            'confirmed',
+            'checked_in',
+            'waiting',
+            'in_progress',
+        ]);
+    }
+
     public function scopeUpcoming($query)
     {
         return $query->where('appointment_date', '>=', now())
-                    ->whereIn('status', ['confirmed', 'pending'])
-                    ->orderBy('appointment_date', 'asc');
+            ->whereIn('status', ['pending', 'confirmed', 'checked_in', 'waiting', 'in_progress'])
+            ->orderBy('appointment_date', 'asc');
     }
 
-    /**
-     * Scope: Lấy lịch hẹn quá khứ
-     */
     public function scopePast($query)
     {
         return $query->where('appointment_date', '<', now())
-                    ->orderBy('appointment_date', 'desc');
+            ->orderBy('appointment_date', 'desc');
     }
 
-    /**
-     * Scope: Lấy lịch hẹn trong khoảng thời gian
-     */
     public function scopeBetweenDates($query, $startDate, $endDate)
     {
         return $query->whereBetween('appointment_date', [$startDate, $endDate]);
     }
 
-    /**
-     * Scope: Tìm lịch hẹn theo bác sĩ
-     */
     public function scopeByDoctor($query, $doctorId)
     {
         return $query->where('doctor_id', $doctorId);
     }
 
-    /**
-     * Scope: Tìm lịch hẹn theo dịch vụ
-     */
     public function scopeByService($query, $serviceId)
     {
         return $query->where('service_id', $serviceId);
     }
 
+    public function scopeByRoom($query, $roomId)
+    {
+        return $query->where('room_id', $roomId);
+    }
+
+    public function scopeForDate($query, $date)
+    {
+        return $query->whereDate('appointment_date', $date);
+    }
+
     // ==================== HELPERS ====================
 
-    /**
-     * Kiểm tra xem lịch hẹn đã qua hay chưa
-     */
     public function isPast()
     {
         return $this->appointment_date < now();
     }
 
-    /**
-     * Kiểm tra xem lịch hẹn còn hiệu lực không
-     */
     public function isUpcoming()
     {
         return $this->appointment_date >= now() && $this->status !== 'cancelled';
     }
 
-    /**
-     * Kiểm tra xem lịch hẹn đã được xác nhận không
-     */
+    public function isPending()
+    {
+        return $this->status === 'pending';
+    }
+
     public function isConfirmed()
     {
         return $this->status === 'confirmed';
     }
 
-    /**
-     * Kiểm tra xem lịch hẹn đã bị hủy không
-     */
-    public function isCancelled()
+    public function isCheckedIn()
     {
-        return $this->status === 'cancelled';
+        return $this->status === 'checked_in';
     }
 
-    /**
-     * Kiểm tra xem lịch hẹn đã hoàn thành không
-     */
+    public function isWaiting()
+    {
+        return $this->status === 'waiting';
+    }
+
+    public function isInProgress()
+    {
+        return $this->status === 'in_progress';
+    }
+
     public function isCompleted()
     {
         return $this->status === 'completed';
     }
 
+    public function isCancelled()
+    {
+        return $this->status === 'cancelled';
+    }
+
+    public function isOnline()
+    {
+        return $this->source === 'online';
+    }
+
+    public function isOffline()
+    {
+        return $this->source === 'offline';
+    }
+
     /**
-     * Lấy tên trạng thái hiển thị
+     * Thời điểm kết thúc dự kiến theo appointment_date + duration_minutes.
+     */
+    public function getExpectedEndTimeAttribute()
+    {
+        if (!$this->appointment_date) {
+            return null;
+        }
+
+        return $this->appointment_date->copy()->addMinutes((int) ($this->duration_minutes ?? 30));
+    }
+
+    /**
+     * Kiểm tra ca khám có đang quá thời lượng dự kiến không.
+     */
+    public function isOvertime()
+    {
+        if ($this->status !== 'in_progress') {
+            return false;
+        }
+
+        $estimatedEnd = $this->estimated_end_at ?? $this->expected_end_time;
+
+        if (!$estimatedEnd) {
+            return false;
+        }
+
+        return now()->greaterThan($estimatedEnd);
+    }
+
+    /**
+     * Số phút quá giờ, dùng cho cảnh báo lễ tân/bệnh nhân.
+     */
+    public function getOvertimeMinutesAttribute()
+    {
+        if (!$this->isOvertime()) {
+            return 0;
+        }
+
+        $estimatedEnd = $this->estimated_end_at ?? $this->expected_end_time;
+
+        return max(0, $estimatedEnd->diffInMinutes(now()));
+    }
+
+    /**
+     * Lấy tên trạng thái hiển thị.
      */
     public function getStatusLabelAttribute()
     {
         $statuses = [
-            'pending' => '⏳ Chờ xác nhận',
-            'confirmed' => '✅ Đã xác nhận',
-            'completed' => '✔️ Đã hoàn thành',
-            'cancelled' => '❌ Đã hủy',
+            'pending' => 'Chờ xác nhận',
+            'confirmed' => 'Đã xác nhận',
+            'checked_in' => 'Đã check-in',
+            'waiting' => 'Đang chờ khám',
+            'in_progress' => 'Đang khám',
+            'completed' => 'Đã hoàn thành',
+            'cancelled' => 'Đã hủy',
         ];
 
-        return $statuses[$this->status] ?? 'N/A';
+        return $statuses[$this->status] ?? 'Không xác định';
+    }
+
+    /**
+     * Lấy tên nguồn lịch.
+     */
+    public function getSourceLabelAttribute()
+    {
+        $sources = [
+            'online' => 'Đặt online',
+            'offline' => 'Tiếp nhận tại quầy',
+        ];
+
+        return $sources[$this->source] ?? 'Không xác định';
     }
 }

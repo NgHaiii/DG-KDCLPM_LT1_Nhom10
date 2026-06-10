@@ -511,6 +511,12 @@
                     <span>Quản lý giá</span>
                 </a>
             </li>
+            <li class="nav-item">
+    <a href="{{ route('admin.rooms.index') }}" class="nav-link @if(request()->routeIs('admin.rooms.*')) active @endif">
+        <i class="nav-icon ri-door-open-line"></i>
+        <span>Quản lý phòng khám</span>
+    </a>
+</li>
         </ul>
 
         <!-- User Profile Panel -->

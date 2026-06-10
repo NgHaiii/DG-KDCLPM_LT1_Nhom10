@@ -3,11 +3,15 @@
 @section('title', 'Đặt Lịch Khám - DentalCare')
 
 @section('page-title', 'Đặt Lịch Khám Bệnh')
-@section('page-subtitle', 'Vui lòng nhập thông tin cá nhân, chọn dịch vụ, thời gian và bác sĩ phù hợp')
+@section('page-subtitle', 'Đặt lịch online trước ít nhất 1 ngày, chọn dịch vụ, thời gian và bác sĩ phù hợp')
+
+@php
+    $minBookingDate = \Carbon\Carbon::tomorrow()->format('Y-m-d');
+@endphp
 
 @section('styles')
 <style>
-    .appointment-container { max-width: 820px; margin: 0 auto; }
+    .appointment-container { max-width: 860px; margin: 0 auto; }
 
     .card {
         border: 1px solid var(--border-color);
@@ -90,7 +94,7 @@
         background: #f8fafc;
         color: #94a3b8;
         cursor: not-allowed;
-        opacity: 0.6;
+        opacity: 0.7;
     }
 
     .form-group textarea {
@@ -110,12 +114,57 @@
         display: flex;
         gap: 12px;
         align-items: flex-start;
+        line-height: 1.55;
+    }
+
+    .warning-box {
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        color: #9a3412;
     }
 
     .info-box i {
         font-size: 18px;
         flex-shrink: 0;
         margin-top: 2px;
+    }
+
+    .summary-box {
+        display: none;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: var(--radius-lg);
+        padding: 16px;
+        margin-top: 16px;
+    }
+
+    .summary-box.show { display: block; }
+
+    .summary-title {
+        font-weight: 600;
+        color: var(--text-main);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        font-size: 13px;
+    }
+
+    .summary-item {
+        color: var(--text-muted);
+    }
+
+    .summary-item strong {
+        display: block;
+        color: var(--text-main);
+        margin-top: 3px;
+        font-weight: 600;
     }
 
     .loading-state {
@@ -154,6 +203,7 @@
         color: var(--text-muted);
         font-size: 12px;
         margin-top: 6px;
+        line-height: 1.45;
     }
 
     .form-actions {
@@ -238,7 +288,8 @@
     @media (max-width: 768px) {
         .appointment-container { max-width: 100%; }
         .card { padding: 24px; }
-        .form-grid { grid-template-columns: 1fr; }
+        .form-grid,
+        .summary-grid { grid-template-columns: 1fr; }
         .form-actions { flex-direction: column-reverse; }
         .step-indicator { margin-bottom: 24px; }
         .step-label { display: none; }
@@ -272,7 +323,15 @@
             <i class="ri-lightbulb-flash-line"></i>
             <div>
                 <strong>Cách thức đặt lịch:</strong>
-                Nhập thông tin cá nhân -> Chọn dịch vụ -> Chọn ngày -> Chọn thời gian -> Chọn bác sĩ còn rảnh -> Xác nhận.
+                Nhập thông tin cá nhân -> Chọn dịch vụ -> Chọn ngày từ ngày mai trở đi -> Chọn thời gian -> Chọn bác sĩ còn rảnh -> Xác nhận.
+            </div>
+        </div>
+
+        <div class="info-box warning-box">
+            <i class="ri-time-line"></i>
+            <div>
+                Lịch online cần được đặt trước ít nhất 1 ngày. Phòng khám không nhận lịch online trong khoảng <strong>11:30 - 12:30</strong>.
+                Phòng khám sẽ được xếp sau khi bác sĩ xác nhận lịch hẹn.
             </div>
         </div>
 
@@ -361,6 +420,7 @@
                 <div class="section-title">
                     <i class="ri-folders-line"></i> 2. Loại Dịch Vụ
                 </div>
+
                 <div class="form-group">
                     <label for="service_category" class="required">Chọn loại dịch vụ</label>
                     <select id="service_category" name="service_category" required onchange="onCategoryChange()">
@@ -382,6 +442,7 @@
                 <div class="section-title">
                     <i class="ri-hospital-line"></i> 3. Dịch Vụ Cụ Thể
                 </div>
+
                 <div class="form-group">
                     <label for="service_id" class="required">Dịch vụ khám</label>
                     <select id="service_id" name="service_id" required disabled onchange="onServiceChange()">
@@ -392,8 +453,7 @@
                         <span>Đang tải dịch vụ...</span>
                     </div>
                     <div class="help-text">
-                        <i class="ri-information-line" style="font-size: 12px;"></i>
-                        Dịch vụ cần được gán chuyên khoa để hệ thống tìm đúng bác sĩ.
+                        Dịch vụ cần có chuyên khoa, thời lượng và phòng gợi ý để hệ thống điều phối chính xác.
                     </div>
                     @error('service_id')
                         <div class="error-text"><i class="ri-error-warning-fill"></i>{{ $message }}</div>
@@ -407,6 +467,7 @@
                 <div class="section-title">
                     <i class="ri-calendar-line"></i> 4. Chọn Ngày Khám
                 </div>
+
                 <div class="form-group">
                     <label for="appointment_date_only" class="required">Ngày khám</label>
                     <input type="date"
@@ -414,9 +475,12 @@
                            name="appointment_date_only"
                            required
                            disabled
-                           min="{{ date('Y-m-d') }}"
+                           min="{{ $minBookingDate }}"
                            onchange="onDateChange()">
-                    <div class="help-text">Sau khi chọn ngày, hệ thống sẽ lấy các giờ còn bác sĩ rảnh theo ca trực.</div>
+                    <div class="help-text">
+                        Ngày sớm nhất có thể đặt online: <strong>{{ \Carbon\Carbon::parse($minBookingDate)->format('d/m/Y') }}</strong>.
+                        Sau khi chọn ngày, hệ thống sẽ lấy các giờ còn bác sĩ rảnh theo lịch làm việc đã được duyệt.
+                    </div>
                     @error('appointment_date')
                         <div class="error-text"><i class="ri-error-warning-fill"></i>{{ $message }}</div>
                     @enderror
@@ -429,6 +493,7 @@
                 <div class="section-title">
                     <i class="ri-time-line"></i> 5. Chọn Thời Gian
                 </div>
+
                 <div class="form-group">
                     <label for="time_slot" class="required">Thời gian khám</label>
                     <select id="time_slot" name="time_slot" required disabled onchange="onTimeSlotChange()">
@@ -438,7 +503,9 @@
                         <span class="spinner"></span>
                         <span>Đang tìm khung giờ còn bác sĩ rảnh...</span>
                     </div>
-                    <div class="help-text">Chỉ hiển thị khung giờ có bác sĩ đúng chuyên khoa còn trống.</div>
+                    <div class="help-text">
+                        Chỉ hiển thị khung giờ có bác sĩ đúng chuyên khoa, đủ thời lượng dịch vụ và không giao với 11:30 - 12:30.
+                    </div>
                 </div>
             </div>
 
@@ -448,6 +515,7 @@
                 <div class="section-title">
                     <i class="ri-user-doctor-line"></i> 6. Chọn Bác Sĩ
                 </div>
+
                 <div class="form-group">
                     <label for="doctor_id" class="required">Bác sĩ</label>
                     <select id="doctor_id" name="doctor_id" required disabled onchange="onDoctorChange()">
@@ -457,9 +525,36 @@
                         <span class="spinner"></span>
                         <span>Đang lọc bác sĩ theo giờ đã chọn...</span>
                     </div>
+                    <div class="help-text">
+                        Danh sách bác sĩ được sắp xếp ưu tiên theo tải lịch online nhẹ hơn trong ngày.
+                    </div>
                     @error('doctor_id')
                         <div class="error-text"><i class="ri-error-warning-fill"></i>{{ $message }}</div>
                     @enderror
+                </div>
+            </div>
+
+            <div class="summary-box" id="summaryBox">
+                <div class="summary-title">
+                    <i class="ri-file-list-3-line"></i> Tóm tắt lịch hẹn
+                </div>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        Dịch vụ
+                        <strong id="summaryService">-</strong>
+                    </div>
+                    <div class="summary-item">
+                        Thời lượng dự kiến
+                        <strong id="summaryDuration">-</strong>
+                    </div>
+                    <div class="summary-item">
+                        Ngày giờ khám
+                        <strong id="summaryDateTime">-</strong>
+                    </div>
+                    <div class="summary-item">
+                        Bác sĩ
+                        <strong id="summaryDoctor">-</strong>
+                    </div>
                 </div>
             </div>
 
@@ -469,12 +564,13 @@
                 <div class="section-title">
                     <i class="ri-edit-2-line"></i> 7. Ghi Chú Thêm
                 </div>
+
                 <div class="form-group">
                     <label for="notes">Mô tả triệu chứng</label>
                     <textarea id="notes"
                               name="notes"
                               placeholder="Vui lòng mô tả triệu chứng hoặc thông tin quan trọng bạn muốn chia sẻ với bác sĩ...">{{ old('notes') }}</textarea>
-                    <div class="help-text">Tối đa 500 ký tự nếu dùng validation hiện tại của controller.</div>
+                    <div class="help-text">Tối đa 500 ký tự.</div>
                 </div>
             </div>
 
@@ -493,7 +589,12 @@
 </div>
 
 <script>
+    const MIN_BOOKING_DATE = @json($minBookingDate);
+    const LUNCH_START = 11 * 60 + 30;
+    const LUNCH_END = 12 * 60 + 30;
+
     let selectedServiceDuration = 30;
+    let selectedServiceName = '';
 
     document.addEventListener('DOMContentLoaded', function() {
         loadCategories();
@@ -573,9 +674,13 @@
                 services.forEach(service => {
                     const slots = Number(service.slots_required || 1);
                     const duration = Number(service.actual_duration || service.duration_minutes || (slots * 30));
+                    const specialization = service.required_specialization || 'Chưa gán chuyên khoa';
 
-                    html += `<option value="${service.id}" data-duration="${duration}">
-                        ${escapeHtml(service.name)} (${duration} phút)
+                    html += `<option value="${service.id}"
+                                     data-duration="${duration}"
+                                     data-specialization="${escapeHtml(specialization)}"
+                                     data-name="${escapeHtml(service.name)}">
+                        ${escapeHtml(service.name)} - ${duration} phút - ${escapeHtml(specialization)}
                     </option>`;
                 });
 
@@ -599,13 +704,17 @@
         if (!serviceSelect.value) {
             dateInput.disabled = true;
             setStepState(2);
+            updateSummary();
             return;
         }
 
         selectedServiceDuration = Number(selectedOption.dataset.duration || 30);
+        selectedServiceName = selectedOption.dataset.name || selectedOption.textContent.trim();
 
         dateInput.disabled = false;
+        dateInput.min = MIN_BOOKING_DATE;
         setStepState(3);
+        updateSummary();
     }
 
     function onDateChange() {
@@ -615,10 +724,19 @@
         resetTimeAndDoctor();
 
         if (!serviceId || !date) {
+            updateSummary();
+            return;
+        }
+
+        if (!isBookingDateAllowed(date)) {
+            alert('Lịch online cần được đặt trước ít nhất 1 ngày. Vui lòng chọn ngày từ ngày mai trở đi.');
+            document.getElementById('appointment_date_only').value = '';
+            updateSummary();
             return;
         }
 
         loadTimeSlotsForDate(serviceId, date);
+        updateSummary();
     }
 
     function loadTimeSlotsForDate(serviceId, date) {
@@ -636,7 +754,7 @@
 
                 if (!Array.isArray(times) || times.length === 0) {
                     timeSlotSelect.disabled = false;
-                    timeSlotSelect.innerHTML = '<option value="" disabled>Không có khung giờ còn bác sĩ rảnh</option>';
+                    timeSlotSelect.innerHTML = '<option value="" disabled>Không có khung giờ phù hợp trong ngày này</option>';
                     return;
                 }
 
@@ -672,12 +790,22 @@
         if (!time || !date) {
             document.getElementById('appointment_date').value = '';
             setStepState(3);
+            updateSummary();
+            return;
+        }
+
+        if (overlapsLunchBreak(time, selectedServiceDuration)) {
+            alert('Phòng khám không nhận lịch online trong khoảng 11:30 - 12:30. Vui lòng chọn khung giờ khác.');
+            document.getElementById('time_slot').value = '';
+            document.getElementById('appointment_date').value = '';
+            updateSummary();
             return;
         }
 
         document.getElementById('appointment_date').value = `${date} ${normalizeTime(time)}`;
         loadDoctorsForSelectedTime(normalizeTime(time));
         setStepState(4);
+        updateSummary();
     }
 
     function loadDoctorsForSelectedTime(time) {
@@ -704,8 +832,15 @@
                 let html = '<option value="">-- Chọn bác sĩ --</option>';
 
                 doctors.forEach(doctor => {
-                    html += `<option value="${doctor.id}">
-                        ${escapeHtml(doctor.name)} - ${escapeHtml(doctor.specialization || 'N/A')}
+                    const loadMinutes = Number(doctor.load_minutes || 0);
+                    const appointmentCount = Number(doctor.appointment_count || 0);
+                    const loadText = loadMinutes > 0
+                        ? ` - đã có ${loadMinutes} phút/${appointmentCount} lịch online`
+                        : ' - tải nhẹ';
+
+                    html += `<option value="${doctor.id}"
+                                     data-name="${escapeHtml(doctor.name)}">
+                        ${escapeHtml(doctor.name)} - ${escapeHtml(doctor.specialization || 'N/A')}${loadText}
                     </option>`;
                 });
 
@@ -729,6 +864,8 @@
         } else {
             document.getElementById('step4').classList.remove('completed');
         }
+
+        updateSummary();
     }
 
     function validateForm() {
@@ -751,7 +888,7 @@
             return false;
         }
 
-        if (!/^[0-9+\-\s]{8,15}$/.test(patientPhone)) {
+        if (!/^[0-9+\-\s]{8,20}$/.test(patientPhone)) {
             alert('Số điện thoại không hợp lệ');
             return false;
         }
@@ -771,8 +908,18 @@
             return false;
         }
 
+        if (!isBookingDateAllowed(date)) {
+            alert('Lịch online cần được đặt trước ít nhất 1 ngày. Vui lòng chọn ngày từ ngày mai trở đi.');
+            return false;
+        }
+
         if (!time || !appointmentDate) {
             alert('Vui lòng chọn thời gian khám');
+            return false;
+        }
+
+        if (overlapsLunchBreak(time, selectedServiceDuration)) {
+            alert('Phòng khám không nhận lịch online trong khoảng 11:30 - 12:30. Vui lòng chọn khung giờ khác.');
             return false;
         }
 
@@ -790,12 +937,15 @@
         document.getElementById('appointment_date_only').disabled = true;
         document.getElementById('appointment_date_only').value = '';
         selectedServiceDuration = 30;
+        selectedServiceName = '';
         resetTimeAndDoctor();
+        updateSummary();
     }
 
     function resetAfterService() {
         document.getElementById('appointment_date_only').value = '';
         resetTimeAndDoctor();
+        updateSummary();
     }
 
     function resetTimeAndDoctor() {
@@ -804,6 +954,7 @@
         document.getElementById('appointment_date').value = '';
         resetDoctorOnly();
         setStepState(3);
+        updateSummary();
     }
 
     function resetDoctorOnly() {
@@ -811,6 +962,30 @@
         document.getElementById('doctor_id').innerHTML = '<option value="">-- Chọn bác sĩ --</option>';
         document.getElementById('submitBtn').disabled = true;
         document.getElementById('step4').classList.remove('active', 'completed');
+        updateSummary();
+    }
+
+    function updateSummary() {
+        const serviceSelect = document.getElementById('service_id');
+        const doctorSelect = document.getElementById('doctor_id');
+        const date = document.getElementById('appointment_date_only').value;
+        const time = document.getElementById('time_slot').value;
+
+        const serviceName = serviceSelect.value
+            ? (selectedServiceName || serviceSelect.options[serviceSelect.selectedIndex]?.textContent.trim())
+            : '-';
+
+        const doctorName = doctorSelect.value
+            ? (doctorSelect.options[doctorSelect.selectedIndex]?.dataset.name || doctorSelect.options[doctorSelect.selectedIndex]?.textContent.trim())
+            : '-';
+
+        document.getElementById('summaryService').textContent = serviceName;
+        document.getElementById('summaryDuration').textContent = serviceSelect.value ? `${selectedServiceDuration} phút` : '-';
+        document.getElementById('summaryDateTime').textContent = date && time ? `${formatDateVi(date)} ${normalizeTime(time)}` : '-';
+        document.getElementById('summaryDoctor').textContent = doctorName;
+
+        const shouldShow = serviceSelect.value || date || time || doctorSelect.value;
+        document.getElementById('summaryBox').classList.toggle('show', !!shouldShow);
     }
 
     function setStepState(activeStep) {
@@ -829,13 +1004,41 @@
         }
     }
 
+    function isBookingDateAllowed(date) {
+        return String(date) >= MIN_BOOKING_DATE;
+    }
+
+    function overlapsLunchBreak(startTime, durationMinutes) {
+        const start = timeToMinutes(startTime);
+        const end = start + Number(durationMinutes || 30);
+
+        return start < LUNCH_END && end > LUNCH_START;
+    }
+
+    function timeToMinutes(time) {
+        const [hour, minute] = normalizeTime(time).split(':').map(Number);
+        return hour * 60 + minute;
+    }
+
     function normalizeTime(time) {
         return String(time || '').slice(0, 5);
     }
 
+    function formatDateVi(date) {
+        const [year, month, day] = String(date).split('-');
+        return `${day}/${month}/${year}`;
+    }
+
     function handleJsonResponse(response) {
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+            return response.json()
+                .then(data => {
+                    const message = data?.message || data?.error || `HTTP ${response.status}`;
+                    throw new Error(typeof message === 'string' ? message : `HTTP ${response.status}`);
+                })
+                .catch(() => {
+                    throw new Error(`HTTP ${response.status}`);
+                });
         }
 
         return response.json();

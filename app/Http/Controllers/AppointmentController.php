@@ -28,13 +28,13 @@ class AppointmentController extends Controller
             ->where('appointment_date', '>=', now())
             ->where('status', '!=', 'cancelled')
             ->orderBy('appointment_date', 'asc')
-            ->with('doctor', 'service')
+            ->with(['doctor', 'service', 'room'])
             ->get();
 
         $pastAppointments = Appointment::where('patient_id', $patientId)
             ->where('appointment_date', '<', now())
             ->orderBy('appointment_date', 'desc')
-            ->with('doctor', 'service')
+            ->with(['doctor', 'service', 'room'])
             ->get();
 
         return view('patient.appointments.index', compact('appointments', 'pastAppointments'));
@@ -56,7 +56,7 @@ class AppointmentController extends Controller
 
             return view('patient.appointments.create', compact('services'));
         } catch (\Exception $e) {
-            Log::error('Error in create: ' . $e->getMessage());
+            Log::error('Error in create appointment page: ' . $e->getMessage());
 
             return back()->with('error', 'Lỗi khi tải trang đặt lịch');
         }
@@ -127,13 +127,13 @@ class AppointmentController extends Controller
         try {
             $validated = $request->validate([
                 'service_id' => 'required|exists:services,id',
-                'date' => 'required|date_format:Y-m-d|after_or_equal:today',
+                'date' => 'required|date_format:Y-m-d|after:today',
             ], [
                 'service_id.required' => 'Vui lòng chọn dịch vụ',
                 'service_id.exists' => 'Dịch vụ không tồn tại',
                 'date.required' => 'Vui lòng chọn ngày',
                 'date.date_format' => 'Định dạng ngày không hợp lệ',
-                'date.after_or_equal' => 'Vui lòng chọn ngày hôm nay hoặc trong tương lai',
+                'date.after' => 'Lịch online cần được đặt trước ít nhất 1 ngày',
             ]);
 
             $doctors = $this->appointmentService->getAvailableDoctorsByService(
@@ -150,6 +150,8 @@ class AppointmentController extends Controller
                     'email' => $item['doctor']->email ?? '',
                     'available_slots_count' => count($item['available_slots'] ?? []),
                     'slots_needed' => $item['slots_needed'] ?? 1,
+                    'load_minutes' => $item['load_minutes'] ?? 0,
+                    'appointment_count' => $item['appointment_count'] ?? 0,
                 ];
             });
 
@@ -174,13 +176,13 @@ class AppointmentController extends Controller
         try {
             $validated = $request->validate([
                 'doctor_id' => 'required|exists:employees,id',
-                'date' => 'required|date_format:Y-m-d|after_or_equal:today',
+                'date' => 'required|date_format:Y-m-d|after:today',
             ], [
                 'doctor_id.required' => 'Vui lòng chọn bác sĩ',
                 'doctor_id.exists' => 'Bác sĩ không tồn tại',
                 'date.required' => 'Vui lòng chọn ngày',
                 'date.date_format' => 'Định dạng ngày không hợp lệ',
-                'date.after_or_equal' => 'Vui lòng chọn ngày hôm nay hoặc trong tương lai',
+                'date.after' => 'Lịch online cần được đặt trước ít nhất 1 ngày',
             ]);
 
             $slots = $this->appointmentService->getAvailableSlotsForDoctor(
@@ -209,13 +211,13 @@ class AppointmentController extends Controller
         try {
             $validated = $request->validate([
                 'service_id' => 'required|exists:services,id',
-                'date' => 'required|date_format:Y-m-d|after_or_equal:today',
+                'date' => 'required|date_format:Y-m-d|after:today',
             ], [
                 'service_id.required' => 'Vui lòng chọn dịch vụ',
                 'service_id.exists' => 'Dịch vụ không tồn tại',
                 'date.required' => 'Vui lòng chọn ngày',
                 'date.date_format' => 'Định dạng ngày không hợp lệ',
-                'date.after_or_equal' => 'Vui lòng chọn ngày hôm nay hoặc trong tương lai',
+                'date.after' => 'Lịch online cần được đặt trước ít nhất 1 ngày',
             ]);
 
             $times = $this->appointmentService->getAvailableTimesByService(
@@ -244,14 +246,14 @@ class AppointmentController extends Controller
         try {
             $validated = $request->validate([
                 'service_id' => 'required|exists:services,id',
-                'date' => 'required|date_format:Y-m-d|after_or_equal:today',
+                'date' => 'required|date_format:Y-m-d|after:today',
                 'start_time' => 'required|date_format:H:i',
             ], [
                 'service_id.required' => 'Vui lòng chọn dịch vụ',
                 'service_id.exists' => 'Dịch vụ không tồn tại',
                 'date.required' => 'Vui lòng chọn ngày',
                 'date.date_format' => 'Định dạng ngày không hợp lệ',
-                'date.after_or_equal' => 'Vui lòng chọn ngày hôm nay hoặc trong tương lai',
+                'date.after' => 'Lịch online cần được đặt trước ít nhất 1 ngày',
                 'start_time.required' => 'Vui lòng chọn thời gian',
                 'start_time.date_format' => 'Định dạng thời gian không hợp lệ',
             ]);
@@ -292,7 +294,7 @@ class AppointmentController extends Controller
 
                 'doctor_id' => 'required|exists:employees,id',
                 'service_id' => 'required|exists:services,id',
-                'appointment_date' => 'required|date_format:Y-m-d H:i',
+                'appointment_date' => 'required|date_format:Y-m-d H:i|after:today',
                 'notes' => 'nullable|string|max:500',
             ], [
                 'patient_name.required' => 'Vui lòng nhập họ và tên',
@@ -304,17 +306,20 @@ class AppointmentController extends Controller
                 'emergency_phone.regex' => 'Số điện thoại người thân không hợp lệ',
 
                 'doctor_id.required' => 'Vui lòng chọn bác sĩ',
+                'doctor_id.exists' => 'Bác sĩ không tồn tại',
                 'service_id.required' => 'Vui lòng chọn dịch vụ',
+                'service_id.exists' => 'Dịch vụ không tồn tại',
                 'appointment_date.required' => 'Vui lòng chọn ngày giờ',
                 'appointment_date.date_format' => 'Định dạng ngày giờ không hợp lệ',
+                'appointment_date.after' => 'Lịch online cần được đặt trước ít nhất 1 ngày',
             ]);
 
             $appointmentDateTime = Carbon::createFromFormat('Y-m-d H:i', $validated['appointment_date']);
 
-            if ($appointmentDateTime->isPast()) {
+            if ($appointmentDateTime->lessThanOrEqualTo(now()->endOfDay())) {
                 return back()
                     ->withInput()
-                    ->with('error', 'Không thể đặt lịch cho thời gian trong quá khứ');
+                    ->with('error', 'Lịch online cần được đặt trước ít nhất 1 ngày. Vui lòng chọn ngày từ ngày mai trở đi.');
             }
 
             $appointment = $this->appointmentService->createAppointment([
@@ -325,19 +330,25 @@ class AppointmentController extends Controller
                 'notes' => $this->buildAppointmentNotes($validated),
             ]);
 
-            Log::info('Appointment created successfully: ID=' . $appointment->id . ', Patient=' . Auth::id());
+            Log::info('Appointment created successfully', [
+                'appointment_id' => $appointment->id,
+                'patient_id' => Auth::id(),
+                'doctor_id' => $validated['doctor_id'],
+                'service_id' => $validated['service_id'],
+                'appointment_date' => $validated['appointment_date'],
+            ]);
 
             return redirect()->route('patient.appointment.list')
-                ->with('success', 'Lịch hẹn đã được tạo thành công. Vui lòng chờ xác nhận từ bác sĩ.');
+                ->with('success', 'Lịch hẹn đã được tạo thành công. Vui lòng chờ bác sĩ xác nhận và xếp phòng khám.');
         } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::warning('Validation error in store: ' . json_encode($e->errors()));
+            Log::warning('Validation error in appointment store: ' . json_encode($e->errors()));
 
             return back()
                 ->withInput()
                 ->withErrors($e->errors())
                 ->with('error', 'Dữ liệu không hợp lệ');
         } catch (\Exception $e) {
-            Log::error('Error in store: ' . $e->getMessage());
+            Log::error('Error in appointment store: ' . $e->getMessage());
 
             return back()
                 ->withInput()
@@ -348,9 +359,9 @@ class AppointmentController extends Controller
     public function show($id)
     {
         try {
-            $appointment = Appointment::findOrFail($id);
+            $appointment = Appointment::with(['doctor', 'service', 'room'])->findOrFail($id);
 
-            if ($appointment->patient_id !== Auth::id()) {
+            if ((int) $appointment->patient_id !== (int) Auth::id()) {
                 Log::warning('Unauthorized access attempt for appointment ' . $id . ' by user ' . Auth::id());
                 abort(403, 'Không có quyền xem lịch hẹn này');
             }
@@ -361,7 +372,7 @@ class AppointmentController extends Controller
 
             return back()->with('error', 'Lịch hẹn không tồn tại');
         } catch (\Exception $e) {
-            Log::error('Error in show: ' . $e->getMessage());
+            Log::error('Error in appointment show: ' . $e->getMessage());
 
             return back()->with('error', 'Lỗi: ' . $e->getMessage());
         }
@@ -372,7 +383,7 @@ class AppointmentController extends Controller
         try {
             $appointment = Appointment::findOrFail($id);
 
-            if ($appointment->patient_id !== Auth::id()) {
+            if ((int) $appointment->patient_id !== (int) Auth::id()) {
                 Log::warning('Unauthorized cancel attempt for appointment ' . $id . ' by user ' . Auth::id());
                 abort(403, 'Không có quyền hủy lịch hẹn này');
             }
@@ -381,13 +392,16 @@ class AppointmentController extends Controller
                 return back()->with('warning', 'Lịch hẹn này đã được hủy trước đó');
             }
 
-            if ($appointment->status === 'completed') {
-                return back()->with('error', 'Không thể hủy lịch hẹn đã hoàn thành');
+            if (in_array($appointment->status, ['checked_in', 'waiting', 'in_progress', 'completed'], true)) {
+                return back()->with('error', 'Không thể hủy lịch hẹn đã tiếp nhận hoặc đã hoàn thành');
             }
 
             $this->appointmentService->cancelAppointment($id);
 
-            Log::info('Appointment ' . $id . ' cancelled by patient ' . Auth::id());
+            Log::info('Appointment cancelled by patient', [
+                'appointment_id' => $id,
+                'patient_id' => Auth::id(),
+            ]);
 
             return back()->with('success', 'Lịch hẹn đã được hủy thành công.');
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -395,7 +409,7 @@ class AppointmentController extends Controller
 
             return back()->with('error', 'Lịch hẹn không tồn tại');
         } catch (\Exception $e) {
-            Log::error('Error in cancel: ' . $e->getMessage());
+            Log::error('Error in appointment cancel: ' . $e->getMessage());
 
             return back()->with('error', 'Lỗi: ' . $e->getMessage());
         }
