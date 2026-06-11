@@ -17,6 +17,7 @@ use App\Http\Controllers\RoomController;
 use App\Http\Controllers\ReceptionController;
 use App\Http\Controllers\ExaminationController;
 use App\Http\Controllers\PatientProfileController;
+use App\Http\Controllers\DentalChartController;
 
 // ==================== ROUTE CHÍNH ====================
 Route::get('/', function () {
@@ -165,13 +166,38 @@ Route::middleware('auth')->group(function () {
             ->whereNumber('appointment')
             ->name('appointments.online.cancel');
 
-        // ----- Hồ sơ bệnh nhân cho bác sĩ -----
+        // ----- Hồ sơ bệnh nhân / hồ sơ bệnh án cho bác sĩ -----
         Route::prefix('patient-profiles')->name('patient-profiles.')->group(function () {
-            Route::get('/', [PatientProfileController::class, 'doctorIndex'])->name('index');
+            Route::get('/', [PatientProfileController::class, 'doctorIndex'])
+                ->name('index');
+
+            Route::get('{patientProfile}/dental-chart', [DentalChartController::class, 'show'])
+                ->whereNumber('patientProfile')
+                ->name('dental-chart.show');
+
+            Route::post('{patientProfile}/dental-chart', [DentalChartController::class, 'store'])
+                ->whereNumber('patientProfile')
+                ->name('dental-chart.store');
 
             Route::get('{patientProfile}', [PatientProfileController::class, 'doctorShow'])
                 ->whereNumber('patientProfile')
                 ->name('show');
+
+            Route::put('{patientProfile}', [PatientProfileController::class, 'doctorUpdate'])
+                ->whereNumber('patientProfile')
+                ->name('update');
+
+            Route::put('medical-records/{appointment}', [PatientProfileController::class, 'doctorUpdateMedicalRecord'])
+                ->whereNumber('appointment')
+                ->name('medical-records.update');
+
+            Route::post('clinical-images/{appointment}', [PatientProfileController::class, 'doctorStoreClinicalImage'])
+                ->whereNumber('appointment')
+                ->name('clinical-images.store');
+
+            Route::delete('clinical-images/{clinicalImage}', [PatientProfileController::class, 'doctorDestroyClinicalImage'])
+                ->whereNumber('clinicalImage')
+                ->name('clinical-images.destroy');
         });
 
         // ----- UC3.2: Khám bệnh và cập nhật hồ sơ -----

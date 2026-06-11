@@ -229,7 +229,12 @@ class Appointment extends Model
     }
 
     // ==================== HELPERS ====================
-
+public function clinicalImages()
+{
+    return $this->hasMany(ClinicalImage::class, 'appointment_id')
+        ->latest('taken_date')
+        ->latest('created_at');
+}
     public function isPast()
     {
         return $this->appointment_date && $this->appointment_date->lt(now());

@@ -116,7 +116,23 @@
     .patient-name {
         font-size: 16px;
         font-weight: 800;
+        margin-bottom: 7px;
+    }
+
+    .patient-sub {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px 14px;
+        color: var(--text-muted);
+        font-size: 13px;
         margin-bottom: 8px;
+    }
+
+    .patient-sub span {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
     }
 
     .meta {
@@ -199,6 +215,66 @@
     $inProgress = $inProgress ?? collect();
     $waitingAppointments = $waitingAppointments ?? collect();
     $completedToday = $completedToday ?? collect();
+
+    $getSnapshot = function ($appointment) {
+        $snapshot = $appointment->patient_snapshot ?? [];
+
+        if (is_string($snapshot)) {
+            $decoded = json_decode($snapshot, true);
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        return is_array($snapshot) ? $snapshot : [];
+    };
+
+    $getPatientInfo = function ($appointment) use ($getSnapshot) {
+        $snapshot = $getSnapshot($appointment);
+
+        $name = $appointment->patientProfile?->full_name
+            ?? data_get($snapshot, 'full_name')
+            ?? $appointment->patient?->name
+            ?? 'Chưa có tên';
+
+        $phone = $appointment->patientProfile?->phone
+            ?? data_get($snapshot, 'phone')
+            ?? $appointment->patient?->phone
+            ?? $appointment->patient?->phone_number
+            ?? $appointment->patient?->tel
+            ?? null;
+
+        if (!$phone && $appointment->notes) {
+            preg_match('/SĐT:\s*([0-9+\-\s]+)/u', $appointment->notes, $matches);
+            $phone = isset($matches[1]) ? trim($matches[1]) : null;
+        }
+
+        $dob = $appointment->patientProfile?->dob
+            ? $appointment->patientProfile->dob->format('d/m/Y')
+            : data_get($snapshot, 'dob');
+
+        if ($dob && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dob)) {
+            $dob = \Carbon\Carbon::parse($dob)->format('d/m/Y');
+        }
+
+        $gender = $appointment->patientProfile?->gender_label
+            ?? data_get($snapshot, 'gender_label')
+            ?? data_get($snapshot, 'gender')
+            ?? null;
+
+        if ($gender === 'male') {
+            $gender = 'Nam';
+        } elseif ($gender === 'female') {
+            $gender = 'Nữ';
+        } elseif ($gender === 'other') {
+            $gender = 'Khác';
+        }
+
+        return [
+            'name' => $name,
+            'phone' => $phone ?: 'Chưa có SĐT',
+            'dob' => $dob,
+            'gender' => $gender,
+        ];
+    };
 @endphp
 
 <div class="summary-grid">
@@ -244,11 +320,28 @@
     @else
         <div class="appointment-list">
             @foreach($inProgress as $appointment)
+                @php
+                    $patientInfo = $getPatientInfo($appointment);
+                @endphp
+
                 <div class="appointment-row">
                     <div class="queue-no">{{ $appointment->queue_number ?? '-' }}</div>
 
                     <div>
-                        <div class="patient-name">{{ $appointment->patient?->name ?? 'Bệnh nhân #' . $appointment->patient_id }}</div>
+                        <div class="patient-name">{{ $patientInfo['name'] }}</div>
+
+                        <div class="patient-sub">
+                            <span><i class="ri-phone-line"></i>{{ $patientInfo['phone'] }}</span>
+
+                            @if($patientInfo['gender'])
+                                <span><i class="ri-user-line"></i>{{ $patientInfo['gender'] }}</span>
+                            @endif
+
+                            @if($patientInfo['dob'])
+                                <span><i class="ri-calendar-line"></i>{{ $patientInfo['dob'] }}</span>
+                            @endif
+                        </div>
+
                         <div class="meta">
                             <span><i class="ri-stethoscope-line"></i>{{ $appointment->service?->name ?? 'Dịch vụ' }}</span>
                             <span><i class="ri-door-open-line"></i>{{ $appointment->room?->name ?? 'Chưa có phòng' }}</span>
@@ -282,20 +375,37 @@
         <div class="empty">
             <i class="ri-user-heart-line"></i>
             <h3>Không có bệnh nhân đang chờ</h3>
-            <p>Bệnh nhân sau khi lễ tân check-in sẽ hiển thị tại đây.</p>
+            <p>Bệnh nhân sau khi lễ tân tiếp nhận sẽ hiển thị tại đây.</p>
         </div>
     @else
         <div class="appointment-list">
             @foreach($waitingAppointments as $appointment)
+                @php
+                    $patientInfo = $getPatientInfo($appointment);
+                @endphp
+
                 <div class="appointment-row">
                     <div class="queue-no">{{ $appointment->queue_number ?? '-' }}</div>
 
                     <div>
-                        <div class="patient-name">{{ $appointment->patient?->name ?? 'Bệnh nhân #' . $appointment->patient_id }}</div>
+                        <div class="patient-name">{{ $patientInfo['name'] }}</div>
+
+                        <div class="patient-sub">
+                            <span><i class="ri-phone-line"></i>{{ $patientInfo['phone'] }}</span>
+
+                            @if($patientInfo['gender'])
+                                <span><i class="ri-user-line"></i>{{ $patientInfo['gender'] }}</span>
+                            @endif
+
+                            @if($patientInfo['dob'])
+                                <span><i class="ri-calendar-line"></i>{{ $patientInfo['dob'] }}</span>
+                            @endif
+                        </div>
+
                         <div class="meta">
                             <span><i class="ri-stethoscope-line"></i>{{ $appointment->service?->name ?? 'Dịch vụ' }}</span>
                             <span><i class="ri-door-open-line"></i>{{ $appointment->room?->name ?? 'Chưa có phòng' }}</span>
-                            <span><i class="ri-login-circle-line"></i>Check-in: {{ $appointment->checked_in_at?->format('H:i') ?? '-' }}</span>
+                            <span><i class="ri-login-circle-line"></i>Tiếp nhận: {{ $appointment->checked_in_at?->format('H:i') ?? '-' }}</span>
                             <span><i class="{{ ($appointment->source ?? 'online') === 'offline' ? 'ri-hospital-line' : 'ri-global-line' }}"></i>{{ ($appointment->source ?? 'online') === 'offline' ? 'Tại quầy' : 'Online' }}</span>
                         </div>
                     </div>
@@ -333,11 +443,28 @@
     @else
         <div class="appointment-list">
             @foreach($completedToday as $appointment)
+                @php
+                    $patientInfo = $getPatientInfo($appointment);
+                @endphp
+
                 <div class="appointment-row">
                     <div class="queue-no">{{ $appointment->queue_number ?? '-' }}</div>
 
                     <div>
-                        <div class="patient-name">{{ $appointment->patient?->name ?? 'Bệnh nhân #' . $appointment->patient_id }}</div>
+                        <div class="patient-name">{{ $patientInfo['name'] }}</div>
+
+                        <div class="patient-sub">
+                            <span><i class="ri-phone-line"></i>{{ $patientInfo['phone'] }}</span>
+
+                            @if($patientInfo['gender'])
+                                <span><i class="ri-user-line"></i>{{ $patientInfo['gender'] }}</span>
+                            @endif
+
+                            @if($patientInfo['dob'])
+                                <span><i class="ri-calendar-line"></i>{{ $patientInfo['dob'] }}</span>
+                            @endif
+                        </div>
+
                         <div class="meta">
                             <span><i class="ri-stethoscope-line"></i>{{ $appointment->service?->name ?? 'Dịch vụ' }}</span>
                             <span><i class="ri-check-double-line"></i>Hoàn thành: {{ $appointment->completed_at?->format('H:i') ?? '-' }}</span>

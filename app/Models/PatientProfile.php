@@ -18,10 +18,16 @@ class PatientProfile extends Model
         'email',
         'dob',
         'gender',
+        'blood_type',
         'address',
+        'occupation',
         'identity_number',
         'emergency_contact_name',
         'emergency_contact_phone',
+        'allergies',
+        'medical_history',
+        'current_medications',
+        'dental_history',
         'source',
         'is_temporary',
         'last_visit_at',
@@ -38,34 +44,22 @@ class PatientProfile extends Model
 
     // ==================== RELATIONSHIPS ====================
 
-    /**
-     * Tài khoản người dùng nếu bệnh nhân có tài khoản đăng nhập.
-     */
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Tất cả lịch/lượt khám của bệnh nhân.
-     */
     public function appointments()
     {
         return $this->hasMany(Appointment::class, 'patient_profile_id');
     }
 
-    /**
-     * Lượt khám gần nhất.
-     */
     public function latestAppointment()
     {
         return $this->hasOne(Appointment::class, 'patient_profile_id')
             ->latestOfMany('appointment_date');
     }
 
-    /**
-     * Hồ sơ bệnh án thông qua các lượt khám.
-     */
     public function medicalRecords()
     {
         return $this->hasManyThrough(
@@ -78,11 +72,21 @@ class PatientProfile extends Model
         );
     }
 
+    public function clinicalImages()
+    {
+        return $this->hasMany(ClinicalImage::class, 'patient_profile_id')
+            ->latest('taken_date')
+            ->latest('created_at');
+    }
+
+    public function latestClinicalImage()
+    {
+        return $this->hasOne(ClinicalImage::class, 'patient_profile_id')
+            ->latestOfMany('taken_date');
+    }
+
     // ==================== SCOPES ====================
 
-    /**
-     * Tìm kiếm hồ sơ theo tên, SĐT, email, CCCD.
-     */
     public function scopeSearch($query, $keyword)
     {
         $keyword = trim((string) $keyword);
@@ -95,29 +99,22 @@ class PatientProfile extends Model
             $q->where('full_name', 'like', "%{$keyword}%")
                 ->orWhere('phone', 'like', "%{$keyword}%")
                 ->orWhere('email', 'like', "%{$keyword}%")
-                ->orWhere('identity_number', 'like', "%{$keyword}%");
+                ->orWhere('identity_number', 'like', "%{$keyword}%")
+                ->orWhere('blood_type', 'like', "%{$keyword}%")
+                ->orWhere('occupation', 'like', "%{$keyword}%");
         });
     }
 
-    /**
-     * Hồ sơ online.
-     */
     public function scopeOnline($query)
     {
         return $query->where('source', 'online');
     }
 
-    /**
-     * Hồ sơ offline.
-     */
     public function scopeOffline($query)
     {
         return $query->where('source', 'offline');
     }
 
-    /**
-     * Hồ sơ tạm.
-     */
     public function scopeTemporary($query)
     {
         return $query->where('is_temporary', true);
@@ -160,13 +157,39 @@ class PatientProfile extends Model
         return $this->is_temporary ? 'Hồ sơ tạm' : 'Hồ sơ chính thức';
     }
 
+    public function getDisplayBloodTypeAttribute()
+    {
+        return $this->blood_type ?: 'Chưa cập nhật';
+    }
+
+    public function getDisplayOccupationAttribute()
+    {
+        return $this->occupation ?: 'Chưa cập nhật';
+    }
+
+    public function getDisplayAllergiesAttribute()
+    {
+        return $this->allergies ?: 'Chưa ghi nhận dị ứng.';
+    }
+
+    public function getDisplayMedicalHistoryAttribute()
+    {
+        return $this->medical_history ?: 'Chưa cập nhật.';
+    }
+
+    public function getDisplayCurrentMedicationsAttribute()
+    {
+        return $this->current_medications ?: 'Chưa cập nhật.';
+    }
+
+    public function getDisplayDentalHistoryAttribute()
+    {
+        return $this->dental_history ?: 'Chưa cập nhật.';
+    }
+
     public function getAgeAttribute()
     {
-        if (!$this->dob) {
-            return null;
-        }
-
-        return $this->dob->age;
+        return $this->dob ? $this->dob->age : null;
     }
 
     public function getDisplayAgeAttribute()
@@ -185,11 +208,36 @@ class PatientProfile extends Model
             : $this->address;
     }
 
+    public function getEmergencyContactLabelAttribute()
+    {
+        if (!$this->emergency_contact_name && !$this->emergency_contact_phone) {
+            return 'Chưa cập nhật';
+        }
+
+        return trim(($this->emergency_contact_name ?: '') . ' - ' . ($this->emergency_contact_phone ?: ''), ' -');
+    }
+
+    public function getMedicalWarningLabelAttribute()
+    {
+        $warnings = [];
+
+        if (filled($this->allergies)) {
+            $warnings[] = 'Dị ứng';
+        }
+
+        if (filled($this->medical_history)) {
+            $warnings[] = 'Tiền sử bệnh lý';
+        }
+
+        if (filled($this->current_medications)) {
+            $warnings[] = 'Đang dùng thuốc';
+        }
+
+        return count($warnings) ? implode(', ', $warnings) : 'Không có cảnh báo';
+    }
+
     // ==================== HELPERS ====================
 
-    /**
-     * Tạo snapshot thông tin bệnh nhân để lưu vào appointments.patient_snapshot.
-     */
     public function toAppointmentSnapshot()
     {
         return [
@@ -201,17 +249,22 @@ class PatientProfile extends Model
             'dob' => $this->dob ? $this->dob->format('Y-m-d') : null,
             'gender' => $this->gender,
             'gender_label' => $this->gender_label,
+            'blood_type' => $this->blood_type,
             'address' => $this->address,
+            'occupation' => $this->occupation,
             'identity_number' => $this->identity_number,
+            'emergency_contact_name' => $this->emergency_contact_name,
+            'emergency_contact_phone' => $this->emergency_contact_phone,
+            'allergies' => $this->allergies,
+            'medical_history' => $this->medical_history,
+            'current_medications' => $this->current_medications,
+            'dental_history' => $this->dental_history,
             'source' => $this->source,
             'is_temporary' => $this->is_temporary,
             'snapshot_at' => now()->format('Y-m-d H:i:s'),
         ];
     }
 
-    /**
-     * Cập nhật lần khám gần nhất.
-     */
     public function markVisited($visitedAt = null)
     {
         $this->update([
@@ -219,9 +272,6 @@ class PatientProfile extends Model
         ]);
     }
 
-    /**
-     * Kiểm tra hồ sơ đã đủ thông tin cơ bản chưa.
-     */
     public function isComplete()
     {
         return filled($this->full_name)
@@ -229,5 +279,13 @@ class PatientProfile extends Model
             && filled($this->dob)
             && filled($this->gender)
             && filled($this->address);
+    }
+
+    public function hasMedicalSafetyInfo()
+    {
+        return filled($this->allergies)
+            || filled($this->medical_history)
+            || filled($this->current_medications)
+            || filled($this->dental_history);
     }
 }

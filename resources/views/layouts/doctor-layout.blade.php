@@ -8,47 +8,45 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+
     <style>
         :root {
             --font-title: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-
             --primary: #0ea5e9;
             --primary-hover: #0284c7;
             --primary-light: #e0f2fe;
             --primary-gradient: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
             --primary-glow: rgba(14, 165, 233, 0.4);
-
             --success: #10b981;
             --success-light: #d1fae5;
             --success-dark: #065f46;
-
             --error: #ef4444;
             --error-light: #fee2e2;
             --error-dark: #991b1b;
-
             --info: #3b82f6;
             --info-light: #dbeafe;
             --info-dark: #1e3a8a;
-
             --bg-color: #f8fafc;
             --card-bg: rgba(255, 255, 255, 0.9);
             --sidebar-bg: linear-gradient(180deg, #082f49 0%, #0c4a6e 100%);
             --text-main: #1e293b;
             --text-muted: #64748b;
             --border-color: rgba(226, 232, 240, 0.8);
-
             --radius-sm: 8px;
             --radius-md: 12px;
             --radius-lg: 16px;
             --radius-full: 9999px;
-
             --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
             --shadow-md: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
             --shadow-lg: 0 10px 30px -5px rgba(15, 23, 42, 0.12);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             font-family: var(--font-body);
@@ -442,8 +440,15 @@
         }
 
         @media (max-width: 1024px) {
-            .sidebar { width: 240px; padding: 20px 12px; }
-            .main-content { margin-left: 240px; padding: 28px; }
+            .sidebar {
+                width: 240px;
+                padding: 20px 12px;
+            }
+
+            .main-content {
+                margin-left: 240px;
+                padding: 28px;
+            }
         }
 
         @media (max-width: 768px) {
@@ -505,6 +510,7 @@
             }
         }
     </style>
+
     @yield('styles')
 </head>
 <body>
@@ -536,6 +542,14 @@
         $examinationsUrl = \Illuminate\Support\Facades\Route::has('doctor.examinations.index')
             ? route('doctor.examinations.index')
             : '#';
+
+        $patientProfilesUrl = \Illuminate\Support\Facades\Route::has('doctor.patient-profiles.index')
+            ? route('doctor.patient-profiles.index')
+            : (
+                \Illuminate\Support\Facades\Route::has('doctor.medical-records.index')
+                    ? route('doctor.medical-records.index')
+                    : '#'
+            );
     @endphp
 
     <aside class="sidebar">
@@ -614,6 +628,14 @@
                 </a>
             </li>
 
+            <li class="nav-item">
+                <a href="{{ $patientProfilesUrl }}"
+                   class="nav-link @if(request()->routeIs('doctor.patient-profiles.*') || request()->routeIs('doctor.medical-records.*')) active @endif">
+                    <i class="nav-icon ri-folder-user-line"></i>
+                    <span>Hồ sơ bệnh án</span>
+                </a>
+            </li>
+
             <div class="nav-group-title">Cài đặt</div>
 
             <li class="nav-item">
@@ -628,6 +650,7 @@
                     <i class="nav-icon ri-logout-box-r-line"></i>
                     <span>Đăng xuất</span>
                 </a>
+
                 <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
                     @csrf
                 </form>
@@ -635,18 +658,20 @@
         </ul>
 
         @auth
-        <div class="user-profile">
-            <div class="user-avatar">
-                {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+            <div class="user-profile">
+                <div class="user-avatar">
+                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                </div>
+
+                <div class="user-profile-info">
+                    <h4>{{ Auth::user()->name }}</h4>
+                    <p>Bác sĩ</p>
+                </div>
+
+                <button class="logout-icon-btn" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" title="Đăng xuất">
+                    <i class="ri-logout-box-r-line"></i>
+                </button>
             </div>
-            <div class="user-profile-info">
-                <h4>{{ Auth::user()->name }}</h4>
-                <p>Bác sĩ</p>
-            </div>
-            <button class="logout-icon-btn" onclick="event.preventDefault(); document.getElementById('logout-form').submit();" title="Đăng xuất">
-                <i class="ri-logout-box-r-line"></i>
-            </button>
-        </div>
         @endauth
     </aside>
 
@@ -657,6 +682,7 @@
                     <h1>@yield('page-title')</h1>
                     <p class="header-subtitle">@yield('page-subtitle')</p>
                 </div>
+
                 <div class="header-right">
                     @yield('header-actions')
                 </div>
