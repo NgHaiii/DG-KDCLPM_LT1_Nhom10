@@ -7,6 +7,8 @@
 
 @php
     $minBookingDate = \Carbon\Carbon::tomorrow()->format('Y-m-d');
+    $currentUser = Auth::user();
+    $defaultPhone = $currentUser->phone ?? $currentUser->phone_number ?? $currentUser->tel ?? '';
 @endphp
 
 @section('styles')
@@ -122,6 +124,19 @@
         border: 1px solid #fed7aa;
         color: #9a3412;
     }
+
+    .profile-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: var(--radius-lg);
+        padding: 14px 16px;
+        margin-bottom: 18px;
+        color: var(--text-muted);
+        font-size: 13px;
+        line-height: 1.55;
+    }
+
+    .profile-box strong { color: var(--text-main); }
 
     .info-box i {
         font-size: 18px;
@@ -323,7 +338,7 @@
             <i class="ri-lightbulb-flash-line"></i>
             <div>
                 <strong>Cách thức đặt lịch:</strong>
-                Nhập thông tin cá nhân -> Chọn dịch vụ -> Chọn ngày từ ngày mai trở đi -> Chọn thời gian -> Chọn bác sĩ còn rảnh -> Xác nhận.
+                Nhập thông tin hồ sơ bệnh nhân -> Chọn dịch vụ -> Chọn ngày từ ngày mai trở đi -> Chọn thời gian -> Chọn bác sĩ còn rảnh -> Xác nhận.
             </div>
         </div>
 
@@ -340,7 +355,11 @@
 
             <div class="form-section">
                 <div class="section-title">
-                    <i class="ri-user-heart-line"></i> 1. Thông Tin Cá Nhân
+                    <i class="ri-user-heart-line"></i> 1. Thông Tin Hồ Sơ Bệnh Nhân
+                </div>
+
+                <div class="profile-box">
+                    <strong>Lưu ý:</strong> Thông tin này sẽ được lưu vào hồ sơ bệnh nhân để phòng khám tiếp đón, bác sĩ xem lịch sử khám và hỗ trợ các lần tái khám sau.
                 </div>
 
                 <div class="form-grid">
@@ -349,8 +368,9 @@
                         <input type="text"
                                id="patient_name"
                                name="patient_name"
-                               value="{{ old('patient_name', Auth::user()->name ?? '') }}"
+                               value="{{ old('patient_name', $currentUser->name ?? '') }}"
                                placeholder="Nhập họ và tên"
+                               maxlength="100"
                                required>
                     </div>
 
@@ -359,8 +379,10 @@
                         <input type="tel"
                                id="patient_phone"
                                name="patient_phone"
-                               value="{{ old('patient_phone') }}"
+                               value="{{ old('patient_phone', $defaultPhone) }}"
                                placeholder="Ví dụ: 0987654321"
+                               maxlength="20"
+                               inputmode="tel"
                                required>
                     </div>
 
@@ -369,8 +391,9 @@
                         <input type="email"
                                id="patient_email"
                                name="patient_email"
-                               value="{{ old('patient_email', Auth::user()->email ?? '') }}"
-                               placeholder="email@example.com">
+                               value="{{ old('patient_email', $currentUser->email ?? '') }}"
+                               placeholder="email@example.com"
+                               maxlength="255">
                     </div>
 
                     <div class="form-group">
@@ -393,12 +416,35 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="identity_number">CCCD / Mã định danh</label>
+                        <input type="text"
+                               id="identity_number"
+                               name="identity_number"
+                               value="{{ old('identity_number') }}"
+                               placeholder="Nhập CCCD nếu có"
+                               maxlength="50">
+                        <div class="help-text">Không bắt buộc, dùng để đối chiếu hồ sơ khi cần.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="emergency_contact_name">Người liên hệ khẩn cấp</label>
+                        <input type="text"
+                               id="emergency_contact_name"
+                               name="emergency_contact_name"
+                               value="{{ old('emergency_contact_name') }}"
+                               placeholder="Tên người thân/người liên hệ"
+                               maxlength="255">
+                    </div>
+
+                    <div class="form-group">
                         <label for="emergency_phone">Số điện thoại người thân</label>
                         <input type="tel"
                                id="emergency_phone"
                                name="emergency_phone"
                                value="{{ old('emergency_phone') }}"
-                               placeholder="Liên hệ khi cần thiết">
+                               placeholder="Liên hệ khi cần thiết"
+                               maxlength="20"
+                               inputmode="tel">
                     </div>
 
                     <div class="form-group full-width">
@@ -407,11 +453,12 @@
                                id="patient_address"
                                name="patient_address"
                                value="{{ old('patient_address') }}"
-                               placeholder="Nhập địa chỉ liên hệ">
+                               placeholder="Nhập địa chỉ liên hệ"
+                               maxlength="255">
                     </div>
                 </div>
 
-                <div class="help-text">Thông tin này giúp phòng khám liên hệ và tiếp đón bệnh nhân chính xác hơn.</div>
+                <div class="help-text">Họ tên và số điện thoại là thông tin bắt buộc để tạo/cập nhật hồ sơ bệnh nhân.</div>
             </div>
 
             <div class="divider"></div>
@@ -569,8 +616,9 @@
                     <label for="notes">Mô tả triệu chứng</label>
                     <textarea id="notes"
                               name="notes"
+                              maxlength="500"
                               placeholder="Vui lòng mô tả triệu chứng hoặc thông tin quan trọng bạn muốn chia sẻ với bác sĩ...">{{ old('notes') }}</textarea>
-                    <div class="help-text">Tối đa 500 ký tự.</div>
+                    <div class="help-text">Tối đa 500 ký tự. Nội dung này sẽ được gửi kèm lịch hẹn để bác sĩ nắm tình trạng ban đầu.</div>
                 </div>
             </div>
 
@@ -871,6 +919,9 @@
     function validateForm() {
         const patientName = document.getElementById('patient_name').value.trim();
         const patientPhone = document.getElementById('patient_phone').value.trim();
+        const emergencyPhone = document.getElementById('emergency_phone').value.trim();
+        const notes = document.getElementById('notes').value.trim();
+
         const category = document.getElementById('service_category').value;
         const serviceId = document.getElementById('service_id').value;
         const date = document.getElementById('appointment_date_only').value;
@@ -890,6 +941,16 @@
 
         if (!/^[0-9+\-\s]{8,20}$/.test(patientPhone)) {
             alert('Số điện thoại không hợp lệ');
+            return false;
+        }
+
+        if (emergencyPhone && !/^[0-9+\-\s]{8,20}$/.test(emergencyPhone)) {
+            alert('Số điện thoại người thân không hợp lệ');
+            return false;
+        }
+
+        if (notes.length > 500) {
+            alert('Mô tả triệu chứng không được vượt quá 500 ký tự.');
             return false;
         }
 

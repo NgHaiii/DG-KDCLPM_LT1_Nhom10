@@ -16,13 +16,24 @@ class ExaminationController extends Controller
         $doctor = $this->currentDoctor();
         $today = now()->toDateString();
 
-        $inProgress = Appointment::with(['patient', 'service', 'room', 'medicalRecord'])
+        $inProgress = Appointment::with([
+                'patient',
+                'patientProfile',
+                'service',
+                'room',
+                'medicalRecord',
+            ])
             ->where('doctor_id', $doctor->id)
             ->where('status', 'in_progress')
             ->orderBy('started_at')
             ->get();
 
-        $waitingAppointments = Appointment::with(['patient', 'service', 'room'])
+        $waitingAppointments = Appointment::with([
+                'patient',
+                'patientProfile',
+                'service',
+                'room',
+            ])
             ->where('doctor_id', $doctor->id)
             ->where(function ($query) use ($today) {
                 $query->whereDate('checked_in_at', $today)
@@ -35,7 +46,13 @@ class ExaminationController extends Controller
             ->orderBy('appointment_date')
             ->get();
 
-        $completedToday = Appointment::with(['patient', 'service', 'room', 'medicalRecord'])
+        $completedToday = Appointment::with([
+                'patient',
+                'patientProfile',
+                'service',
+                'room',
+                'medicalRecord',
+            ])
             ->where('doctor_id', $doctor->id)
             ->where('status', 'completed')
             ->where(function ($query) use ($today) {
@@ -62,7 +79,7 @@ class ExaminationController extends Controller
         }
 
         if (!$appointment->checked_in_at) {
-            return back()->with('error', 'Bệnh nhân chưa được check-in tại quầy.');
+            return back()->with('error', 'Bệnh nhân chưa được tiếp nhận tại quầy.');
         }
 
         $hasAnotherInProgress = Appointment::where('doctor_id', $doctor->id)
@@ -90,7 +107,13 @@ class ExaminationController extends Controller
         $doctor = $this->currentDoctor();
         $this->authorizeDoctorAppointment($appointment, $doctor);
 
-        $appointment->load(['patient', 'service', 'room', 'medicalRecord']);
+        $appointment->load([
+            'patient',
+            'patientProfile',
+            'service',
+            'room',
+            'medicalRecord',
+        ]);
 
         return view('doctor.examinations.show', compact('appointment'));
     }
@@ -102,6 +125,12 @@ class ExaminationController extends Controller
 
         if ($appointment->status !== 'in_progress') {
             return back()->with('error', 'Chỉ có thể hoàn thành ca đang khám.');
+        }
+
+        $appointment->loadMissing(['patientProfile']);
+
+        if (!$appointment->patient_id && !$appointment->patient_profile_id) {
+            return back()->with('error', 'Ca khám này chưa có hồ sơ bệnh nhân, không thể tạo bệnh án.');
         }
 
         $validated = $request->validate([
@@ -120,6 +149,7 @@ class ExaminationController extends Controller
                 ['appointment_id' => $appointment->id],
                 [
                     'patient_id' => $appointment->patient_id,
+                    'patient_profile_id' => $appointment->patient_profile_id,
                     'doctor_id' => $appointment->doctor_id,
                     'service_id' => $appointment->service_id,
                     'chief_complaint' => $validated['chief_complaint'] ?? null,
@@ -140,6 +170,12 @@ class ExaminationController extends Controller
                 'completed_at' => now(),
                 'actual_used_minutes' => $actualMinutes,
             ]);
+
+            if ($appointment->patientProfile) {
+                $appointment->patientProfile->update([
+                    'last_visit_at' => now(),
+                ]);
+            }
         });
 
         return redirect()

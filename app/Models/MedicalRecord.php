@@ -14,6 +14,7 @@ class MedicalRecord extends Model
     protected $fillable = [
         'appointment_id',
         'patient_id',
+        'patient_profile_id',
         'doctor_id',
         'service_id',
         'chief_complaint',
@@ -27,6 +28,7 @@ class MedicalRecord extends Model
     protected $casts = [
         'appointment_id' => 'integer',
         'patient_id' => 'integer',
+        'patient_profile_id' => 'integer',
         'doctor_id' => 'integer',
         'service_id' => 'integer',
         'follow_up_date' => 'date',
@@ -44,6 +46,11 @@ class MedicalRecord extends Model
         return $this->belongsTo(User::class, 'patient_id');
     }
 
+    public function patientProfile()
+    {
+        return $this->belongsTo(PatientProfile::class, 'patient_profile_id');
+    }
+
     public function doctor()
     {
         return $this->belongsTo(Employee::class, 'doctor_id');
@@ -52,5 +59,22 @@ class MedicalRecord extends Model
     public function service()
     {
         return $this->belongsTo(Service::class, 'service_id');
+    }
+
+    public function getPatientDisplayNameAttribute()
+    {
+        return $this->patientProfile?->full_name
+            ?? $this->appointment?->patient_display_name
+            ?? $this->patient?->name
+            ?? 'Chưa có tên';
+    }
+
+    public function getPatientDisplayPhoneAttribute()
+    {
+        return $this->patientProfile?->phone
+            ?? $this->appointment?->patient_display_phone
+            ?? $this->patient?->phone
+            ?? $this->patient?->phone_number
+            ?? 'Chưa có SĐT';
     }
 }

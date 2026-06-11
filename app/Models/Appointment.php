@@ -13,10 +13,12 @@ class Appointment extends Model
 
     protected $fillable = [
         'patient_id',
+        'patient_profile_id',
         'doctor_id',
         'service_id',
         'room_id',
         'source',
+        'patient_snapshot',
         'appointment_date',
         'slots_used',
         'duration_minutes',
@@ -33,6 +35,18 @@ class Appointment extends Model
     ];
 
     protected $casts = [
+        'patient_id' => 'integer',
+        'patient_profile_id' => 'integer',
+        'doctor_id' => 'integer',
+        'service_id' => 'integer',
+        'room_id' => 'integer',
+        'slots_used' => 'integer',
+        'duration_minutes' => 'integer',
+        'actual_used_minutes' => 'integer',
+        'queue_number' => 'integer',
+
+        'patient_snapshot' => 'array',
+
         'appointment_date' => 'datetime',
         'confirmed_at' => 'datetime',
         'checked_in_at' => 'datetime',
@@ -42,39 +56,53 @@ class Appointment extends Model
         'delay_notified_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
-
-        'patient_id' => 'integer',
-        'doctor_id' => 'integer',
-        'service_id' => 'integer',
-        'room_id' => 'integer',
-        'slots_used' => 'integer',
-        'duration_minutes' => 'integer',
-        'actual_used_minutes' => 'integer',
-        'queue_number' => 'integer',
     ];
 
     // ==================== RELATIONSHIPS ====================
 
+    /**
+     * Tài khoản bệnh nhân nếu lịch online có user đăng nhập.
+     */
     public function patient()
     {
         return $this->belongsTo(User::class, 'patient_id');
     }
 
+    /**
+     * Hồ sơ bệnh nhân dùng chung cho online/offline.
+     */
+    public function patientProfile()
+    {
+        return $this->belongsTo(PatientProfile::class, 'patient_profile_id');
+    }
+
+    /**
+     * Bác sĩ phụ trách.
+     */
     public function doctor()
     {
         return $this->belongsTo(Employee::class, 'doctor_id');
     }
 
+    /**
+     * Dịch vụ khám.
+     */
     public function service()
     {
         return $this->belongsTo(Service::class);
     }
 
+    /**
+     * Phòng khám.
+     */
     public function room()
     {
         return $this->belongsTo(Room::class);
     }
 
+    /**
+     * Hồ sơ bệnh án của lượt khám này.
+     */
     public function medicalRecord()
     {
         return $this->hasOne(MedicalRecord::class, 'appointment_id');
@@ -120,6 +148,11 @@ class Appointment extends Model
     public function scopeCancelled($query)
     {
         return $query->where('status', 'cancelled');
+    }
+
+    public function scopeMissed($query)
+    {
+        return $query->where('status', 'missed');
     }
 
     public function scopeOnline($query)
@@ -185,6 +218,11 @@ class Appointment extends Model
         return $query->where('room_id', $roomId);
     }
 
+    public function scopeByPatientProfile($query, $patientProfileId)
+    {
+        return $query->where('patient_profile_id', $patientProfileId);
+    }
+
     public function scopeForDate($query, $date)
     {
         return $query->whereDate('appointment_date', $date);
@@ -194,12 +232,14 @@ class Appointment extends Model
 
     public function isPast()
     {
-        return $this->appointment_date < now();
+        return $this->appointment_date && $this->appointment_date->lt(now());
     }
 
     public function isUpcoming()
     {
-        return $this->appointment_date >= now() && $this->status !== 'cancelled';
+        return $this->appointment_date
+            && $this->appointment_date->gte(now())
+            && !in_array($this->status, ['cancelled', 'missed'], true);
     }
 
     public function isPending()
@@ -237,14 +277,19 @@ class Appointment extends Model
         return $this->status === 'cancelled';
     }
 
+    public function isMissed()
+    {
+        return $this->status === 'missed';
+    }
+
     public function isOnline()
     {
-        return $this->source === 'online';
+        return ($this->source ?? 'online') === 'online';
     }
 
     public function isOffline()
     {
-        return $this->source === 'offline';
+        return ($this->source ?? 'online') === 'offline';
     }
 
     public function canBeCheckedIn()
@@ -301,16 +346,91 @@ class Appointment extends Model
         return max(0, $estimatedEnd->diffInMinutes(now()));
     }
 
+    /**
+     * Tên bệnh nhân ưu tiên lấy từ:
+     * 1. patient_profiles
+     * 2. patient_snapshot
+     * 3. users
+     * 4. fallback theo patient_id
+     */
+    public function getPatientDisplayNameAttribute()
+    {
+        return $this->patientProfile?->full_name
+            ?? data_get($this->patient_snapshot, 'full_name')
+            ?? $this->patient?->name
+            ?? 'Bệnh nhân #' . ($this->patient_id ?? $this->id);
+    }
+
+    /**
+     * SĐT bệnh nhân ưu tiên lấy từ:
+     * 1. patient_profiles
+     * 2. patient_snapshot
+     * 3. users nếu có cột phone/phone_number/tel
+     * 4. notes theo dạng "SĐT: ..."
+     */
+    public function getPatientDisplayPhoneAttribute()
+    {
+        $phone = $this->patientProfile?->phone
+            ?? data_get($this->patient_snapshot, 'phone')
+            ?? $this->patient?->phone
+            ?? $this->patient?->phone_number
+            ?? $this->patient?->tel
+            ?? null;
+
+        if (!$phone && $this->notes) {
+            preg_match('/SĐT:\s*([0-9+\-\s]+)/u', $this->notes, $matches);
+            $phone = isset($matches[1]) ? trim($matches[1]) : null;
+        }
+
+        return $phone ?: 'Chưa có SĐT';
+    }
+
+    public function getPatientDisplayEmailAttribute()
+    {
+        return $this->patientProfile?->email
+            ?? data_get($this->patient_snapshot, 'email')
+            ?? $this->patient?->email
+            ?? null;
+    }
+
+    public function getPatientDisplayAddressAttribute()
+    {
+        return $this->patientProfile?->address
+            ?? data_get($this->patient_snapshot, 'address')
+            ?? 'Chưa cập nhật';
+    }
+
+    public function getPatientDisplayDobAttribute()
+    {
+        $dob = $this->patientProfile?->dob
+            ?? data_get($this->patient_snapshot, 'dob');
+
+        if (!$dob) {
+            return null;
+        }
+
+        return is_string($dob) ? $dob : $dob->format('Y-m-d');
+    }
+
+    public function getPatientDisplayGenderAttribute()
+    {
+        return $this->patientProfile?->gender_label
+            ?? data_get($this->patient_snapshot, 'gender_label')
+            ?? data_get($this->patient_snapshot, 'gender')
+            ?? 'Chưa cập nhật';
+    }
+
     public function getStatusLabelAttribute()
     {
         $statuses = [
             'pending' => 'Chờ xác nhận',
             'confirmed' => 'Đã xác nhận',
-            'checked_in' => 'Đã check-in',
+            'checked_in' => 'Đã tiếp nhận',
             'waiting' => 'Đang chờ khám',
             'in_progress' => 'Đang khám',
             'completed' => 'Đã hoàn thành',
             'cancelled' => 'Đã hủy',
+            'missed' => 'Bỏ lỡ lịch khám',
         ];
 
         return $statuses[$this->status] ?? 'Không xác định';
@@ -323,11 +443,27 @@ class Appointment extends Model
             'offline' => 'Tiếp nhận tại quầy',
         ];
 
-        return $sources[$this->source] ?? 'Không xác định';
+        return $sources[$this->source ?? 'online'] ?? 'Không xác định';
     }
 
     public function getDisplayQueueNumberAttribute()
     {
-        return $this->queue_number ? str_pad((string) $this->queue_number, 3, '0', STR_PAD_LEFT) : '-';
+        return $this->queue_number
+            ? str_pad((string) $this->queue_number, 3, '0', STR_PAD_LEFT)
+            : '-';
+    }
+
+    /**
+     * Tạo snapshot từ hồ sơ bệnh nhân hiện tại.
+     */
+    public function syncPatientSnapshotFromProfile()
+    {
+        if (!$this->patientProfile) {
+            return false;
+        }
+
+        $this->patient_snapshot = $this->patientProfile->toAppointmentSnapshot();
+
+        return $this->save();
     }
 }

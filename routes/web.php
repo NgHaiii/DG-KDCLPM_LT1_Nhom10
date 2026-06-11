@@ -16,6 +16,7 @@ use App\Http\Controllers\DoctorAppointmentController;
 use App\Http\Controllers\RoomController;
 use App\Http\Controllers\ReceptionController;
 use App\Http\Controllers\ExaminationController;
+use App\Http\Controllers\PatientProfileController;
 
 // ==================== ROUTE CHÍNH ====================
 Route::get('/', function () {
@@ -44,7 +45,7 @@ Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('p
 
 // ==================== PROTECTED ROUTES ====================
 Route::middleware('auth')->group(function () {
-    // ==================== DASHBOARD REDIRECT / DIRECT ====================
+    // ==================== DASHBOARD ====================
     Route::get('admin/dashboard', function () {
         return view('admin.dashboard');
     })->name('admin.dashboard');
@@ -71,7 +72,6 @@ Route::middleware('auth')->group(function () {
             return view('admin.dashboard');
         })->name('dashboard');
 
-        // ----- Quản lý bác sĩ / nhân viên -----
         Route::get('doctors', [EmployeeController::class, 'listDoctors'])->name('doctors');
         Route::get('employees', [EmployeeController::class, 'listEmployees'])->name('employees');
 
@@ -80,34 +80,28 @@ Route::middleware('auth')->group(function () {
         Route::patch('employee/{employee}', [EmployeeController::class, 'update'])->name('employee.patch');
         Route::delete('employee/{employee}', [EmployeeController::class, 'destroy'])->name('employee.destroy');
 
-        // ----- Quản lý ca làm việc -----
         Route::resource('shifts', ShiftManagementController::class)->names('shifts');
 
-        // ----- Quản lý phòng khám -----
         Route::resource('rooms', RoomController::class)
             ->except(['show'])
             ->names('rooms');
 
-        // ----- Quản lý dịch vụ -----
         Route::get('services', [ServiceController::class, 'index'])->name('services.index');
         Route::post('services', [ServiceController::class, 'store'])->name('services.store');
         Route::patch('services/{service}', [ServiceController::class, 'update'])->name('services.update');
         Route::delete('services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
 
-        // ----- Gán chuyên khoa / phòng cho dịch vụ -----
         Route::get('services/specializations', [ServiceSpecializationController::class, 'index'])
             ->name('service-specialization.index');
 
         Route::put('services/{id}/specialization', [ServiceSpecializationController::class, 'update'])
             ->name('service-specialization.update');
 
-        // ----- Quản lý giá -----
         Route::get('prices', [PriceController::class, 'index'])->name('prices.index');
         Route::post('prices', [PriceController::class, 'store'])->name('prices.store');
         Route::patch('prices/{price}', [PriceController::class, 'update'])->name('prices.update');
         Route::delete('prices/{price}', [PriceController::class, 'destroy'])->name('prices.destroy');
 
-        // ----- Duyệt lịch làm việc -----
         Route::prefix('schedule-approval')->name('schedule-approval.')->group(function () {
             Route::get('/', [ScheduleApprovalController::class, 'index'])->name('index');
 
@@ -139,7 +133,6 @@ Route::middleware('auth')->group(function () {
             Route::get('employees', [ScheduleApprovalController::class, 'employees'])->name('employees');
         });
 
-        // ----- Phân công trực nếu còn dùng logic cũ -----
         Route::prefix('duty')->name('duty.')->group(function () {
             Route::get('/', [AdminDutyController::class, 'index'])->name('index');
             Route::post('store', [AdminDutyController::class, 'store'])->name('store');
@@ -160,7 +153,7 @@ Route::middleware('auth')->group(function () {
             return view('doctor.dashboard');
         })->name('dashboard');
 
-        // ----- Xác nhận lịch online của bệnh nhân -----
+        // ----- Xác nhận lịch online -----
         Route::get('appointments/online', [DoctorAppointmentController::class, 'onlineAppointments'])
             ->name('appointments.online');
 
@@ -171,6 +164,15 @@ Route::middleware('auth')->group(function () {
         Route::post('appointments/online/{appointment}/cancel', [DoctorAppointmentController::class, 'cancelOnlineAppointment'])
             ->whereNumber('appointment')
             ->name('appointments.online.cancel');
+
+        // ----- Hồ sơ bệnh nhân cho bác sĩ -----
+        Route::prefix('patient-profiles')->name('patient-profiles.')->group(function () {
+            Route::get('/', [PatientProfileController::class, 'doctorIndex'])->name('index');
+
+            Route::get('{patientProfile}', [PatientProfileController::class, 'doctorShow'])
+                ->whereNumber('patientProfile')
+                ->name('show');
+        });
 
         // ----- UC3.2: Khám bệnh và cập nhật hồ sơ -----
         Route::prefix('examinations')->name('examinations.')->group(function () {
@@ -203,7 +205,7 @@ Route::middleware('auth')->group(function () {
         })->whereNumber('id')->name('appointments.view');
 
         Route::get('patients', function () {
-            return view('doctor.patients');
+            return redirect()->route('doctor.patient-profiles.index');
         })->name('patients');
 
         Route::get('patients/create', function () {
@@ -211,7 +213,7 @@ Route::middleware('auth')->group(function () {
         })->name('patients.create');
 
         Route::get('patients/{id}', function ($id) {
-            return view('doctor.patients-view', compact('id'));
+            return redirect()->route('doctor.patient-profiles.show', $id);
         })->whereNumber('id')->name('patients.view');
 
         Route::get('medical-records', function () {
@@ -222,7 +224,6 @@ Route::middleware('auth')->group(function () {
             return view('doctor.settings');
         })->name('settings');
 
-        // ----- Đăng ký / xem lịch làm việc bác sĩ -----
         Route::prefix('schedule')->name('schedule.')->group(function () {
             Route::get('/', [DoctorScheduleController::class, 'create'])->name('create');
             Route::get('official', [DoctorScheduleController::class, 'officialSchedule'])->name('official');
@@ -250,7 +251,6 @@ Route::middleware('auth')->group(function () {
             })->name('off-days');
         });
 
-        // ----- Route trực cũ nếu còn cần xem -----
         Route::prefix('duty')->name('duty.')->group(function () {
             Route::get('/', function () {
                 return view('doctor.duty');
@@ -266,36 +266,37 @@ Route::middleware('auth')->group(function () {
             return view('employees.dashboard');
         })->name('dashboard');
 
-        // ----- UC3.1: Tiếp đón bệnh nhân -----
-        Route::prefix('reception')->name('reception.')->group(function () {
-            Route::get('/', [ReceptionController::class, 'index'])->name('index');
-            Route::get('queue', [ReceptionController::class, 'queue'])->name('queue');
-
-            Route::get('{appointment}/ticket', [ReceptionController::class, 'printTicket'])
-                ->whereNumber('appointment')
-                ->name('ticket');
-
-            Route::post('{appointment}/check-in', [ReceptionController::class, 'checkIn'])
-                ->whereNumber('appointment')
-                ->name('check-in');
-
-            Route::post('walk-in', [ReceptionController::class, 'createWalkIn'])->name('walk-in');
-        });
-
-        // Giữ alias cũ để các file đang gọi route('employees.reception') không bị lỗi
+        // ----- UC3.1: Tiếp nhận bệnh nhân -----
         Route::get('reception', [ReceptionController::class, 'index'])->name('reception');
 
-        // Giữ alias cũ để các file đang gọi route('employees.reception.queue') không bị lỗi
-        Route::get('reception-queue', function () {
-            return redirect()->route('employees.reception.queue');
-        })->name('reception.queue.old');
+        Route::get('reception/index', function () {
+            return redirect()->route('employees.reception');
+        })->name('reception.index');
 
-        // Route tương thích với code cũ nếu đang dùng route('employees.reception.queue')
-        Route::get('reception/queue-alias', function () {
-            return redirect()->route('employees.reception.queue');
-        })->name('reception.queue.alias');
+        Route::get('reception/queue', [ReceptionController::class, 'queue'])->name('reception.queue');
 
-        // ----- Đăng ký / xem lịch làm việc nhân viên -----
+        Route::get('reception/{appointment}/ticket', [ReceptionController::class, 'printTicket'])
+            ->whereNumber('appointment')
+            ->name('reception.ticket');
+
+        Route::post('reception/{appointment}/check-in', [ReceptionController::class, 'checkIn'])
+            ->whereNumber('appointment')
+            ->name('reception.check-in');
+
+        Route::post('reception/walk-in', [ReceptionController::class, 'createWalkIn'])
+            ->name('reception.walk-in');
+
+        // ----- Hồ sơ bệnh nhân cho nhân viên/lễ tân -----
+        Route::prefix('patient-profiles')->name('patient-profiles.')->group(function () {
+            Route::get('/', [PatientProfileController::class, 'index'])->name('index');
+            Route::get('search', [PatientProfileController::class, 'search'])->name('search');
+            Route::post('quick-store', [PatientProfileController::class, 'storeQuick'])->name('quick-store');
+
+            Route::put('{patientProfile}', [PatientProfileController::class, 'update'])
+                ->whereNumber('patientProfile')
+                ->name('update');
+        });
+
         Route::prefix('schedule')->name('schedule.')->group(function () {
             Route::get('/', [EmployeeScheduleController::class, 'create'])->name('create');
             Route::get('official', [EmployeeScheduleController::class, 'officialSchedule'])->name('official');
@@ -350,7 +351,6 @@ Route::middleware('auth')->group(function () {
             return view('patient.dashboard');
         })->name('dashboard');
 
-        // ----- Lịch hẹn khám -----
         Route::get('appointments', [AppointmentController::class, 'index'])->name('appointment.list');
         Route::get('appointments/create', [AppointmentController::class, 'create'])->name('appointment.create');
         Route::post('appointments', [AppointmentController::class, 'store'])->name('appointment.store');
@@ -363,7 +363,6 @@ Route::middleware('auth')->group(function () {
             ->whereNumber('id')
             ->name('appointment.cancel');
 
-        // ----- Redirect route cũ singular -> plural -----
         Route::get('appointment', function () {
             return redirect()->route('patient.appointment.list');
         });
@@ -376,7 +375,6 @@ Route::middleware('auth')->group(function () {
             return redirect()->route('patient.appointment.show', $id);
         })->whereNumber('id');
 
-        // ----- API đặt lịch AJAX -----
         Route::get('api/service-categories', [AppointmentController::class, 'getServiceCategories'])
             ->name('api.service-categories');
 
@@ -395,7 +393,6 @@ Route::middleware('auth')->group(function () {
         Route::get('api/doctors-by-time', [AppointmentController::class, 'getDoctorsByTime'])
             ->name('api.doctors-by-time');
 
-        // ----- Hồ sơ / hóa đơn / dịch vụ -----
         Route::get('medical-records', function () {
             return view('patient.medical-records');
         })->name('medical-records');

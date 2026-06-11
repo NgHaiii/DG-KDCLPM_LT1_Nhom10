@@ -188,12 +188,19 @@
         line-height: 1.35;
     }
 
-    .patient-phone {
+    .patient-phone,
+    .patient-extra {
         color: var(--text-muted);
         font-size: 12px;
-        display: inline-flex;
+        display: flex;
         align-items: center;
         gap: 5px;
+        line-height: 1.4;
+    }
+
+    .patient-extra {
+        margin-top: 2px;
+        flex-wrap: wrap;
     }
 
     .status {
@@ -344,6 +351,86 @@
 
     $waitingList = $todayAppointments->whereIn('status', ['checked_in', 'waiting']);
     $inProgressList = $todayAppointments->where('status', 'in_progress');
+
+    $getSnapshot = function ($appointment) {
+        $snapshot = $appointment->patient_snapshot ?? [];
+
+        if (is_string($snapshot)) {
+            $decoded = json_decode($snapshot, true);
+            return is_array($decoded) ? $decoded : [];
+        }
+
+        return is_array($snapshot) ? $snapshot : [];
+    };
+
+    $getPatientInfo = function ($appointment) use ($getSnapshot) {
+        $snapshot = $getSnapshot($appointment);
+
+        $name = $appointment->patientProfile?->full_name
+            ?? data_get($snapshot, 'full_name')
+            ?? $appointment->patient?->name
+            ?? 'Chưa có tên';
+
+        $phone = $appointment->patientProfile?->phone
+            ?? data_get($snapshot, 'phone')
+            ?? $appointment->patient?->phone
+            ?? $appointment->patient?->phone_number
+            ?? $appointment->patient?->tel
+            ?? null;
+
+        if (!$phone && $appointment->notes) {
+            preg_match('/SĐT:\s*([0-9+\-\s]+)/u', $appointment->notes, $matches);
+            $phone = isset($matches[1]) ? trim($matches[1]) : null;
+        }
+
+        $dob = $appointment->patientProfile?->dob
+            ? $appointment->patientProfile->dob->format('d/m/Y')
+            : data_get($snapshot, 'dob');
+
+        if ($dob && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dob)) {
+            $dob = \Carbon\Carbon::parse($dob)->format('d/m/Y');
+        }
+
+        $gender = $appointment->patientProfile?->gender_label
+            ?? data_get($snapshot, 'gender_label')
+            ?? data_get($snapshot, 'gender')
+            ?? null;
+
+        if ($gender === 'male') {
+            $gender = 'Nam';
+        } elseif ($gender === 'female') {
+            $gender = 'Nữ';
+        } elseif ($gender === 'other') {
+            $gender = 'Khác';
+        }
+
+        $address = $appointment->patientProfile?->address
+            ?? data_get($snapshot, 'address')
+            ?? null;
+
+        return [
+            'name' => $name,
+            'phone' => $phone ?: 'Chưa có SĐT',
+            'dob' => $dob,
+            'gender' => $gender,
+            'address' => $address,
+        ];
+    };
+
+    $makeSearchText = function ($appointment, $patientInfo, $source) {
+        return implode(' ', array_filter([
+            $appointment->queue_number,
+            $patientInfo['name'],
+            $patientInfo['phone'],
+            $patientInfo['dob'],
+            $patientInfo['gender'],
+            $patientInfo['address'],
+            $appointment->service?->name,
+            $appointment->doctor?->name,
+            $appointment->room?->name,
+            $source,
+        ]));
+    };
 @endphp
 
 <div class="toolbar">
@@ -385,27 +472,9 @@
         <div class="column-body">
             @forelse($waitingList as $appointment)
                 @php
-                    $patientPhone = $appointment->patient?->phone
-                        ?? $appointment->patient?->phone_number
-                        ?? $appointment->patient?->tel
-                        ?? null;
-
-                    if (!$patientPhone && $appointment->notes) {
-                        preg_match('/SĐT:\s*([0-9+\-\s]+)/u', $appointment->notes, $matches);
-                        $patientPhone = isset($matches[1]) ? trim($matches[1]) : null;
-                    }
-
+                    $patientInfo = $getPatientInfo($appointment);
                     $source = ($appointment->source ?? 'online') === 'offline' ? 'Khám trực tiếp' : 'Lịch online';
-
-                    $searchText = implode(' ', [
-                        $appointment->queue_number,
-                        $appointment->patient?->name,
-                        $patientPhone,
-                        $appointment->service?->name,
-                        $appointment->doctor?->name,
-                        $appointment->room?->name,
-                        $source,
-                    ]);
+                    $searchText = $makeSearchText($appointment, $patientInfo, $source);
                 @endphp
 
                 <div class="queue-card" data-search="{{ e(mb_strtolower($searchText)) }}">
@@ -417,14 +486,24 @@
                         <div>
                             <div class="patient-row">
                                 <div>
-                                    <div class="patient-name">
-                                        {{ $appointment->patient?->name ?? 'Bệnh nhân #' . $appointment->patient_id }}
-                                    </div>
+                                    <div class="patient-name">{{ $patientInfo['name'] }}</div>
 
                                     <div class="patient-phone">
                                         <i class="ri-phone-line"></i>
-                                        {{ $patientPhone ?: 'Chưa có SĐT' }}
+                                        {{ $patientInfo['phone'] }}
                                     </div>
+
+                                    @if($patientInfo['dob'] || $patientInfo['gender'])
+                                        <div class="patient-extra">
+                                            <i class="ri-user-line"></i>
+                                            @if($patientInfo['gender'])
+                                                <span>{{ $patientInfo['gender'] }}</span>
+                                            @endif
+                                            @if($patientInfo['dob'])
+                                                <span>{{ $patientInfo['dob'] }}</span>
+                                            @endif
+                                        </div>
+                                    @endif
                                 </div>
 
                                 <span class="status status-waiting">
@@ -491,27 +570,9 @@
         <div class="column-body">
             @forelse($inProgressList as $appointment)
                 @php
-                    $patientPhone = $appointment->patient?->phone
-                        ?? $appointment->patient?->phone_number
-                        ?? $appointment->patient?->tel
-                        ?? null;
-
-                    if (!$patientPhone && $appointment->notes) {
-                        preg_match('/SĐT:\s*([0-9+\-\s]+)/u', $appointment->notes, $matches);
-                        $patientPhone = isset($matches[1]) ? trim($matches[1]) : null;
-                    }
-
+                    $patientInfo = $getPatientInfo($appointment);
                     $source = ($appointment->source ?? 'online') === 'offline' ? 'Khám trực tiếp' : 'Lịch online';
-
-                    $searchText = implode(' ', [
-                        $appointment->queue_number,
-                        $appointment->patient?->name,
-                        $patientPhone,
-                        $appointment->service?->name,
-                        $appointment->doctor?->name,
-                        $appointment->room?->name,
-                        $source,
-                    ]);
+                    $searchText = $makeSearchText($appointment, $patientInfo, $source);
                 @endphp
 
                 <div class="queue-card" data-search="{{ e(mb_strtolower($searchText)) }}">
@@ -523,14 +584,24 @@
                         <div>
                             <div class="patient-row">
                                 <div>
-                                    <div class="patient-name">
-                                        {{ $appointment->patient?->name ?? 'Bệnh nhân #' . $appointment->patient_id }}
-                                    </div>
+                                    <div class="patient-name">{{ $patientInfo['name'] }}</div>
 
                                     <div class="patient-phone">
                                         <i class="ri-phone-line"></i>
-                                        {{ $patientPhone ?: 'Chưa có SĐT' }}
+                                        {{ $patientInfo['phone'] }}
                                     </div>
+
+                                    @if($patientInfo['dob'] || $patientInfo['gender'])
+                                        <div class="patient-extra">
+                                            <i class="ri-user-line"></i>
+                                            @if($patientInfo['gender'])
+                                                <span>{{ $patientInfo['gender'] }}</span>
+                                            @endif
+                                            @if($patientInfo['dob'])
+                                                <span>{{ $patientInfo['dob'] }}</span>
+                                            @endif
+                                        </div>
+                                    @endif
                                 </div>
 
                                 <span class="status status-progress">
@@ -597,27 +668,9 @@
         <div class="column-body">
             @forelse($completedAppointments as $appointment)
                 @php
-                    $patientPhone = $appointment->patient?->phone
-                        ?? $appointment->patient?->phone_number
-                        ?? $appointment->patient?->tel
-                        ?? null;
-
-                    if (!$patientPhone && $appointment->notes) {
-                        preg_match('/SĐT:\s*([0-9+\-\s]+)/u', $appointment->notes, $matches);
-                        $patientPhone = isset($matches[1]) ? trim($matches[1]) : null;
-                    }
-
+                    $patientInfo = $getPatientInfo($appointment);
                     $source = ($appointment->source ?? 'online') === 'offline' ? 'Khám trực tiếp' : 'Lịch online';
-
-                    $searchText = implode(' ', [
-                        $appointment->queue_number,
-                        $appointment->patient?->name,
-                        $patientPhone,
-                        $appointment->service?->name,
-                        $appointment->doctor?->name,
-                        $appointment->room?->name,
-                        $source,
-                    ]);
+                    $searchText = $makeSearchText($appointment, $patientInfo, $source);
                 @endphp
 
                 <div class="queue-card" data-search="{{ e(mb_strtolower($searchText)) }}">
@@ -629,14 +682,24 @@
                         <div>
                             <div class="patient-row">
                                 <div>
-                                    <div class="patient-name">
-                                        {{ $appointment->patient?->name ?? 'Bệnh nhân #' . $appointment->patient_id }}
-                                    </div>
+                                    <div class="patient-name">{{ $patientInfo['name'] }}</div>
 
                                     <div class="patient-phone">
                                         <i class="ri-phone-line"></i>
-                                        {{ $patientPhone ?: 'Chưa có SĐT' }}
+                                        {{ $patientInfo['phone'] }}
                                     </div>
+
+                                    @if($patientInfo['dob'] || $patientInfo['gender'])
+                                        <div class="patient-extra">
+                                            <i class="ri-user-line"></i>
+                                            @if($patientInfo['gender'])
+                                                <span>{{ $patientInfo['gender'] }}</span>
+                                            @endif
+                                            @if($patientInfo['dob'])
+                                                <span>{{ $patientInfo['dob'] }}</span>
+                                            @endif
+                                        </div>
+                                    @endif
                                 </div>
 
                                 <span class="status status-completed">
@@ -654,6 +717,11 @@
                                 <div class="compact-line">
                                     <i class="ri-user-heart-line"></i>
                                     <span>{{ $appointment->doctor?->name ?? 'Chưa có bác sĩ' }}</span>
+                                </div>
+
+                                <div class="compact-line">
+                                    <i class="ri-door-open-line"></i>
+                                    <span>{{ $appointment->room?->name ?? 'Chưa có phòng' }}</span>
                                 </div>
 
                                 <div class="compact-line">

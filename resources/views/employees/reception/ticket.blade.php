@@ -1,122 +1,194 @@
+@php
+    use Carbon\Carbon;
+
+    $appointment->loadMissing(['patient', 'patientProfile', 'doctor', 'service', 'room']);
+
+    $appointmentDate = $appointment->appointment_date
+        ? Carbon::parse($appointment->appointment_date)
+        : now();
+
+    $checkedInAt = $appointment->checked_in_at
+        ? Carbon::parse($appointment->checked_in_at)
+        : now();
+
+    $snapshot = is_array($appointment->patient_snapshot)
+        ? $appointment->patient_snapshot
+        : [];
+
+    $patientName = $appointment->patientProfile?->full_name
+        ?? data_get($snapshot, 'full_name')
+        ?? $appointment->patient?->name
+        ?? 'Chưa có tên';
+
+    $patientPhone = $appointment->patientProfile?->phone
+        ?? data_get($snapshot, 'phone')
+        ?? $appointment->patient?->phone
+        ?? $appointment->patient?->phone_number
+        ?? 'Chưa có SĐT';
+
+    $queueNumber = $appointment->queue_number ?? '-';
+
+    $sourceLabel = $appointment->source === 'online'
+        ? 'ĐẶT LỊCH ONLINE'
+        : 'KHÁM TRỰC TIẾP';
+
+    $room = $appointment->room;
+@endphp
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Phiếu số thứ tự</title>
+    <title>Phiếu tiếp nhận khám bệnh</title>
+
     <style>
-        @page {
-            size: 80mm auto;
-            margin: 4mm;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
         body {
             margin: 0;
-            background: #f8fafc;
-            color: #111827;
+            background: #f1f5f9;
             font-family: Arial, sans-serif;
+            color: #0f172a;
         }
 
-        .screen-actions {
-            padding: 20px;
+        .page-actions {
+            width: 420px;
+            margin: 24px auto 16px;
             display: flex;
             gap: 10px;
             justify-content: center;
         }
 
         .btn {
-            border: none;
-            border-radius: 8px;
-            padding: 10px 16px;
-            font-weight: 700;
-            cursor: pointer;
-            text-decoration: none;
+            border: 1px solid #cbd5e1;
+            background: white;
+            color: #0f172a;
+            padding: 10px 14px;
+            border-radius: 7px;
             font-size: 14px;
+            font-weight: 700;
+            text-decoration: none;
+            cursor: pointer;
         }
 
         .btn-primary {
             background: #0ea5e9;
+            border-color: #0ea5e9;
             color: white;
         }
 
-        .btn-secondary {
-            background: white;
-            color: #111827;
-            border: 1px solid #d1d5db;
-        }
-
         .ticket-wrap {
-            width: 80mm;
-            margin: 20px auto;
+            width: 420px;
+            margin: 0 auto 32px;
             background: white;
-            padding: 12px;
-            border: 1px solid #e5e7eb;
+            border: 1px solid #e2e8f0;
+            padding: 16px;
         }
 
         .ticket {
-            border: 1px dashed #111827;
-            padding: 12px;
-            text-align: center;
+            border: 1px dashed #0f172a;
+            padding: 18px 16px;
         }
 
-        .brand {
-            font-size: 17px;
+        .clinic-name {
+            text-align: center;
+            font-size: 24px;
             font-weight: 900;
-            letter-spacing: .5px;
+            letter-spacing: 1px;
             margin-bottom: 4px;
         }
 
-        .clinic {
-            font-size: 11px;
-            line-height: 1.35;
-            margin-bottom: 10px;
-        }
-
-        .type {
-            display: inline-block;
-            padding: 4px 8px;
-            border: 1px solid #111827;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-        }
-
-        .label {
+        .ticket-subtitle {
+            text-align: center;
             font-size: 13px;
-            margin-top: 4px;
+            margin-bottom: 2px;
         }
 
-        .number {
-            font-size: 52px;
+        .ticket-date {
+            text-align: center;
+            font-size: 13px;
+            margin-bottom: 14px;
+        }
+
+        .badge {
+            width: fit-content;
+            margin: 0 auto 16px;
+            padding: 6px 14px;
+            border: 1px solid #0f172a;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: 900;
+        }
+
+        .queue-label {
+            text-align: center;
+            font-size: 15px;
+            margin-bottom: 4px;
+        }
+
+        .queue-number {
+            text-align: center;
+            font-size: 62px;
             line-height: 1;
             font-weight: 900;
-            margin: 8px 0 12px;
+            margin-bottom: 18px;
+        }
+
+        .room-box {
+            border: 2px solid #0f172a;
+            padding: 12px;
+            margin-bottom: 14px;
+            text-align: center;
+        }
+
+        .room-label {
+            font-size: 13px;
+            font-weight: 900;
+            margin-bottom: 4px;
+        }
+
+        .room-name {
+            font-size: 22px;
+            font-weight: 900;
+            margin-bottom: 8px;
+        }
+
+        .room-detail {
+            text-align: left;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .divider {
+            border-top: 1px dashed #94a3b8;
+            margin: 12px 0;
         }
 
         .info {
-            text-align: left;
-            font-size: 12px;
+            font-size: 13px;
             line-height: 1.55;
-            border-top: 1px dashed #9ca3af;
-            padding-top: 10px;
-            margin-top: 10px;
         }
 
         .info-row {
             margin-bottom: 3px;
         }
 
-        .footer {
-            border-top: 1px dashed #9ca3af;
-            margin-top: 10px;
-            padding-top: 8px;
-            font-size: 11px;
-            line-height: 1.4;
+        .info-row strong {
+            font-weight: 900;
+        }
+
+        .guide-box {
+            margin-top: 12px;
+            padding: 10px;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .footer-note {
+            text-align: center;
+            font-size: 12px;
+            line-height: 1.45;
+            margin-top: 12px;
         }
 
         @media print {
@@ -124,342 +196,114 @@
                 background: white;
             }
 
-            .screen-actions {
-                display: none;
+            .page-actions {
+                display: none !important;
             }
 
             .ticket-wrap {
                 margin: 0;
-                width: 100%;
+                width: 80mm;
                 border: none;
                 padding: 0;
+            }
+
+            .ticket {
+                border: 1px dashed #000;
+                padding: 12px;
+            }
+
+            @page {
+                size: 80mm auto;
+                margin: 6mm;
             }
         }
     </style>
 </head>
 <body>
-@php
-    $isOffline = ($appointment->source ?? 'online') === 'offline';
-@endphp
-
-<div class="screen-actions">
-    <button class="btn btn-primary" onclick="window.print()">In lại phiếu</button>
-    <a href="{{ route('employees.reception.queue') }}" class="btn btn-secondary">Về danh sách khám</a>
-    <a href="{{ route('employees.reception') }}" class="btn btn-secondary">Tiếp nhận tiếp</a>
-</div>
-
-<div class="ticket-wrap">
-    <div class="ticket">
-        <div class="brand">DENTALCARE</div>
-        <div class="clinic">
-            Phiếu tiếp nhận khám bệnh<br>
-            {{ now()->format('d/m/Y H:i') }}
-        </div>
-
-        <div class="type">
-            {{ $isOffline ? 'Khám trực tiếp' : 'Lịch đặt online' }}
-        </div>
-
-        <div class="label">Số thứ tự</div>
-        <div class="number">{{ $appointment->queue_number ?? '-' }}</div>
-
-        <div class="info">
-            <div class="info-row"><strong>Bệnh nhân:</strong> {{ $appointment->patient?->name ?? 'Bệnh nhân #' . $appointment->patient_id }}</div>
-            <div class="info-row"><strong>Dịch vụ:</strong> {{ $appointment->service?->name ?? '-' }}</div>
-            <div class="info-row"><strong>Bác sĩ:</strong> {{ $appointment->doctor?->name ?? '-' }}</div>
-            <div class="info-row"><strong>Phòng:</strong> {{ $appointment->room?->name ?? 'Chưa có phòng' }}</div>
-            <div class="info-row"><strong>Giờ hẹn:</strong> {{ $appointment->appointment_date?->format('H:i d/m/Y') ?? '-' }}</div>
-            <div class="info-row"><strong>Tiếp nhận:</strong> {{ $appointment->checked_in_at?->format('H:i d/m/Y') ?? now()->format('H:i d/m/Y') }}</div>
-        </div>
-
-        <div class="footer">
-            Vui lòng giữ phiếu và chờ gọi số.<br>
-            Cảm ơn quý khách.
-        </div>
+    <div class="page-actions">
+        <button type="button" class="btn btn-primary" onclick="window.print()">In lại phiếu</button>
+        <a href="{{ route('employees.reception.queue') }}" class="btn">Về danh sách khám</a>
+        <a href="{{ route('employees.reception') }}" class="btn">Tiếp nhận tiếp</a>
     </div>
-</div>
 
-<script>
-    window.addEventListener('load', function () {
-        setTimeout(function () {
-            window.print();
-        }, 400);
-    });
-</script>
-</body>
-</html><!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Phiếu số thứ tự</title>
-    <style>
-        @page {
-            size: 80mm auto;
-            margin: 4mm;
-        }
+    <div class="ticket-wrap">
+        <div class="ticket">
+            <div class="clinic-name">DENTALCARE</div>
+            <div class="ticket-subtitle">Phiếu tiếp nhận khám bệnh</div>
+            <div class="ticket-date">{{ $checkedInAt->format('d/m/Y H:i') }}</div>
 
-        * {
-            box-sizing: border-box;
-        }
+            <div class="badge">{{ $sourceLabel }}</div>
 
-        body {
-            margin: 0;
-            background: #f8fafc;
-            color: #111827;
-            font-family: Arial, sans-serif;
-        }
+            <div class="queue-label">Số thứ tự</div>
+            <div class="queue-number">{{ $queueNumber }}</div>
 
-        .screen-actions {
-            padding: 20px;
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
+            <div class="room-box">
+                <div class="room-label">PHÒNG KHÁM</div>
+                <div class="room-name">{{ $room?->name ?? 'Chưa có phòng' }}</div>
 
-        .btn {
-            border: none;
-            border-radius: 8px;
-            padding: 10px 16px;
-            font-weight: 700;
-            cursor: pointer;
-            text-decoration: none;
-            font-size: 14px;
-        }
+                <div class="room-detail">
+                    <div><strong>Mã phòng:</strong> {{ $room?->code ?? 'Chưa cập nhật' }}</div>
+                    <div><strong>Tầng:</strong> {{ $room?->floor ?? 'Chưa cập nhật' }}</div>
+                    <div><strong>Loại phòng:</strong> {{ $room?->type ?? 'Chưa cập nhật' }}</div>
+                    <div><strong>Vị trí/khu vực:</strong> {{ $room?->location ?? 'Chưa cập nhật' }}</div>
+                </div>
+            </div>
 
-        .btn-primary {
-            background: #0ea5e9;
-            color: white;
-        }
+            <div class="divider"></div>
 
-        .btn-secondary {
-            background: white;
-            color: #111827;
-            border: 1px solid #d1d5db;
-        }
+            <div class="info">
+                <div class="info-row">
+                    <strong>Bệnh nhân:</strong> {{ $patientName }}
+                </div>
 
-        .ticket-wrap {
-            width: 80mm;
-            margin: 20px auto;
-            background: white;
-            padding: 12px;
-            border: 1px solid #e5e7eb;
-        }
+                <div class="info-row">
+                    <strong>SĐT:</strong> {{ $patientPhone }}
+                </div>
 
-        .ticket {
-            border: 1px dashed #111827;
-            padding: 12px;
-            text-align: center;
-        }
+                <div class="info-row">
+                    <strong>Dịch vụ:</strong> {{ $appointment->service?->name ?? 'Chưa có dịch vụ' }}
+                </div>
 
-        .brand {
-            font-size: 17px;
-            font-weight: 900;
-            letter-spacing: .5px;
-            margin-bottom: 4px;
-        }
+                <div class="info-row">
+                    <strong>Bác sĩ:</strong> {{ $appointment->doctor?->name ?? 'Chưa có bác sĩ' }}
+                </div>
 
-        .clinic {
-            font-size: 11px;
-            line-height: 1.35;
-            margin-bottom: 10px;
-        }
+                <div class="info-row">
+                    <strong>Giờ hẹn khám dự kiến:</strong> {{ $appointmentDate->format('H:i d/m/Y') }}
+                </div>
 
-        .type {
-            display: inline-block;
-            padding: 4px 8px;
-            border: 1px solid #111827;
-            border-radius: 999px;
-            font-size: 11px;
-            font-weight: 800;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-        }
+                <div class="info-row">
+                    <strong>Tiếp nhận:</strong> {{ $checkedInAt->format('H:i d/m/Y') }}
+                </div>
+            </div>
 
-        .label {
-            font-size: 13px;
-            margin-top: 4px;
-        }
-
-        .number {
-            font-size: 52px;
-            line-height: 1;
-            font-weight: 900;
-            margin: 8px 0 12px;
-        }
-
-        .room-block {
-            border: 2px solid #111827;
-            padding: 8px;
-            margin: 10px 0;
-            text-align: left;
-        }
-
-        .room-title {
-            text-align: center;
-            font-size: 12px;
-            font-weight: 900;
-            text-transform: uppercase;
-            margin-bottom: 6px;
-        }
-
-        .room-main {
-            text-align: center;
-            font-size: 18px;
-            font-weight: 900;
-            margin-bottom: 6px;
-        }
-
-        .info {
-            text-align: left;
-            font-size: 12px;
-            line-height: 1.55;
-            border-top: 1px dashed #9ca3af;
-            padding-top: 10px;
-            margin-top: 10px;
-        }
-
-        .info-row {
-            margin-bottom: 3px;
-        }
-
-        .direction {
-            text-align: left;
-            background: #f3f4f6;
-            border: 1px solid #d1d5db;
-            padding: 7px;
-            margin-top: 8px;
-            font-size: 11px;
-            line-height: 1.4;
-        }
-
-        .footer {
-            border-top: 1px dashed #9ca3af;
-            margin-top: 10px;
-            padding-top: 8px;
-            font-size: 11px;
-            line-height: 1.4;
-        }
-
-        @media print {
-            body {
-                background: white;
-            }
-
-            .screen-actions {
-                display: none;
-            }
-
-            .ticket-wrap {
-                margin: 0;
-                width: 100%;
-                border: none;
-                padding: 0;
-            }
-        }
-    </style>
-</head>
-<body>
-@php
-    $isOffline = ($appointment->source ?? 'online') === 'offline';
-    $room = $appointment->room;
-
-    $patientPhone = $appointment->patient?->phone
-        ?? $appointment->patient?->phone_number
-        ?? $appointment->patient?->tel
-        ?? null;
-
-    if (!$patientPhone && $appointment->notes) {
-        preg_match('/SĐT:\s*([0-9+\-\s]+)/u', $appointment->notes, $matches);
-        $patientPhone = $matches[1] ?? null;
-    }
-@endphp
-
-<div class="screen-actions">
-    <button class="btn btn-primary" onclick="window.print()">In lại phiếu</button>
-    <a href="{{ route('employees.reception.queue') }}" class="btn btn-secondary">Về danh sách khám</a>
-    <a href="{{ route('employees.reception') }}" class="btn btn-secondary">Tiếp nhận tiếp</a>
-</div>
-
-<div class="ticket-wrap">
-    <div class="ticket">
-        <div class="brand">DENTALCARE</div>
-        <div class="clinic">
-            Phiếu tiếp nhận khám bệnh<br>
-            {{ now()->format('d/m/Y H:i') }}
-        </div>
-
-        <div class="type">
-            {{ $isOffline ? 'Khám trực tiếp' : 'Lịch đặt online' }}
-        </div>
-
-        <div class="label">Số thứ tự</div>
-        <div class="number">{{ $appointment->queue_number ?? '-' }}</div>
-
-        <div class="room-block">
-            <div class="room-title">Phòng khám</div>
-
-            @if($room)
-                <div class="room-main">{{ $room->name }}</div>
-
-                @if(!empty($room->code))
-                    <div class="info-row"><strong>Mã phòng:</strong> {{ $room->code }}</div>
-                @endif
-
-                @if(!empty($room->floor))
-                    <div class="info-row"><strong>Tầng:</strong> {{ $room->floor }}</div>
-                @endif
-
-                @if(!empty($room->type))
-                    <div class="info-row"><strong>Loại phòng:</strong> {{ $room->type }}</div>
-                @endif
-
-                @if(!empty($room->location))
-                    <div class="info-row"><strong>Vị trí/khu vực:</strong> {{ $room->location }}</div>
-                @endif
-            @else
-                <div class="room-main">Chưa có phòng</div>
-                <div class="info-row">Vui lòng hỏi lễ tân để được hướng dẫn.</div>
-            @endif
-        </div>
-
-        <div class="info">
-            <div class="info-row"><strong>Bệnh nhân:</strong> {{ $appointment->patient?->name ?? 'Bệnh nhân #' . $appointment->patient_id }}</div>
-            <div class="info-row"><strong>SĐT:</strong> {{ $patientPhone ?: 'Chưa cập nhật' }}</div>
-            <div class="info-row"><strong>Dịch vụ:</strong> {{ $appointment->service?->name ?? '-' }}</div>
-            <div class="info-row"><strong>Bác sĩ:</strong> {{ $appointment->doctor?->name ?? '-' }}</div>
-            <div class="info-row"><strong>Giờ hẹn/dự kiến:</strong> {{ $appointment->appointment_date?->format('H:i d/m/Y') ?? '-' }}</div>
-            <div class="info-row"><strong>Tiếp nhận:</strong> {{ $appointment->checked_in_at?->format('H:i d/m/Y') ?? now()->format('H:i d/m/Y') }}</div>
-        </div>
-
-        <div class="direction">
-            <strong>Hướng dẫn:</strong>
-            @if($room)
-                Đến {{ $room->name }}
-                @if(!empty($room->floor))
+            <div class="guide-box">
+                <strong>Hướng dẫn:</strong>
+                Đến {{ $room?->name ?? 'phòng khám được chỉ định' }}
+                @if($room?->floor)
                     , tầng {{ $room->floor }}
                 @endif
-                @if(!empty($room->location))
-                    , khu vực {{ $room->location }}
+                @if($room?->location)
+                    , {{ $room->location }}
                 @endif
                 . Nếu không tìm thấy phòng, vui lòng đưa phiếu này cho lễ tân.
-            @else
-                Vui lòng đưa phiếu này cho lễ tân để được hướng dẫn đến phòng khám.
-            @endif
-        </div>
+            </div>
 
-        <div class="footer">
-            Vui lòng giữ phiếu và chờ gọi số.<br>
-            Cảm ơn quý khách.
+            <div class="divider"></div>
+
+            <div class="footer-note">
+                Vui lòng giữ phiếu và chờ gọi số.<br>
+                Cảm ơn quý khách.
+            </div>
         </div>
     </div>
-</div>
 
-<script>
-    window.addEventListener('load', function () {
-        setTimeout(function () {
-            window.print();
-        }, 400);
-    });
-</script>
+    <script>
+        window.addEventListener('load', function () {
+            setTimeout(function () {
+                window.print();
+            }, 300);
+        });
+    </script>
 </body>
 </html>

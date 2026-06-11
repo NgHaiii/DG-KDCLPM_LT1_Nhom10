@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Appointment;
+use App\Models\PatientProfile;
 use App\Models\Service;
 use App\Services\AppointmentService;
 use Carbon\Carbon;
@@ -26,15 +27,18 @@ class AppointmentController extends Controller
 
         $appointments = Appointment::where('patient_id', $patientId)
             ->where('appointment_date', '>=', now())
-            ->where('status', '!=', 'cancelled')
+            ->whereNotIn('status', ['cancelled', 'missed'])
             ->orderBy('appointment_date', 'asc')
-            ->with(['doctor', 'service', 'room'])
+            ->with(['doctor', 'service', 'room', 'patientProfile'])
             ->get();
 
         $pastAppointments = Appointment::where('patient_id', $patientId)
-            ->where('appointment_date', '<', now())
+            ->where(function ($query) {
+                $query->where('appointment_date', '<', now())
+                    ->orWhereIn('status', ['completed', 'cancelled', 'missed']);
+            })
             ->orderBy('appointment_date', 'desc')
-            ->with(['doctor', 'service', 'room'])
+            ->with(['doctor', 'service', 'room', 'patientProfile'])
             ->get();
 
         return view('patient.appointments.index', compact('appointments', 'pastAppointments'));
@@ -58,7 +62,7 @@ class AppointmentController extends Controller
         } catch (\Exception $e) {
             Log::error('Error in create appointment page: ' . $e->getMessage());
 
-            return back()->with('error', 'Lỗi khi tải trang đặt lịch');
+            return back()->with('error', 'Lỗi khi tải trang đặt lịch.');
         }
     }
 
@@ -79,7 +83,8 @@ class AppointmentController extends Controller
             Log::error('Error in getServiceCategories: ' . $e->getMessage());
 
             return response()->json([
-                'error' => 'Lỗi server: ' . $e->getMessage(),
+                'message' => 'Không thể tải loại dịch vụ.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -111,13 +116,15 @@ class AppointmentController extends Controller
             Log::warning('Validation error in getServicesByCategory: ' . json_encode($e->errors()));
 
             return response()->json([
+                'message' => 'Dữ liệu loại dịch vụ không hợp lệ.',
                 'error' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             Log::error('Error in getServicesByCategory: ' . $e->getMessage());
 
             return response()->json([
-                'error' => 'Lỗi server: ' . $e->getMessage(),
+                'message' => 'Không thể tải danh sách dịch vụ.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -160,13 +167,15 @@ class AppointmentController extends Controller
             Log::warning('Validation error in getDoctorsByService: ' . json_encode($e->errors()));
 
             return response()->json([
+                'message' => 'Dữ liệu tìm bác sĩ không hợp lệ.',
                 'error' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             Log::error('Error in getDoctorsByService: ' . $e->getMessage());
 
             return response()->json([
-                'error' => 'Lỗi server: ' . $e->getMessage(),
+                'message' => 'Không thể tải danh sách bác sĩ theo dịch vụ.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -195,13 +204,15 @@ class AppointmentController extends Controller
             Log::warning('Validation error in getAvailableSlots: ' . json_encode($e->errors()));
 
             return response()->json([
+                'message' => 'Dữ liệu tải khung giờ không hợp lệ.',
                 'error' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             Log::error('Error in getAvailableSlots: ' . $e->getMessage());
 
             return response()->json([
-                'error' => 'Lỗi server: ' . $e->getMessage(),
+                'message' => 'Không thể tải khung giờ của bác sĩ.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -220,6 +231,15 @@ class AppointmentController extends Controller
                 'date.after' => 'Lịch online cần được đặt trước ít nhất 1 ngày',
             ]);
 
+            $service = Service::findOrFail($validated['service_id']);
+
+            if (!$service->required_specialization) {
+                return response()->json([
+                    'message' => 'Dịch vụ này chưa được gán chuyên khoa nên chưa thể tìm khung giờ.',
+                    'error' => 'missing_required_specialization',
+                ], 422);
+            }
+
             $times = $this->appointmentService->getAvailableTimesByService(
                 $validated['service_id'],
                 $validated['date']
@@ -230,13 +250,18 @@ class AppointmentController extends Controller
             Log::warning('Validation error in getAvailableTimes: ' . json_encode($e->errors()));
 
             return response()->json([
+                'message' => 'Dữ liệu tải khung giờ không hợp lệ.',
                 'error' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error in getAvailableTimes: ' . $e->getMessage());
+            Log::error('Error in getAvailableTimes: ' . $e->getMessage(), [
+                'service_id' => $request->input('service_id'),
+                'date' => $request->input('date'),
+            ]);
 
             return response()->json([
-                'error' => 'Lỗi server: ' . $e->getMessage(),
+                'message' => 'Không thể tải khung giờ. Vui lòng kiểm tra lịch làm việc bác sĩ, chuyên khoa dịch vụ và dữ liệu ca làm.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -258,6 +283,15 @@ class AppointmentController extends Controller
                 'start_time.date_format' => 'Định dạng thời gian không hợp lệ',
             ]);
 
+            $service = Service::findOrFail($validated['service_id']);
+
+            if (!$service->required_specialization) {
+                return response()->json([
+                    'message' => 'Dịch vụ này chưa được gán chuyên khoa nên chưa thể tìm bác sĩ.',
+                    'error' => 'missing_required_specialization',
+                ], 422);
+            }
+
             $doctors = $this->appointmentService->getAvailableDoctorsByServiceAndTime(
                 $validated['service_id'],
                 $validated['date'],
@@ -269,13 +303,19 @@ class AppointmentController extends Controller
             Log::warning('Validation error in getDoctorsByTime: ' . json_encode($e->errors()));
 
             return response()->json([
+                'message' => 'Dữ liệu tìm bác sĩ theo giờ không hợp lệ.',
                 'error' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error in getDoctorsByTime: ' . $e->getMessage());
+            Log::error('Error in getDoctorsByTime: ' . $e->getMessage(), [
+                'service_id' => $request->input('service_id'),
+                'date' => $request->input('date'),
+                'start_time' => $request->input('start_time'),
+            ]);
 
             return response()->json([
-                'error' => 'Lỗi server: ' . $e->getMessage(),
+                'message' => 'Không thể tải bác sĩ theo khung giờ. Vui lòng kiểm tra lịch làm việc và lịch hẹn hiện có.',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -288,8 +328,10 @@ class AppointmentController extends Controller
                 'patient_phone' => ['required', 'string', 'max:20', 'regex:/^[0-9+\-\s]{8,20}$/'],
                 'patient_email' => 'nullable|email|max:255',
                 'patient_dob' => 'nullable|date|before_or_equal:today',
-                'patient_gender' => 'nullable|in:Nam,Nữ,Khác',
+                'patient_gender' => 'nullable|in:Nam,Nữ,Khác,male,female,other',
                 'patient_address' => 'nullable|string|max:255',
+                'identity_number' => 'nullable|string|max:50',
+                'emergency_contact_name' => 'nullable|string|max:255',
                 'emergency_phone' => ['nullable', 'string', 'max:20', 'regex:/^[0-9+\-\s]{8,20}$/'],
 
                 'doctor_id' => 'required|exists:employees,id',
@@ -322,17 +364,26 @@ class AppointmentController extends Controller
                     ->with('error', 'Lịch online cần được đặt trước ít nhất 1 ngày. Vui lòng chọn ngày từ ngày mai trở đi.');
             }
 
+            $patientProfile = $this->createOrUpdatePatientProfile($validated);
+            $notes = $this->buildAppointmentNotes($validated);
+
             $appointment = $this->appointmentService->createAppointment([
                 'patient_id' => Auth::id(),
+                'patient_profile_id' => $patientProfile->id,
                 'doctor_id' => $validated['doctor_id'],
                 'service_id' => $validated['service_id'],
                 'appointment_date' => $validated['appointment_date'],
-                'notes' => $this->buildAppointmentNotes($validated),
+                'source' => 'online',
+                'patient_snapshot' => $patientProfile->toAppointmentSnapshot(),
+                'notes' => $notes,
             ]);
+
+            $patientProfile->markVisited($appointmentDateTime);
 
             Log::info('Appointment created successfully', [
                 'appointment_id' => $appointment->id,
                 'patient_id' => Auth::id(),
+                'patient_profile_id' => $patientProfile->id,
                 'doctor_id' => $validated['doctor_id'],
                 'service_id' => $validated['service_id'],
                 'appointment_date' => $validated['appointment_date'],
@@ -359,7 +410,7 @@ class AppointmentController extends Controller
     public function show($id)
     {
         try {
-            $appointment = Appointment::with(['doctor', 'service', 'room'])->findOrFail($id);
+            $appointment = Appointment::with(['doctor', 'service', 'room', 'patientProfile'])->findOrFail($id);
 
             if ((int) $appointment->patient_id !== (int) Auth::id()) {
                 Log::warning('Unauthorized access attempt for appointment ' . $id . ' by user ' . Auth::id());
@@ -415,6 +466,41 @@ class AppointmentController extends Controller
         }
     }
 
+    private function createOrUpdatePatientProfile(array $validated): PatientProfile
+    {
+        $gender = $this->normalizeGender($validated['patient_gender'] ?? null);
+
+        return PatientProfile::updateOrCreate(
+            [
+                'phone' => trim($validated['patient_phone']),
+            ],
+            [
+                'user_id' => Auth::id(),
+                'full_name' => trim($validated['patient_name']),
+                'email' => $validated['patient_email'] ?? Auth::user()?->email,
+                'dob' => $validated['patient_dob'] ?? null,
+                'gender' => $gender,
+                'address' => $validated['patient_address'] ?? null,
+                'identity_number' => $validated['identity_number'] ?? null,
+                'emergency_contact_name' => $validated['emergency_contact_name'] ?? null,
+                'emergency_contact_phone' => $validated['emergency_phone'] ?? null,
+                'source' => 'online',
+                'is_temporary' => false,
+                'last_visit_at' => now(),
+            ]
+        );
+    }
+
+    private function normalizeGender(?string $gender): ?string
+    {
+        return match ($gender) {
+            'Nam', 'male' => 'male',
+            'Nữ', 'female' => 'female',
+            'Khác', 'other' => 'other',
+            default => null,
+        };
+    }
+
     private function buildAppointmentNotes(array $validated): string
     {
         $lines = [
@@ -435,8 +521,16 @@ class AppointmentController extends Controller
             $lines[] = 'Giới tính: ' . $validated['patient_gender'];
         }
 
+        if (!empty($validated['identity_number'])) {
+            $lines[] = 'CCCD/Mã định danh: ' . $validated['identity_number'];
+        }
+
         if (!empty($validated['patient_address'])) {
             $lines[] = 'Địa chỉ: ' . $validated['patient_address'];
+        }
+
+        if (!empty($validated['emergency_contact_name'])) {
+            $lines[] = 'Người liên hệ khẩn cấp: ' . $validated['emergency_contact_name'];
         }
 
         if (!empty($validated['emergency_phone'])) {

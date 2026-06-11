@@ -29,17 +29,21 @@
         gap: 14px;
     }
 
-    .stat-icon {
-        width: 46px;
-        height: 46px;
+    .stat-icon,
+    .action-icon {
         border-radius: var(--radius-md);
         background: var(--primary-light);
         color: var(--primary);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 22px;
         flex-shrink: 0;
+    }
+
+    .stat-icon {
+        width: 46px;
+        height: 46px;
+        font-size: 22px;
     }
 
     .stat-label {
@@ -73,12 +77,6 @@
     .action-icon {
         width: 54px;
         height: 54px;
-        border-radius: var(--radius-md);
-        background: var(--primary-light);
-        color: var(--primary);
-        display: flex;
-        align-items: center;
-        justify-content: center;
         font-size: 25px;
     }
 
@@ -159,8 +157,22 @@
         box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.12);
     }
 
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
+
     .form-group {
         margin-bottom: 15px;
+    }
+
+    .form-grid .form-group {
+        margin-bottom: 0;
+    }
+
+    .form-group.full-width {
+        grid-column: 1 / -1;
     }
 
     .form-label {
@@ -180,6 +192,41 @@
         font-size: 12px;
         color: var(--text-muted);
         line-height: 1.4;
+    }
+
+    .alert-box {
+        padding: 15px 18px;
+        border-radius: var(--radius-md);
+        margin-bottom: 18px;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .alert-error {
+        background: #fee2e2;
+        border: 1px solid #fecaca;
+        color: #991b1b;
+    }
+
+    .alert-success {
+        background: #dcfce7;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+    }
+
+    .profile-note {
+        padding: 13px 14px;
+        border-radius: var(--radius-md);
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: var(--text-muted);
+        font-size: 13px;
+        line-height: 1.5;
+        margin-bottom: 16px;
+    }
+
+    .profile-note strong {
+        color: var(--text-main);
     }
 
     .appointment-list {
@@ -296,13 +343,10 @@
         margin-bottom: 12px;
     }
 
-    .ticket-print-area {
-        display: none;
-    }
-
     @media (max-width: 1100px) {
         .action-grid,
-        .offline-grid {
+        .offline-grid,
+        .form-grid {
             grid-template-columns: 1fr;
         }
 
@@ -311,69 +355,15 @@
             grid-template-columns: 1fr;
         }
     }
-
-    @media print {
-        body * {
-            visibility: hidden;
-        }
-
-        .ticket-print-area,
-        .ticket-print-area * {
-            visibility: visible;
-        }
-
-        .ticket-print-area {
-            display: block;
-            position: absolute;
-            inset: 0;
-            width: 80mm;
-            padding: 12px;
-            background: white;
-            color: #111827;
-            font-family: Arial, sans-serif;
-        }
-
-        .print-ticket {
-            text-align: center;
-            border: 1px dashed #111827;
-            padding: 12px;
-        }
-
-        .ticket-brand {
-            font-size: 16px;
-            font-weight: 800;
-            margin-bottom: 6px;
-        }
-
-        .ticket-type {
-            font-size: 13px;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-        }
-
-        .ticket-number {
-            font-size: 44px;
-            font-weight: 900;
-            line-height: 1;
-            margin: 10px 0;
-        }
-
-        .ticket-info {
-            text-align: left;
-            font-size: 12px;
-            line-height: 1.5;
-            margin-top: 10px;
-        }
-
-        .ticket-footer {
-            margin-top: 10px;
-            font-size: 11px;
-        }
-    }
 </style>
 @endsection
 
 @section('header-actions')
+<a href="{{ route('employees.patient-profiles.index') }}" class="btn btn-secondary">
+    <i class="ri-folder-user-line"></i>
+    Hồ sơ bệnh nhân
+</a>
+
 <a href="{{ route('employees.reception.queue') }}" class="btn btn-secondary">
     <i class="ri-list-check-3"></i>
     Danh sách khám
@@ -385,13 +375,35 @@
     $todayAppointments = $todayAppointments ?? collect();
     $completedAppointments = $completedAppointments ?? collect();
     $services = $services ?? collect();
-    $patients = $patients ?? collect();
+    $patientProfiles = $patientProfiles ?? collect();
     $doctors = $doctors ?? collect();
 
     $confirmedAppointments = $todayAppointments->where('status', 'confirmed');
     $waitingAppointments = $todayAppointments->whereIn('status', ['checked_in', 'waiting', 'in_progress']);
-    $printTicket = session('print_ticket');
 @endphp
+
+@if(session('success'))
+    <div class="alert-box alert-success">
+        <strong>Thành công:</strong> {{ session('success') }}
+    </div>
+@endif
+
+@if(session('error'))
+    <div class="alert-box alert-error">
+        <strong>Lỗi:</strong> {{ session('error') }}
+    </div>
+@endif
+
+@if($errors->any())
+    <div class="alert-box alert-error">
+        <strong>Lỗi:</strong>
+        <ul style="margin: 6px 0 0 18px;">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
 
 <div class="stats-grid">
     <div class="stat-card">
@@ -426,7 +438,7 @@
         </div>
         <div>
             <div class="action-title">Lịch đặt online</div>
-            <div class="action-desc">Mở danh sách bệnh nhân đã được bác sĩ xác nhận để tiếp nhận khi đến phòng khám.</div>
+            <div class="action-desc">Tiếp nhận bệnh nhân đã được bác sĩ xác nhận khi đến phòng khám.</div>
         </div>
         <button type="button" class="btn btn-primary" onclick="showPanel('onlinePanel')">
             <i class="ri-folder-open-line"></i>
@@ -440,7 +452,7 @@
         </div>
         <div>
             <div class="action-title">Khám trực tiếp</div>
-            <div class="action-desc">Tiếp nhận bệnh nhân đến trực tiếp, chọn dịch vụ và bác sĩ phù hợp trước khi đưa vào hàng chờ.</div>
+            <div class="action-desc">Nhập nhanh thông tin bệnh nhân, chọn dịch vụ và đưa vào hàng chờ.</div>
         </div>
         <button type="button" class="btn btn-primary" onclick="showPanel('offlinePanel')">
             <i class="ri-add-circle-line"></i>
@@ -482,34 +494,31 @@
                 @foreach($confirmedAppointments as $appointment)
                     <div class="appointment-card">
                         <div class="time-box">
-                            <div class="time-main">{{ $appointment->appointment_date->format('H:i') }}</div>
+                            <div class="time-main">{{ $appointment->appointment_date?->format('H:i') ?? '-' }}</div>
                             <div class="time-sub">{{ $appointment->duration_minutes ?? 30 }} phút</div>
                         </div>
 
                         <div>
-                            <div class="patient-name">
-                                {{ $appointment->patient?->name ?? 'Bệnh nhân #' . $appointment->patient_id }}
-                            </div>
+                            <div class="patient-name">{{ $appointment->patient_display_name }}</div>
 
                             <div class="meta-line">
+                                <span><i class="ri-phone-line"></i>{{ $appointment->patient_display_phone }}</span>
                                 <span><i class="ri-stethoscope-line"></i>{{ $appointment->service?->name ?? 'Dịch vụ' }}</span>
                                 <span><i class="ri-user-heart-line"></i>{{ $appointment->doctor?->name ?? 'Bác sĩ' }}</span>
                                 <span><i class="ri-door-open-line"></i>{{ $appointment->room?->name ?? 'Chưa có phòng' }}</span>
-                                <span><i class="ri-global-line"></i>Lịch online</span>
+                                <span><i class="ri-global-line"></i>{{ $appointment->source_label }}</span>
                             </div>
                         </div>
 
-                        <div>
-                            <form method="POST" action="{{ route('employees.reception.check-in', $appointment->id) }}"
-                                  onsubmit="return confirm('Tiếp nhận bệnh nhân online và in phiếu số thứ tự?');">
-                                @csrf
-                                <input type="hidden" name="print_ticket" value="1">
-                                <button type="submit" class="btn btn-primary btn-sm">
-                                    <i class="ri-user-received-2-line"></i>
-                                    Tiếp nhận
-                                </button>
-                            </form>
-                        </div>
+                        <form method="POST"
+                              action="{{ route('employees.reception.check-in', $appointment->id) }}"
+                              onsubmit="return confirm('Tiếp nhận bệnh nhân online và chuyển sang trang in phiếu số thứ tự?');">
+                            @csrf
+                            <button type="submit" class="btn btn-primary btn-sm">
+                                <i class="ri-user-received-2-line"></i>
+                                Tiếp nhận
+                            </button>
+                        </form>
                     </div>
                 @endforeach
             </div>
@@ -532,58 +541,75 @@
 
     <div class="panel-body">
         <div class="offline-grid">
-            <form method="POST" action="{{ route('employees.reception.walk-in') }}" id="offlineReceptionForm">
+            <form method="POST"
+                  action="{{ route('employees.reception.walk-in') }}"
+                  id="offlineReceptionForm"
+                  onsubmit="return validateWalkInForm();">
                 @csrf
-                <input type="hidden" name="print_ticket" value="1">
+
+                <div class="profile-note">
+                    <strong>Thông tin tiếp nhận:</strong>
+                    Nếu bệnh nhân đã từng khám, chọn hồ sơ cũ. Nếu chưa có, nhập thông tin tối thiểu để tạo hồ sơ và in phiếu số thứ tự.
+                </div>
 
                 <div class="form-group">
-                    <label class="form-label">
-                        Bệnh nhân <span class="required-mark">*</span>
-                    </label>
-                    <select name="patient_id" id="patientSelect" class="form-control" required onchange="handlePatientChange(true)">
-                        <option value="">-- Chọn bệnh nhân --</option>
-                        @foreach($patients as $patient)
-                            @php
-                                $patientPhone = $patient->phone
-                                    ?? $patient->phone_number
-                                    ?? $patient->tel
-                                    ?? '';
-                            @endphp
-
-                            <option value="{{ $patient->id }}"
-                                    data-phone="{{ e($patientPhone) }}"
-                                    @selected(old('patient_id') == $patient->id)>
-                                {{ $patient->name }}{{ $patient->email ? ' - ' . $patient->email : '' }}
+                    <label class="form-label">Hồ sơ bệnh nhân cũ</label>
+                    <select name="patient_profile_id" id="patientProfileSelect" class="form-control" onchange="handlePatientProfileChange(true)">
+                        <option value="">-- Không chọn / tạo hồ sơ mới --</option>
+                        @foreach($patientProfiles as $profile)
+                            <option value="{{ $profile->id }}"
+                                    data-name="{{ e($profile->full_name) }}"
+                                    data-phone="{{ e($profile->phone) }}"
+                                    data-dob="{{ $profile->dob ? $profile->dob->format('Y-m-d') : '' }}"
+                                    data-gender="{{ e($profile->gender ?? '') }}"
+                                    data-address="{{ e($profile->address ?? '') }}"
+                                    @selected(old('patient_profile_id') == $profile->id)>
+                                #{{ $profile->id }} - {{ $profile->full_name }} - {{ $profile->phone ?: 'Chưa có SĐT' }}
                             </option>
                         @endforeach
                     </select>
-                    <div class="field-hint">
-                        Nếu bệnh nhân đã có SĐT trong hồ sơ, hệ thống sẽ tự điền xuống ô bên dưới.
+                    <div class="field-hint">Không bắt buộc. Dùng khi bệnh nhân đã từng khám tại phòng khám.</div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Họ tên <span class="required-mark">*</span></label>
+                        <input type="text" name="patient_name" id="patientNameInput" class="form-control"
+                               value="{{ old('patient_name') }}" placeholder="Nhập họ tên bệnh nhân" maxlength="255">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Số điện thoại <span class="required-mark">*</span></label>
+                        <input type="tel" name="patient_phone" id="patientPhoneInput" class="form-control"
+                               value="{{ old('patient_phone') }}" placeholder="VD: 0987456123" inputmode="tel" maxlength="30">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Ngày sinh</label>
+                        <input type="date" name="patient_dob" id="patientDobInput" class="form-control"
+                               value="{{ old('patient_dob') }}" max="{{ now()->toDateString() }}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Giới tính</label>
+                        <select name="patient_gender" id="patientGenderInput" class="form-control">
+                            <option value="">-- Chọn giới tính --</option>
+                            <option value="Nam" @selected(old('patient_gender') === 'Nam')>Nam</option>
+                            <option value="Nữ" @selected(old('patient_gender') === 'Nữ')>Nữ</option>
+                            <option value="Khác" @selected(old('patient_gender') === 'Khác')>Khác</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label class="form-label">Địa chỉ</label>
+                        <input type="text" name="patient_address" id="patientAddressInput" class="form-control"
+                               value="{{ old('patient_address') }}" placeholder="Nhập địa chỉ liên hệ" maxlength="1000">
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">
-                        Số điện thoại bệnh nhân <span class="required-mark">*</span>
-                    </label>
-                    <input type="tel"
-                           name="patient_phone"
-                           id="patientPhoneInput"
-                           class="form-control"
-                           value="{{ old('patient_phone') }}"
-                           placeholder="VD: 0987456123"
-                           inputmode="tel"
-                           required>
-                    <div class="field-hint">
-                        Số điện thoại này sẽ được lưu kèm phiếu tiếp nhận offline và hiển thị trên phiếu STT.
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">
-                        Dịch vụ khám <span class="required-mark">*</span>
-                    </label>
-                    <select name="service_id" id="serviceSelect" class="form-control" required onchange="handleServiceChange()">
+                <div class="form-group" style="margin-top: 16px;">
+                    <label class="form-label">Dịch vụ khám <span class="required-mark">*</span></label>
+                    <select name="service_id" id="serviceSelect" class="form-control" required onchange="handleServiceChange(false)">
                         <option value="">-- Chọn dịch vụ --</option>
                         @foreach($services as $service)
                             <option value="{{ $service->id }}"
@@ -601,9 +627,7 @@
                 <div class="service-summary" id="serviceSummary"></div>
 
                 <div class="form-group">
-                    <label class="form-label">
-                        Bác sĩ phù hợp <span class="required-mark">*</span>
-                    </label>
+                    <label class="form-label">Bác sĩ phù hợp <span class="required-mark">*</span></label>
                     <select name="doctor_id" id="doctorSelect" class="form-control" required disabled>
                         <option value="">-- Chọn dịch vụ trước --</option>
                         @foreach($doctors as $doctor)
@@ -618,16 +642,12 @@
 
                 <div class="form-group">
                     <label class="form-label">Triệu chứng / ghi chú ban đầu</label>
-                    <textarea name="notes"
-                              class="form-control"
-                              rows="4"
+                    <textarea name="notes" class="form-control" rows="4" maxlength="500"
                               placeholder="Nhập lý do khám, triệu chứng ban đầu...">{{ old('notes') }}</textarea>
+                    <div class="field-hint">Thông tin này được lưu theo lượt tiếp nhận, không thay thế hồ sơ bệnh án.</div>
                 </div>
 
-                <button type="submit"
-                        class="btn btn-primary"
-                        style="width: 100%;"
-                        onclick="return confirm('Tiếp nhận bệnh nhân khám trực tiếp và in phiếu số thứ tự?');">
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
                     <i class="ri-printer-line"></i>
                     Tiếp nhận và in số thứ tự
                 </button>
@@ -636,62 +656,37 @@
             <aside class="hint-box">
                 <div class="hint-title">
                     <i class="ri-information-line"></i>
-                    Quy tắc tiếp nhận khám trực tiếp
+                    Quy tắc tiếp nhận
                 </div>
-                <p>Bệnh nhân offline chỉ được nhận khi bác sĩ đang trong ca làm việc và khoảng trống không có nguy cơ lấn lịch online kế tiếp.</p>
-                <p style="margin-top: 10px;">Sau khi tiếp nhận, hệ thống đưa bệnh nhân vào hàng chờ, cấp số thứ tự và in phiếu dành riêng cho khám trực tiếp.</p>
+                <p>Thông tin chính của bệnh nhân sẽ lưu vào hồ sơ bệnh nhân để tra cứu lại về sau.</p>
+                <p style="margin-top: 10px;">Phiếu số thứ tự không hiển thị trong màn hình này. Sau khi tiếp nhận thành công, hệ thống sẽ chuyển sang file phiếu riêng để in.</p>
+                <p style="margin-top: 10px;">Bệnh nhân offline chỉ nên được nhận khi bác sĩ còn thời gian xử lý và không gây lấn lịch online kế tiếp.</p>
             </aside>
         </div>
     </div>
 </section>
-
-@if($printTicket)
-    <div class="ticket-print-area" id="ticketPrintArea">
-        <div class="print-ticket">
-            <div class="ticket-brand">DENTALCARE</div>
-            <div class="ticket-type">
-                {{ ($printTicket['type'] ?? 'online') === 'offline' ? 'Phiếu khám trực tiếp' : 'Phiếu lịch đặt online' }}
-            </div>
-
-            <div>Số thứ tự</div>
-            <div class="ticket-number">{{ $printTicket['queue_number'] ?? '-' }}</div>
-
-            <div class="ticket-info">
-                <div><strong>Bệnh nhân:</strong> {{ $printTicket['patient_name'] ?? '-' }}</div>
-                <div><strong>SĐT:</strong> {{ $printTicket['patient_phone'] ?? '-' }}</div>
-                <div><strong>Dịch vụ:</strong> {{ $printTicket['service_name'] ?? '-' }}</div>
-                <div><strong>Bác sĩ:</strong> {{ $printTicket['doctor_name'] ?? '-' }}</div>
-                <div><strong>Phòng:</strong> {{ $printTicket['room_name'] ?? '-' }}</div>
-                <div><strong>Giờ tiếp nhận:</strong> {{ $printTicket['checked_in_at'] ?? now()->format('d/m/Y H:i') }}</div>
-            </div>
-
-            <div class="ticket-footer">Vui lòng giữ phiếu và chờ gọi số.</div>
-        </div>
-    </div>
-@endif
 @endsection
 
 @section('scripts')
 <script>
     const requestedPanel = new URLSearchParams(window.location.search).get('panel');
+    const hasValidationErrors = @json($errors->any());
+    const oldDoctorId = @json(old('doctor_id'));
 
     document.addEventListener('DOMContentLoaded', function () {
-        if (requestedPanel === 'online') {
+        if (hasValidationErrors) {
+            showPanel('offlinePanel');
+        } else if (requestedPanel === 'online') {
             showPanel('onlinePanel');
         }
 
-        handlePatientChange(false);
-        handleServiceChange();
-
-        @if($printTicket)
-            setTimeout(function () {
-                window.print();
-            }, 500);
-        @endif
+        handlePatientProfileChange(false);
+        handleServiceChange(true);
     });
 
     function showPanel(panelId) {
         hidePanels();
+
         const panel = document.getElementById(panelId);
 
         if (panel) {
@@ -706,23 +701,57 @@
         });
     }
 
-    function handlePatientChange(forceFill) {
-        const patientSelect = document.getElementById('patientSelect');
-        const phoneInput = document.getElementById('patientPhoneInput');
+    function setValueIfAllowed(inputId, value, forceFill) {
+        const input = document.getElementById(inputId);
 
-        if (!patientSelect || !phoneInput) {
+        if (!input) {
             return;
         }
 
-        const selected = patientSelect.options[patientSelect.selectedIndex];
-        const phone = selected ? (selected.dataset.phone || '') : '';
-
-        if (phone && (forceFill || !phoneInput.value)) {
-            phoneInput.value = phone;
+        if (value && (forceFill || !input.value)) {
+            input.value = value;
         }
     }
 
-    function handleServiceChange() {
+    function handlePatientProfileChange(forceFill) {
+        const profileSelect = document.getElementById('patientProfileSelect');
+
+        if (!profileSelect) {
+            return;
+        }
+
+        const selected = profileSelect.options[profileSelect.selectedIndex];
+
+        if (!selected || !selected.value) {
+            return;
+        }
+
+        setValueIfAllowed('patientNameInput', selected.dataset.name || '', forceFill);
+        setValueIfAllowed('patientPhoneInput', selected.dataset.phone || '', forceFill);
+        setValueIfAllowed('patientDobInput', selected.dataset.dob || '', forceFill);
+        setValueIfAllowed('patientGenderInput', normalizeGenderForSelect(selected.dataset.gender || ''), forceFill);
+        setValueIfAllowed('patientAddressInput', selected.dataset.address || '', forceFill);
+    }
+
+    function normalizeGenderForSelect(value) {
+        const normalized = String(value || '').toLowerCase();
+
+        if (normalized === 'male' || normalized === 'nam') {
+            return 'Nam';
+        }
+
+        if (normalized === 'female' || normalized === 'nu' || normalized === 'nữ') {
+            return 'Nữ';
+        }
+
+        if (normalized === 'other' || normalized === 'khac' || normalized === 'khác') {
+            return 'Khác';
+        }
+
+        return value;
+    }
+
+    function handleServiceChange(isInitialLoad) {
         const serviceSelect = document.getElementById('serviceSelect');
         const doctorSelect = document.getElementById('doctorSelect');
         const summary = document.getElementById('serviceSummary');
@@ -738,7 +767,6 @@
         const type = selected ? (selected.dataset.type || '') : '';
 
         doctorSelect.disabled = !serviceSelect.value;
-        doctorSelect.value = '';
 
         Array.from(doctorSelect.options).forEach(function (option) {
             if (!option.value) {
@@ -751,18 +779,72 @@
             option.hidden = specialization !== '' && doctorSpecialization !== specialization;
         });
 
+        if (isInitialLoad && oldDoctorId) {
+            const oldOption = doctorSelect.querySelector('option[value="' + oldDoctorId + '"]');
+
+            if (oldOption && !oldOption.hidden) {
+                doctorSelect.value = oldDoctorId;
+            }
+        } else {
+            doctorSelect.value = '';
+        }
+
         if (serviceSelect.value) {
             summary.classList.add('active');
             summary.innerHTML =
                 '<strong>Thông tin dịch vụ:</strong><br>' +
-                'Loại dịch vụ: ' + (type || 'Chưa phân loại') + '<br>' +
-                'Chuyên khoa yêu cầu: ' + (specialization || 'Chưa gán') + '<br>' +
-                'Thời lượng dự kiến: ' + (duration || '30') + ' phút<br>' +
-                'Phòng gợi ý: ' + (room || 'Chưa gán phòng');
+                'Loại dịch vụ: ' + escapeHtml(type || 'Chưa phân loại') + '<br>' +
+                'Chuyên khoa yêu cầu: ' + escapeHtml(specialization || 'Chưa gán') + '<br>' +
+                'Thời lượng dự kiến: ' + escapeHtml(duration || '30') + ' phút<br>' +
+                'Phòng gợi ý: ' + escapeHtml(room || 'Chưa gán phòng');
         } else {
             summary.classList.remove('active');
             summary.innerHTML = '';
         }
+    }
+
+    function validateWalkInForm() {
+        const profileId = document.getElementById('patientProfileSelect').value;
+        const patientName = document.getElementById('patientNameInput').value.trim();
+        const patientPhone = document.getElementById('patientPhoneInput').value.trim();
+        const serviceId = document.getElementById('serviceSelect').value;
+        const doctorId = document.getElementById('doctorSelect').value;
+
+        if (!profileId && !patientName) {
+            alert('Vui lòng nhập họ tên bệnh nhân hoặc chọn hồ sơ bệnh nhân cũ.');
+            return false;
+        }
+
+        if (!profileId && !patientPhone) {
+            alert('Vui lòng nhập số điện thoại bệnh nhân hoặc chọn hồ sơ bệnh nhân cũ.');
+            return false;
+        }
+
+        if (patientPhone && !/^[0-9+\-\s]{8,30}$/.test(patientPhone)) {
+            alert('Số điện thoại bệnh nhân không hợp lệ.');
+            return false;
+        }
+
+        if (!serviceId) {
+            alert('Vui lòng chọn dịch vụ khám.');
+            return false;
+        }
+
+        if (!doctorId) {
+            alert('Vui lòng chọn bác sĩ phù hợp.');
+            return false;
+        }
+
+        return confirm('Tiếp nhận bệnh nhân khám trực tiếp và chuyển sang trang in phiếu số thứ tự?');
+    }
+
+    function escapeHtml(value) {
+        return String(value ?? '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
     }
 </script>
 @endsection
