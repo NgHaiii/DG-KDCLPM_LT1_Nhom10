@@ -522,8 +522,19 @@
                 ->count()
             : 0;
 
+        $waitingExaminationsCount = $doctorEmployeeId
+            ? \App\Models\Appointment::where('doctor_id', $doctorEmployeeId)
+                ->whereDate('appointment_date', now()->toDateString())
+                ->whereIn('status', ['checked_in', 'waiting'])
+                ->count()
+            : 0;
+
         $onlineAppointmentsUrl = \Illuminate\Support\Facades\Route::has('doctor.appointments.online')
             ? route('doctor.appointments.online')
+            : '#';
+
+        $examinationsUrl = \Illuminate\Support\Facades\Route::has('doctor.examinations.index')
+            ? route('doctor.examinations.index')
             : '#';
     @endphp
 
@@ -582,6 +593,22 @@
                     @if($pendingOnlineAppointmentsCount > 0)
                         <span class="nav-badge">
                             {{ $pendingOnlineAppointmentsCount > 99 ? '99+' : $pendingOnlineAppointmentsCount }}
+                        </span>
+                    @endif
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a href="{{ $examinationsUrl }}"
+                   class="nav-link nav-link-with-badge @if(request()->routeIs('doctor.examinations.*')) active @endif">
+                    <span class="nav-link-main">
+                        <i class="nav-icon ri-stethoscope-line"></i>
+                        <span>Khám bệnh</span>
+                    </span>
+
+                    @if($waitingExaminationsCount > 0)
+                        <span class="nav-badge">
+                            {{ $waitingExaminationsCount > 99 ? '99+' : $waitingExaminationsCount }}
                         </span>
                     @endif
                 </a>

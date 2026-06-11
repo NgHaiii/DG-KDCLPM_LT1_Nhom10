@@ -13,7 +13,6 @@
             --font-title: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-            /* Theme color: Sky Blue */
             --primary: #0ea5e9;
             --primary-hover: #0284c7;
             --primary-light: #e0f2fe;
@@ -63,7 +62,6 @@
                 radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.05) 0px, transparent 50%);
         }
 
-        /* Sidebar Navigation */
         .sidebar {
             width: 280px;
             background: var(--sidebar-bg);
@@ -152,6 +150,18 @@
             border-color: rgba(255, 255, 255, 0.1);
         }
 
+        .nav-link-with-badge {
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .nav-link-main {
+            display: inline-flex;
+            align-items: center;
+            gap: 11px;
+            min-width: 0;
+        }
+
         .nav-icon {
             font-size: 18px;
             display: inline-flex;
@@ -159,6 +169,27 @@
             justify-content: center;
             width: 22px;
             flex-shrink: 0;
+        }
+
+        .nav-badge {
+            min-width: 22px;
+            height: 22px;
+            padding: 0 7px;
+            border-radius: var(--radius-full);
+            background: #ef4444;
+            color: white;
+            font-size: 11px;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+            flex-shrink: 0;
+        }
+
+        .nav-badge.info {
+            background: #0ea5e9;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.18);
         }
 
         .menu-group-title {
@@ -179,7 +210,6 @@
             margin: 18px 0;
         }
 
-        /* Main Content */
         .main-content {
             flex: 1;
             margin-left: 280px;
@@ -193,7 +223,6 @@
             margin: 0 auto;
         }
 
-        /* Header */
         .header {
             display: flex;
             justify-content: space-between;
@@ -223,7 +252,6 @@
             align-items: center;
         }
 
-        /* Buttons */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -281,7 +309,6 @@
             border-radius: var(--radius-sm);
         }
 
-        /* Alert */
         .alert {
             padding: 14px 18px;
             margin-bottom: 22px;
@@ -321,7 +348,6 @@
             gap: 10px;
         }
 
-        /* Card */
         .card {
             background: var(--card-bg);
             backdrop-filter: blur(8px);
@@ -338,7 +364,6 @@
             box-shadow: var(--shadow-lg);
         }
 
-        /* User Profile */
         .user-profile {
             display: flex;
             align-items: center;
@@ -418,7 +443,6 @@
             color: #ef4444;
         }
 
-        /* Responsive */
         @media (max-width: 1024px) {
             .sidebar { width: 240px; padding: 20px 12px; }
             .main-content { margin-left: 240px; padding: 28px; }
@@ -430,27 +454,92 @@
                 padding: 20px 8px;
                 align-items: center;
             }
-            .sidebar-logo-text, .menu-group-title { display: none; }
-            .sidebar-logo { padding: 0; justify-content: center; margin-bottom: 24px; }
-            .main-content { margin-left: 72px; padding: 20px; }
-            .nav-link { padding: 11px; justify-content: center; }
-            .nav-link span:not(.nav-icon) { display: none; }
-            .user-profile { padding: 8px; justify-content: center; }
-            .user-info, .logout-btn { display: none; }
+
+            .sidebar-logo-text,
+            .menu-group-title {
+                display: none;
+            }
+
+            .sidebar-logo {
+                padding: 0;
+                justify-content: center;
+                margin-bottom: 24px;
+            }
+
+            .main-content {
+                margin-left: 72px;
+                padding: 20px;
+            }
+
+            .nav-link {
+                padding: 11px;
+                justify-content: center;
+                position: relative;
+            }
+
+            .nav-link span:not(.nav-icon):not(.nav-badge) {
+                display: none;
+            }
+
+            .nav-link-main {
+                gap: 0;
+            }
+
+            .nav-badge {
+                position: absolute;
+                top: 4px;
+                right: 4px;
+                min-width: 18px;
+                height: 18px;
+                padding: 0 5px;
+                font-size: 10px;
+                display: inline-flex;
+            }
+
+            .user-profile {
+                padding: 8px;
+                justify-content: center;
+            }
+
+            .user-info,
+            .logout-btn {
+                display: none;
+            }
         }
     </style>
     @yield('styles')
 </head>
 <body>
-    <!-- Sidebar Navigation -->
+    @php
+        $todayReceptionCount = \App\Models\Appointment::whereDate('appointment_date', now()->toDateString())
+            ->where('status', 'confirmed')
+            ->count();
+
+        $todayClinicQueueCount = \App\Models\Appointment::where(function ($query) {
+                $query->whereDate('checked_in_at', now()->toDateString())
+                    ->orWhereDate('appointment_date', now()->toDateString());
+            })
+            ->whereIn('status', ['checked_in', 'waiting', 'in_progress'])
+            ->count();
+
+        $receptionUrl = \Illuminate\Support\Facades\Route::has('employees.reception')
+            ? route('employees.reception')
+            : '#';
+
+        $appointmentUrl = \Illuminate\Support\Facades\Route::has('employees.appointment')
+            ? route('employees.appointment')
+            : '#';
+    @endphp
+
     <aside class="sidebar">
         <div class="sidebar-logo">
-            <div class="sidebar-logo-icon"><i class="ri-tooth-fill"></i></div>
+            <div class="sidebar-logo-icon">
+                <i class="ri-tooth-fill"></i>
+            </div>
             <span class="sidebar-logo-text">DentalCare</span>
         </div>
 
         <ul class="nav-menu">
-            <!-- Dashboard -->
             <li class="nav-item">
                 <a href="{{ route('employees.dashboard') }}" class="nav-link @if(request()->routeIs('employees.dashboard')) active @endif">
                     <i class="nav-icon ri-dashboard-3-line"></i>
@@ -458,7 +547,6 @@
                 </a>
             </li>
 
-            <!-- Lịch làm việc -->
             <div class="menu-group-title">Lịch làm việc</div>
 
             <li class="nav-item">
@@ -477,26 +565,42 @@
 
             <div class="divider"></div>
 
-            <!-- Quản lý bệnh nhân -->
-            <div class="menu-group-title">Quản lý bệnh nhân</div>
+            <div class="menu-group-title">Tiếp đón & khám bệnh</div>
 
             <li class="nav-item">
-                <a href="{{ route('employees.reception') }}" class="nav-link @if(request()->routeIs('employees.reception')) active @endif">
-                    <i class="nav-icon ri-user-add-line"></i>
-                    <span>Tiếp nhận bệnh nhân</span>
+                <a href="{{ $receptionUrl }}"
+                   class="nav-link nav-link-with-badge @if(request()->routeIs('employees.reception*')) active @endif">
+                    <span class="nav-link-main">
+                        <i class="nav-icon ri-user-received-2-line"></i>
+                        <span>Tiếp nhận bệnh nhân</span>
+                    </span>
+
+                    @if($todayReceptionCount > 0)
+                        <span class="nav-badge">
+                            {{ $todayReceptionCount > 99 ? '99+' : $todayReceptionCount }}
+                        </span>
+                    @endif
                 </a>
             </li>
 
             <li class="nav-item">
-                <a href="{{ route('employees.appointment') }}" class="nav-link @if(request()->routeIs('employees.appointment')) active @endif">
-                    <i class="nav-icon ri-list-check-3"></i>
-                    <span>Danh sách khám</span>
+                <a href="{{ $appointmentUrl }}"
+                   class="nav-link nav-link-with-badge @if(request()->routeIs('employees.appointment')) active @endif">
+                    <span class="nav-link-main">
+                        <i class="nav-icon ri-list-check-3"></i>
+                        <span>Danh sách khám</span>
+                    </span>
+
+                    @if($todayClinicQueueCount > 0)
+                        <span class="nav-badge info">
+                            {{ $todayClinicQueueCount > 99 ? '99+' : $todayClinicQueueCount }}
+                        </span>
+                    @endif
                 </a>
             </li>
 
             <div class="divider"></div>
 
-            <!-- Thanh toán -->
             <div class="menu-group-title">Thanh toán</div>
 
             <li class="nav-item">
@@ -522,7 +626,6 @@
 
             <div class="divider"></div>
 
-            <!-- Cài đặt -->
             <div class="menu-group-title">Cài đặt</div>
 
             <li class="nav-item">
@@ -533,7 +636,6 @@
             </li>
         </ul>
 
-        <!-- User Profile -->
         @auth
         <div class="user-profile">
             <div class="user-avatar">
@@ -553,10 +655,8 @@
         @endauth
     </aside>
 
-    <!-- Main Content -->
     <main class="main-content">
         <div class="container">
-            <!-- Header -->
             <div class="header">
                 <div class="header-left">
                     <h1>@yield('page-title')</h1>
@@ -567,7 +667,6 @@
                 </div>
             </div>
 
-            <!-- Alerts -->
             @if(session('success'))
                 <div class="alert success">
                     <i class="ri-checkbox-circle-line" style="font-size:18px;flex-shrink:0;"></i>
@@ -589,7 +688,6 @@
                 </div>
             @endif
 
-            <!-- Errors Display -->
             @if ($errors->any())
                 <div class="alert error">
                     <i class="ri-error-warning-line" style="font-size:18px;flex-shrink:0;"></i>
@@ -602,7 +700,6 @@
                 </div>
             @endif
 
-            <!-- Content -->
             @yield('content')
         </div>
     </main>

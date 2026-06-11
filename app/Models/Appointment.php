@@ -55,36 +55,29 @@ class Appointment extends Model
 
     // ==================== RELATIONSHIPS ====================
 
-    /**
-     * Bệnh nhân đặt lịch.
-     */
     public function patient()
     {
         return $this->belongsTo(User::class, 'patient_id');
     }
 
-    /**
-     * Bác sĩ phụ trách lịch hẹn.
-     */
     public function doctor()
     {
         return $this->belongsTo(Employee::class, 'doctor_id');
     }
 
-    /**
-     * Dịch vụ khám/điều trị.
-     */
     public function service()
     {
         return $this->belongsTo(Service::class);
     }
 
-    /**
-     * Phòng khám thực tế được xếp cho lịch hẹn.
-     */
     public function room()
     {
         return $this->belongsTo(Room::class);
+    }
+
+    public function medicalRecord()
+    {
+        return $this->hasOne(MedicalRecord::class, 'appointment_id');
     }
 
     // ==================== SCOPES ====================
@@ -94,14 +87,29 @@ class Appointment extends Model
         return $query->where('patient_id', auth()->id());
     }
 
+    public function scopePending($query)
+    {
+        return $query->where('status', 'pending');
+    }
+
     public function scopeConfirmed($query)
     {
         return $query->where('status', 'confirmed');
     }
 
-    public function scopePending($query)
+    public function scopeCheckedIn($query)
     {
-        return $query->where('status', 'pending');
+        return $query->where('status', 'checked_in');
+    }
+
+    public function scopeWaiting($query)
+    {
+        return $query->where('status', 'waiting');
+    }
+
+    public function scopeInProgress($query)
+    {
+        return $query->where('status', 'in_progress');
     }
 
     public function scopeCompleted($query)
@@ -129,6 +137,15 @@ class Appointment extends Model
         return $query->whereIn('status', [
             'pending',
             'confirmed',
+            'checked_in',
+            'waiting',
+            'in_progress',
+        ]);
+    }
+
+    public function scopeReceptionFlow($query)
+    {
+        return $query->whereIn('status', [
             'checked_in',
             'waiting',
             'in_progress',
@@ -230,9 +247,25 @@ class Appointment extends Model
         return $this->source === 'offline';
     }
 
-    /**
-     * Thời điểm kết thúc dự kiến theo appointment_date + duration_minutes.
-     */
+    public function canBeCheckedIn()
+    {
+        return $this->status === 'confirmed'
+            && $this->appointment_date
+            && $this->appointment_date->isSameDay(now());
+    }
+
+    public function canStartExamination()
+    {
+        return in_array($this->status, ['checked_in', 'waiting'], true)
+            && $this->checked_in_at !== null;
+    }
+
+    public function canCompleteExamination()
+    {
+        return $this->status === 'in_progress'
+            && $this->started_at !== null;
+    }
+
     public function getExpectedEndTimeAttribute()
     {
         if (!$this->appointment_date) {
@@ -242,9 +275,6 @@ class Appointment extends Model
         return $this->appointment_date->copy()->addMinutes((int) ($this->duration_minutes ?? 30));
     }
 
-    /**
-     * Kiểm tra ca khám có đang quá thời lượng dự kiến không.
-     */
     public function isOvertime()
     {
         if ($this->status !== 'in_progress') {
@@ -260,9 +290,6 @@ class Appointment extends Model
         return now()->greaterThan($estimatedEnd);
     }
 
-    /**
-     * Số phút quá giờ, dùng cho cảnh báo lễ tân/bệnh nhân.
-     */
     public function getOvertimeMinutesAttribute()
     {
         if (!$this->isOvertime()) {
@@ -274,9 +301,6 @@ class Appointment extends Model
         return max(0, $estimatedEnd->diffInMinutes(now()));
     }
 
-    /**
-     * Lấy tên trạng thái hiển thị.
-     */
     public function getStatusLabelAttribute()
     {
         $statuses = [
@@ -292,9 +316,6 @@ class Appointment extends Model
         return $statuses[$this->status] ?? 'Không xác định';
     }
 
-    /**
-     * Lấy tên nguồn lịch.
-     */
     public function getSourceLabelAttribute()
     {
         $sources = [
@@ -303,5 +324,10 @@ class Appointment extends Model
         ];
 
         return $sources[$this->source] ?? 'Không xác định';
+    }
+
+    public function getDisplayQueueNumberAttribute()
+    {
+        return $this->queue_number ? str_pad((string) $this->queue_number, 3, '0', STR_PAD_LEFT) : '-';
     }
 }
