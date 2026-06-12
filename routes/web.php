@@ -18,6 +18,8 @@ use App\Http\Controllers\ReceptionController;
 use App\Http\Controllers\ExaminationController;
 use App\Http\Controllers\PatientProfileController;
 use App\Http\Controllers\DentalChartController;
+use App\Http\Controllers\AdminPatientRecordController;
+use App\Http\Controllers\EmployeePatientRecordController;
 
 // ==================== ROUTE CHÍNH ====================
 Route::get('/', function () {
@@ -103,6 +105,15 @@ Route::middleware('auth')->group(function () {
         Route::patch('prices/{price}', [PriceController::class, 'update'])->name('prices.update');
         Route::delete('prices/{price}', [PriceController::class, 'destroy'])->name('prices.destroy');
 
+        // ----- Quản lý hồ sơ bệnh án cho admin -----
+        Route::prefix('patient-records')->name('patient-records.')->group(function () {
+            Route::get('/', [AdminPatientRecordController::class, 'index'])->name('index');
+
+            Route::get('{patientProfile}', [AdminPatientRecordController::class, 'show'])
+                ->whereNumber('patientProfile')
+                ->name('show');
+        });
+
         Route::prefix('schedule-approval')->name('schedule-approval.')->group(function () {
             Route::get('/', [ScheduleApprovalController::class, 'index'])->name('index');
 
@@ -154,7 +165,6 @@ Route::middleware('auth')->group(function () {
             return view('doctor.dashboard');
         })->name('dashboard');
 
-        // ----- Xác nhận lịch online -----
         Route::get('appointments/online', [DoctorAppointmentController::class, 'onlineAppointments'])
             ->name('appointments.online');
 
@@ -166,7 +176,6 @@ Route::middleware('auth')->group(function () {
             ->whereNumber('appointment')
             ->name('appointments.online.cancel');
 
-        // ----- Hồ sơ bệnh nhân / hồ sơ bệnh án cho bác sĩ -----
         Route::prefix('patient-profiles')->name('patient-profiles.')->group(function () {
             Route::get('/', [PatientProfileController::class, 'doctorIndex'])
                 ->name('index');
@@ -200,7 +209,6 @@ Route::middleware('auth')->group(function () {
                 ->name('clinical-images.destroy');
         });
 
-        // ----- UC3.2: Khám bệnh và cập nhật hồ sơ -----
         Route::prefix('examinations')->name('examinations.')->group(function () {
             Route::get('/', [ExaminationController::class, 'index'])->name('index');
 
@@ -217,7 +225,6 @@ Route::middleware('auth')->group(function () {
                 ->name('complete');
         });
 
-        // ----- Các route view cũ nếu vẫn còn dùng -----
         Route::get('appointments', function () {
             return view('doctor.appointments');
         })->name('appointments');
@@ -243,7 +250,7 @@ Route::middleware('auth')->group(function () {
         })->whereNumber('id')->name('patients.view');
 
         Route::get('medical-records', function () {
-            return view('doctor.medical-records');
+            return redirect()->route('doctor.patient-profiles.index');
         })->name('medical-records');
 
         Route::get('settings', function () {
@@ -292,7 +299,6 @@ Route::middleware('auth')->group(function () {
             return view('employees.dashboard');
         })->name('dashboard');
 
-        // ----- UC3.1: Tiếp nhận bệnh nhân -----
         Route::get('reception', [ReceptionController::class, 'index'])->name('reception');
 
         Route::get('reception/index', function () {
@@ -312,11 +318,16 @@ Route::middleware('auth')->group(function () {
         Route::post('reception/walk-in', [ReceptionController::class, 'createWalkIn'])
             ->name('reception.walk-in');
 
-        // ----- Hồ sơ bệnh nhân cho nhân viên/lễ tân -----
+        // ----- Hồ sơ bệnh án cho nhân viên/lễ tân -----
         Route::prefix('patient-profiles')->name('patient-profiles.')->group(function () {
-            Route::get('/', [PatientProfileController::class, 'index'])->name('index');
+            Route::get('/', [EmployeePatientRecordController::class, 'index'])->name('index');
+
             Route::get('search', [PatientProfileController::class, 'search'])->name('search');
             Route::post('quick-store', [PatientProfileController::class, 'storeQuick'])->name('quick-store');
+
+            Route::get('{patientProfile}', [EmployeePatientRecordController::class, 'show'])
+                ->whereNumber('patientProfile')
+                ->name('show');
 
             Route::put('{patientProfile}', [PatientProfileController::class, 'update'])
                 ->whereNumber('patientProfile')
@@ -419,12 +430,17 @@ Route::middleware('auth')->group(function () {
         Route::get('api/doctors-by-time', [AppointmentController::class, 'getDoctorsByTime'])
             ->name('api.doctors-by-time');
 
+        // ----- Hồ sơ bệnh án cá nhân cho bệnh nhân -----
+        Route::get('patient-records', function () {
+            return view('patient.patient-records.index');
+        })->name('patient-records.index');
+
         Route::get('medical-records', function () {
-            return view('patient.medical-records');
+            return redirect()->route('patient.patient-records.index');
         })->name('medical-records');
 
         Route::get('health-profile', function () {
-            return view('patient.health-profile');
+            return redirect()->route('patient.patient-records.index');
         })->name('health-profile');
 
         Route::get('invoices', function () {

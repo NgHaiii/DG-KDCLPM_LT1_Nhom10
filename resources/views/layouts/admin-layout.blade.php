@@ -13,7 +13,6 @@
             --font-title: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-            /* Theme color: Sky Blue */
             --primary: #0ea5e9;
             --primary-hover: #0284c7;
             --primary-light: #e0f2fe;
@@ -63,7 +62,6 @@
                 radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.05) 0px, transparent 50%);
         }
 
-        /* Sidebar Navigation */
         .sidebar {
             width: 280px;
             background: var(--sidebar-bg);
@@ -174,7 +172,6 @@
             letter-spacing: 1.5px;
         }
 
-        /* User Profile Panel */
         .user-profile {
             display: flex;
             align-items: center;
@@ -254,7 +251,6 @@
             color: #ef4444;
         }
 
-        /* Main Content */
         .main-content {
             flex: 1;
             margin-left: 280px;
@@ -268,7 +264,6 @@
             margin: 0 auto;
         }
 
-        /* Header */
         .header {
             display: flex;
             justify-content: space-between;
@@ -306,7 +301,6 @@
             align-items: center;
         }
 
-        /* Buttons */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -364,7 +358,6 @@
             border-radius: var(--radius-sm);
         }
 
-        /* Alert */
         .alert {
             padding: 14px 18px;
             margin-bottom: 22px;
@@ -395,7 +388,6 @@
             gap: 10px;
         }
 
-        /* Card */
         .card {
             background: var(--card-bg);
             backdrop-filter: blur(8px);
@@ -412,7 +404,6 @@
             box-shadow: var(--shadow-lg);
         }
 
-        /* Responsive */
         @media (max-width: 1024px) {
             .sidebar { width: 240px; padding: 20px 12px; }
             .main-content { margin-left: 240px; padding: 28px; }
@@ -436,7 +427,12 @@
     @yield('styles')
 </head>
 <body>
-    <!-- Sidebar Navigation -->
+    @php
+        $patientRecordsUrl = \Illuminate\Support\Facades\Route::has('admin.patient-records.index')
+            ? route('admin.patient-records.index')
+            : '#';
+    @endphp
+
     <aside class="sidebar">
         <a href="{{ route('admin.dashboard') }}" class="sidebar-logo">
             <div class="sidebar-logo-icon">
@@ -453,6 +449,14 @@
                 <a href="{{ route('admin.dashboard') }}" class="nav-link @if(request()->routeIs('admin.dashboard')) active @endif">
                     <i class="nav-icon ri-dashboard-3-line"></i>
                     <span>Dashboard</span>
+                </a>
+            </li>
+
+            <div class="nav-group-title">Hồ sơ bệnh án</div>
+            <li class="nav-item">
+                <a href="{{ $patientRecordsUrl }}" class="nav-link @if(request()->routeIs('admin.patient-records*')) active @endif">
+                    <i class="nav-icon ri-folder-user-line"></i>
+                    <span>Quản lý hồ sơ bệnh án</span>
                 </a>
             </li>
 
@@ -512,14 +516,13 @@
                 </a>
             </li>
             <li class="nav-item">
-    <a href="{{ route('admin.rooms.index') }}" class="nav-link @if(request()->routeIs('admin.rooms.*')) active @endif">
-        <i class="nav-icon ri-door-open-line"></i>
-        <span>Quản lý phòng khám</span>
-    </a>
-</li>
+                <a href="{{ route('admin.rooms.index') }}" class="nav-link @if(request()->routeIs('admin.rooms.*')) active @endif">
+                    <i class="nav-icon ri-door-open-line"></i>
+                    <span>Quản lý phòng khám</span>
+                </a>
+            </li>
         </ul>
 
-        <!-- User Profile Panel -->
         @auth
         <div class="user-profile">
             <div class="user-avatar">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</div>
@@ -537,7 +540,6 @@
         @endauth
     </aside>
 
-    <!-- Main Content -->
     <main class="main-content">
         <div class="container">
             <div class="header">

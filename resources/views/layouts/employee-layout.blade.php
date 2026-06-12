@@ -529,6 +529,10 @@
         $appointmentUrl = \Illuminate\Support\Facades\Route::has('employees.appointment')
             ? route('employees.appointment')
             : '#';
+
+        $patientProfilesUrl = \Illuminate\Support\Facades\Route::has('employees.patient-profiles.index')
+            ? route('employees.patient-profiles.index')
+            : '#';
     @endphp
 
     <aside class="sidebar">
@@ -596,6 +600,14 @@
                             {{ $todayClinicQueueCount > 99 ? '99+' : $todayClinicQueueCount }}
                         </span>
                     @endif
+                </a>
+            </li>
+
+            <li class="nav-item">
+                <a href="{{ $patientProfilesUrl }}"
+                   class="nav-link @if(request()->routeIs('employees.patient-profiles*')) active @endif">
+                    <i class="nav-icon ri-folder-user-line"></i>
+                    <span>Hồ sơ bệnh án</span>
                 </a>
             </li>
 

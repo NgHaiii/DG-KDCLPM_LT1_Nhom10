@@ -11,26 +11,18 @@
         ? Carbon::parse($appointment->checked_in_at)
         : now();
 
-    $snapshot = is_array($appointment->patient_snapshot)
-        ? $appointment->patient_snapshot
-        : [];
-
-    $patientName = $appointment->patientProfile?->full_name
-        ?? data_get($snapshot, 'full_name')
-        ?? $appointment->patient?->name
-        ?? 'Chưa có tên';
-
-    $patientPhone = $appointment->patientProfile?->phone
-        ?? data_get($snapshot, 'phone')
-        ?? $appointment->patient?->phone
-        ?? $appointment->patient?->phone_number
-        ?? 'Chưa có SĐT';
+    $patientName = $appointment->patient_display_name ?: 'Chưa có tên';
+    $patientPhone = $appointment->patient_display_phone ?: 'Chưa có SĐT';
 
     $queueNumber = $appointment->queue_number ?? '-';
 
     $sourceLabel = $appointment->source === 'online'
         ? 'ĐẶT LỊCH ONLINE'
         : 'KHÁM TRỰC TIẾP';
+
+    $sourceNote = $appointment->source === 'online'
+        ? 'Bệnh nhân đã đặt lịch trước qua hệ thống'
+        : 'Bệnh nhân tiếp nhận trực tiếp tại quầy';
 
     $room = $appointment->room;
 @endphp
@@ -110,12 +102,19 @@
 
         .badge {
             width: fit-content;
-            margin: 0 auto 16px;
+            margin: 0 auto 6px;
             padding: 6px 14px;
             border: 1px solid #0f172a;
             border-radius: 999px;
             font-size: 13px;
             font-weight: 900;
+        }
+
+        .source-note {
+            text-align: center;
+            font-size: 11px;
+            color: #475569;
+            margin-bottom: 14px;
         }
 
         .queue-label {
@@ -169,6 +168,7 @@
 
         .info-row {
             margin-bottom: 3px;
+            word-break: break-word;
         }
 
         .info-row strong {
@@ -233,6 +233,7 @@
             <div class="ticket-date">{{ $checkedInAt->format('d/m/Y H:i') }}</div>
 
             <div class="badge">{{ $sourceLabel }}</div>
+            <div class="source-note">{{ $sourceNote }}</div>
 
             <div class="queue-label">Số thứ tự</div>
             <div class="queue-number">{{ $queueNumber }}</div>

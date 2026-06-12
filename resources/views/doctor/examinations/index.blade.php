@@ -183,6 +183,7 @@
         gap: 8px;
         flex-wrap: wrap;
         justify-content: flex-end;
+        align-items: center;
     }
 
     .empty {
@@ -198,13 +199,119 @@
         margin-bottom: 12px;
     }
 
+    .history-item {
+        border-bottom: 1px solid var(--border-color);
+        background: #fff;
+    }
+
+    .history-item:last-child {
+        border-bottom: none;
+    }
+
+    .history-head {
+        padding: 18px 22px;
+        display: grid;
+        grid-template-columns: 92px 1fr auto;
+        gap: 18px;
+        align-items: center;
+    }
+
+    .history-toggle {
+        width: 40px;
+        height: 40px;
+        border-radius: var(--radius-md);
+        border: 1px solid #dbe3ef;
+        background: #fff;
+        color: var(--text-main);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 22px;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+    }
+
+    .history-toggle:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: var(--primary-light);
+    }
+
+    .history-toggle i {
+        transition: transform 0.2s ease;
+    }
+
+    .history-item.open .history-toggle i {
+        transform: rotate(180deg);
+    }
+
+    .history-body {
+        display: none;
+        padding: 0 22px 20px 132px;
+    }
+
+    .history-item.open .history-body {
+        display: block;
+    }
+
+    .history-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border-color);
+    }
+
+    .detail-box {
+        border: 1px solid #e2e8f0;
+        border-radius: var(--radius-md);
+        background: #f8fafc;
+        padding: 13px 14px;
+    }
+
+    .detail-box.full {
+        grid-column: 1 / -1;
+    }
+
+    .detail-label {
+        color: #2563eb;
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+        margin-bottom: 7px;
+    }
+
+    .detail-value {
+        color: var(--text-main);
+        font-size: 14px;
+        line-height: 1.55;
+        white-space: pre-line;
+    }
+
+    .history-summary {
+        margin-top: 8px;
+        color: var(--text-muted);
+        font-size: 13px;
+        line-height: 1.45;
+    }
+
     @media (max-width: 900px) {
-        .appointment-row {
+        .appointment-row,
+        .history-head {
             grid-template-columns: 1fr;
         }
 
         .actions {
             justify-content: flex-start;
+        }
+
+        .history-body {
+            padding: 0 18px 18px;
+        }
+
+        .history-detail-grid {
+            grid-template-columns: 1fr;
         }
     }
 </style>
@@ -430,8 +537,8 @@
 <section class="panel">
     <div class="panel-header">
         <div class="panel-title">
-            <i class="ri-check-double-line"></i>
-            Đã hoàn thành hôm nay
+            <i class="ri-history-line"></i>
+            Lịch sử ca khám hôm nay
         </div>
     </div>
 
@@ -445,43 +552,139 @@
             @foreach($completedToday as $appointment)
                 @php
                     $patientInfo = $getPatientInfo($appointment);
+                    $record = $appointment->medicalRecord;
+                    $actualMinutes = $appointment->actual_used_minutes ?? '-';
+                    $diagnosis = $record?->diagnosis ?: 'Chưa cập nhật';
                 @endphp
 
-                <div class="appointment-row">
-                    <div class="queue-no">{{ $appointment->queue_number ?? '-' }}</div>
+                <div class="history-item">
+                    <div class="history-head">
+                        <div class="queue-no">{{ $appointment->queue_number ?? '-' }}</div>
 
-                    <div>
-                        <div class="patient-name">{{ $patientInfo['name'] }}</div>
+                        <div>
+                            <div class="patient-name">{{ $patientInfo['name'] }}</div>
 
-                        <div class="patient-sub">
-                            <span><i class="ri-phone-line"></i>{{ $patientInfo['phone'] }}</span>
+                            <div class="patient-sub">
+                                <span><i class="ri-phone-line"></i>{{ $patientInfo['phone'] }}</span>
 
-                            @if($patientInfo['gender'])
-                                <span><i class="ri-user-line"></i>{{ $patientInfo['gender'] }}</span>
-                            @endif
+                                @if($patientInfo['gender'])
+                                    <span><i class="ri-user-line"></i>{{ $patientInfo['gender'] }}</span>
+                                @endif
 
-                            @if($patientInfo['dob'])
-                                <span><i class="ri-calendar-line"></i>{{ $patientInfo['dob'] }}</span>
-                            @endif
+                                @if($patientInfo['dob'])
+                                    <span><i class="ri-calendar-line"></i>{{ $patientInfo['dob'] }}</span>
+                                @endif
+                            </div>
+
+                            <div class="meta">
+                                <span><i class="ri-stethoscope-line"></i>{{ $appointment->service?->name ?? 'Dịch vụ' }}</span>
+                                <span><i class="ri-check-double-line"></i>Hoàn thành: {{ $appointment->completed_at?->format('H:i') ?? '-' }}</span>
+                                <span><i class="ri-timer-line"></i>Thực tế: {{ $actualMinutes }} phút</span>
+                            </div>
+
+                            <div class="history-summary">
+                                Chẩn đoán: {{ $diagnosis }}
+                            </div>
                         </div>
 
-                        <div class="meta">
-                            <span><i class="ri-stethoscope-line"></i>{{ $appointment->service?->name ?? 'Dịch vụ' }}</span>
-                            <span><i class="ri-check-double-line"></i>Hoàn thành: {{ $appointment->completed_at?->format('H:i') ?? '-' }}</span>
-                            <span><i class="ri-timer-line"></i>Thực tế: {{ $appointment->actual_used_minutes ?? '-' }} phút</span>
+                        <div class="actions">
+                            <span class="status status-done"><i class="ri-check-line"></i>Hoàn thành</span>
+
+                            <button type="button" class="history-toggle" title="Xem chi tiết ca khám">
+                                <i class="ri-arrow-down-s-line"></i>
+                            </button>
+
+                            <a href="{{ route('doctor.examinations.show', $appointment->id) }}" class="btn btn-secondary btn-sm">
+                                <i class="ri-eye-line"></i>
+                                Xem hồ sơ
+                            </a>
                         </div>
                     </div>
 
-                    <div class="actions">
-                        <span class="status status-done"><i class="ri-check-line"></i>Hoàn thành</span>
-                        <a href="{{ route('doctor.examinations.show', $appointment->id) }}" class="btn btn-secondary btn-sm">
-                            <i class="ri-eye-line"></i>
-                            Xem hồ sơ
-                        </a>
+                    <div class="history-body">
+                        @if($record)
+                            <div class="history-detail-grid">
+                                <div class="detail-box">
+                                    <div class="detail-label">Lý do khám / Triệu chứng chính</div>
+                                    <div class="detail-value">{{ $record->chief_complaint ?: 'Chưa cập nhật.' }}</div>
+                                </div>
+
+                                <div class="detail-box">
+                                    <div class="detail-label">Khám lâm sàng / Tình trạng trong miệng</div>
+                                    <div class="detail-value">{{ $record->clinical_findings ?: 'Chưa cập nhật.' }}</div>
+                                </div>
+
+                                <div class="detail-box">
+                                    <div class="detail-label">Chẩn đoán</div>
+                                    <div class="detail-value">{{ $record->diagnosis ?: 'Chưa cập nhật.' }}</div>
+                                </div>
+
+                                <div class="detail-box">
+                                    <div class="detail-label">Kế hoạch điều trị</div>
+                                    <div class="detail-value">{{ $record->treatment_plan ?: 'Chưa cập nhật.' }}</div>
+                                </div>
+
+                                <div class="detail-box">
+                                    <div class="detail-label">Đơn thuốc / Chỉ định</div>
+                                    <div class="detail-value">{{ $record->prescription ?: 'Chưa cập nhật.' }}</div>
+                                </div>
+
+                                <div class="detail-box">
+                                    <div class="detail-label">Ghi chú bác sĩ</div>
+                                    <div class="detail-value">{{ $record->doctor_notes ?: 'Chưa cập nhật.' }}</div>
+                                </div>
+
+                                <div class="detail-box full">
+                                    <div class="detail-label">Thông tin xử lý</div>
+                                    <div class="detail-value">
+                                        Bắt đầu: {{ $appointment->started_at?->format('H:i d/m/Y') ?? 'Chưa cập nhật' }}
+                                        <br>
+                                        Hoàn thành: {{ $appointment->completed_at?->format('H:i d/m/Y') ?? 'Chưa cập nhật' }}
+                                        <br>
+                                        Thời lượng dự kiến: {{ $appointment->duration_minutes ?? 30 }} phút
+                                        <br>
+                                        Thời lượng thực tế: {{ $actualMinutes }} phút
+                                    </div>
+                                </div>
+                            </div>
+                        @else
+                            <div class="history-detail-grid">
+                                <div class="detail-box full">
+                                    <div class="detail-label">Bệnh án chi tiết</div>
+                                    <div class="detail-value">Ca khám này chưa có bệnh án chi tiết.</div>
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
             @endforeach
         </div>
     @endif
 </section>
+@endsection
+
+@section('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.history-toggle').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const currentItem = button.closest('.history-item');
+
+            if (!currentItem) {
+                return;
+            }
+
+            const isOpen = currentItem.classList.contains('open');
+
+            document.querySelectorAll('.history-item').forEach(function (item) {
+                item.classList.remove('open');
+            });
+
+            if (!isOpen) {
+                currentItem.classList.add('open');
+            }
+        });
+    });
+});
+</script>
 @endsection

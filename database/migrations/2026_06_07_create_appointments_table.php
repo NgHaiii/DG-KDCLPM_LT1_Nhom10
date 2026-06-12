@@ -37,16 +37,15 @@ class CreateAppointmentsTable extends Migration
 
             // Trạng thái lịch/lượt khám
             $table->enum('status', [
-                'pending',
-                'confirmed',
-                'checked_in',
-                'waiting',
-                'in_progress',
-                'completed',
-                'cancelled',
-                'missed'
-            ])->default('pending');
-
+    'pending',
+    'confirmed',
+    'checked_in',
+    'waiting',
+    'in_progress',
+    'completed',
+    'cancelled',
+    'missed',
+])->default('pending');
             // Mốc xử lý
             $table->timestamp('confirmed_at')->nullable();
             $table->timestamp('checked_in_at')->nullable();

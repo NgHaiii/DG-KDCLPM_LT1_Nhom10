@@ -16,10 +16,13 @@ class ReceptionController extends Controller
     private const ACTIVE_STATUSES = ['confirmed', 'checked_in', 'waiting', 'in_progress'];
     private const QUEUE_STATUSES = ['checked_in', 'waiting', 'in_progress'];
     private const BUFFER_MINUTES = 10;
+    private const ONLINE_CHECK_IN_GRACE_MINUTES = 30;
 
     public function index(Request $request)
     {
         $date = $request->input('date', now()->toDateString());
+
+        $this->markExpiredOnlineAppointments($date);
 
         $todayAppointments = Appointment::with(['patient', 'patientProfile', 'doctor', 'service', 'room'])
             ->whereDate('appointment_date', $date)
@@ -69,6 +72,8 @@ class ReceptionController extends Controller
     {
         $date = $request->input('date', now()->toDateString());
 
+        $this->markExpiredOnlineAppointments($date);
+
         $todayAppointments = Appointment::with(['patient', 'patientProfile', 'doctor', 'service', 'room'])
             ->where(function ($query) use ($date) {
                 $query->whereDate('appointment_date', $date)
@@ -107,6 +112,15 @@ class ReceptionController extends Controller
 
         if (!$appointment->appointment_date->isSameDay(now())) {
             return back()->with('error', 'Chỉ được tiếp nhận lịch khám trong ngày hôm nay.');
+        }
+
+        if ($this->shouldMarkOnlineAppointmentMissed($appointment)) {
+            $this->markAppointmentMissed($appointment);
+
+            return back()->with(
+                'error',
+                'Lịch online này đã quá giờ tiếp nhận quá lâu nên được đánh dấu là bỏ lỡ. Không thể tiếp nhận nữa.'
+            );
         }
 
         $appointment->update([
@@ -211,13 +225,21 @@ class ReceptionController extends Controller
                 ->with('error', 'Lịch khám này chưa được tiếp nhận nên chưa thể in phiếu số thứ tự.');
         }
 
+        $needsUpdate = false;
+
         if (!$appointment->queue_number) {
             $checkedInDate = $appointment->checked_in_at ?? now();
+            $appointment->queue_number = $this->nextQueueNumber($checkedInDate);
+            $needsUpdate = true;
+        }
 
-            $appointment->update([
-                'queue_number' => $this->nextQueueNumber($checkedInDate),
-            ]);
+        if (!$appointment->patient_snapshot && $appointment->patientProfile) {
+            $appointment->patient_snapshot = $appointment->patientProfile->toAppointmentSnapshot();
+            $needsUpdate = true;
+        }
 
+        if ($needsUpdate) {
+            $appointment->save();
             $appointment->refresh();
             $appointment->load(['patient', 'patientProfile', 'doctor', 'service', 'room']);
         }
@@ -466,5 +488,63 @@ class ReceptionController extends Controller
                 0
             ),
         ];
+    }
+
+    private function shouldMarkOnlineAppointmentMissed(Appointment $appointment): bool
+    {
+        if ($appointment->source !== 'online') {
+            return false;
+        }
+
+        if ($appointment->status !== 'confirmed') {
+            return false;
+        }
+
+        if (!$appointment->appointment_date) {
+            return false;
+        }
+
+        $latestAllowedCheckInAt = $appointment->appointment_date
+            ->copy()
+            ->addMinutes(self::ONLINE_CHECK_IN_GRACE_MINUTES);
+
+        return now()->greaterThan($latestAllowedCheckInAt);
+    }
+
+    private function markExpiredOnlineAppointments($date): void
+    {
+        $now = now();
+
+        Appointment::where('source', 'online')
+            ->where('status', 'confirmed')
+            ->whereDate('appointment_date', $date)
+            ->where('appointment_date', '<', $now->copy()->subMinutes(self::ONLINE_CHECK_IN_GRACE_MINUTES))
+            ->get()
+            ->each(function (Appointment $appointment) {
+                $this->markAppointmentMissed($appointment);
+            });
+    }
+
+    private function markAppointmentMissed(Appointment $appointment): void
+    {
+        $latestAllowedCheckInAt = $appointment->appointment_date
+            ? $appointment->appointment_date->copy()->addMinutes(self::ONLINE_CHECK_IN_GRACE_MINUTES)
+            : now();
+
+        $oldNotes = trim((string) $appointment->notes);
+        $missedNote = 'Hệ thống tự đánh dấu bỏ lỡ do bệnh nhân không đến tiếp nhận trước '
+            . $latestAllowedCheckInAt->format('H:i d/m/Y')
+            . '.';
+
+        if (str_contains($oldNotes, 'Hệ thống tự đánh dấu bỏ lỡ')) {
+            $notes = $oldNotes;
+        } else {
+            $notes = trim($oldNotes . "\n" . $missedNote);
+        }
+
+        $appointment->update([
+            'status' => 'missed',
+            'notes' => $notes,
+        ]);
     }
 }

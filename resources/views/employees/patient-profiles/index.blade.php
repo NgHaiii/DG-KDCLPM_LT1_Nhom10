@@ -1,225 +1,148 @@
 @extends('layouts.employee-layout')
 
-@section('title', 'Hồ sơ bệnh nhân')
-@section('page-title', 'Hồ sơ bệnh nhân')
-@section('page-subtitle', 'Tra cứu và quản lý thông tin bệnh nhân online/offline')
-
-@section('styles')
-<style>
-    .toolbar {
-        background: white;
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-md);
-        padding: 18px;
-        margin-bottom: 22px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 14px;
-        flex-wrap: wrap;
-    }
-
-    .search-form {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        flex-wrap: wrap;
-        width: 100%;
-    }
-
-    .form-control {
-        padding: 11px 13px;
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-md);
-        background: white;
-        color: var(--text-main);
-        font-family: var(--font-body);
-        font-size: 14px;
-        outline: none;
-    }
-
-    .search-input {
-        min-width: 320px;
-        flex: 1;
-    }
-
-    .profile-card {
-        background: white;
-        border: 1px solid var(--border-color);
-        border-radius: var(--radius-lg);
-        box-shadow: var(--shadow-md);
-        overflow: hidden;
-    }
-
-    .profile-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .profile-table th,
-    .profile-table td {
-        padding: 14px 16px;
-        border-bottom: 1px solid var(--border-color);
-        text-align: left;
-        vertical-align: top;
-    }
-
-    .profile-table th {
-        background: #f8fafc;
-        color: var(--text-main);
-        font-weight: 800;
-        font-size: 13px;
-    }
-
-    .patient-name {
-        font-weight: 800;
-        color: var(--text-main);
-        margin-bottom: 4px;
-    }
-
-    .muted {
-        color: var(--text-muted);
-        font-size: 13px;
-    }
-
-    .badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 5px 9px;
-        border-radius: var(--radius-full);
-        background: var(--primary-light);
-        color: var(--primary);
-        font-size: 12px;
-        font-weight: 800;
-    }
-
-    .empty {
-        padding: 42px 18px;
-        text-align: center;
-        color: var(--text-muted);
-    }
-
-    .pagination-wrap {
-        padding: 16px;
-    }
-
-    @media (max-width: 900px) {
-        .profile-table,
-        .profile-table thead,
-        .profile-table tbody,
-        .profile-table th,
-        .profile-table td,
-        .profile-table tr {
-            display: block;
-        }
-
-        .profile-table thead {
-            display: none;
-        }
-
-        .profile-table tr {
-            border-bottom: 1px solid var(--border-color);
-            padding: 12px;
-        }
-
-        .profile-table td {
-            border-bottom: none;
-            padding: 7px 0;
-        }
-
-        .search-input {
-            min-width: 100%;
-        }
-    }
-</style>
-@endsection
-
-@section('header-actions')
-<a href="{{ route('employees.reception.index') }}" class="btn btn-primary">
-    <i class="ri-user-add-line"></i>
-    Tiếp nhận
-</a>
-@endsection
+@section('title', 'Tra cứu hồ sơ bệnh nhân')
+@section('page-title', 'Tra cứu hồ sơ bệnh nhân')
+@section('page-subtitle', 'Tìm nhanh hồ sơ để hỗ trợ tiếp nhận và điều phối khám bệnh')
 
 @section('content')
-<div class="toolbar">
-    <form method="GET" action="{{ route('employees.patient-profiles.index') }}" class="search-form">
-        <input type="text"
-               name="keyword"
-               value="{{ $keyword ?? '' }}"
-               class="form-control search-input"
-               placeholder="Tìm theo tên, số điện thoại, email, CCCD...">
+<style>
+    .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-bottom:20px; }
+    .stat, .search-box, .profile-card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; box-shadow:0 8px 24px rgba(15,23,42,.06); }
+    .stat { padding:18px; display:flex; gap:14px; align-items:center; }
+    .stat-icon { width:48px; height:48px; border-radius:14px; display:grid; place-items:center; background:#e0f2fe; color:#0284c7; font-size:24px; }
+    .stat-label { color:#64748b; font-weight:800; font-size:13px; }
+    .stat-value { color:#0f172a; font-weight:900; font-size:28px; }
+    .search-box { padding:18px; margin-bottom:20px; }
+    .search-grid { display:grid; grid-template-columns:2fr 1fr auto; gap:10px; align-items:end; }
+    .form-label { font-weight:800; color:#0f172a; font-size:13px; margin-bottom:6px; display:block; }
+    .form-control { width:100%; border:1px solid #dbe3ef; border-radius:12px; padding:11px 12px; }
+    .btn-main { display:inline-flex; align-items:center; justify-content:center; gap:8px; border:0; background:#0ea5e9; color:#fff; border-radius:12px; padding:11px 15px; font-weight:900; text-decoration:none; cursor:pointer; }
+    .btn-light { background:#fff; border:1px solid #dbe3ef; color:#0f172a; }
+    .profile-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:16px; }
+    .profile-card { padding:18px; }
+    .profile-name { font-size:18px; font-weight:900; color:#0f172a; }
+    .profile-meta { display:grid; gap:6px; color:#64748b; font-size:13px; margin-top:8px; }
+    .visit-box { border:1px solid #e2e8f0; background:#f8fafc; border-radius:14px; padding:12px; margin-top:12px; }
+    .visit-title { font-weight:900; color:#0f172a; margin-bottom:6px; }
+    .visit-line { color:#64748b; font-size:13px; line-height:1.5; }
+    .card-actions { display:flex; justify-content:flex-end; margin-top:14px; }
+    .empty-box { background:#fff; border:1px solid #e2e8f0; border-radius:16px; padding:36px; text-align:center; color:#64748b; }
+    .pagination-wrap { margin-top:18px; }
+    @media(max-width:800px){ .search-grid{grid-template-columns:1fr;} }
+</style>
 
-        <button type="submit" class="btn btn-secondary">
-            <i class="ri-search-line"></i>
-            Tìm kiếm
-        </button>
+<div class="stats">
+    <div class="stat">
+        <div class="stat-icon"><i class="ri-calendar-check-line"></i></div>
+        <div>
+            <div class="stat-label">Lượt khám hôm nay</div>
+            <div class="stat-value">{{ $todayVisitsCount }}</div>
+        </div>
+    </div>
 
-        @if(!empty($keyword))
-            <a href="{{ route('employees.patient-profiles.index') }}" class="btn btn-secondary">
-                <i class="ri-refresh-line"></i>
-                Xóa lọc
-            </a>
-        @endif
+    <div class="stat">
+        <div class="stat-icon"><i class="ri-hourglass-line"></i></div>
+        <div>
+            <div class="stat-label">Đang chờ</div>
+            <div class="stat-value">{{ $waitingCount }}</div>
+        </div>
+    </div>
+
+    <div class="stat">
+        <div class="stat-icon"><i class="ri-check-double-line"></i></div>
+        <div>
+            <div class="stat-label">Hoàn thành hôm nay</div>
+            <div class="stat-value">{{ $completedTodayCount }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="search-box">
+    <form method="GET" action="{{ route('employees.patient-profiles.index') }}">
+        <div class="search-grid">
+            <div>
+                <label class="form-label">Tìm hồ sơ</label>
+                <input type="text"
+                       name="keyword"
+                       value="{{ $keyword }}"
+                       class="form-control"
+                       placeholder="Nhập tên, SĐT, email, CCCD...">
+            </div>
+
+            <div>
+                <label class="form-label">Nguồn</label>
+                <select name="source" class="form-control">
+                    <option value="">Tất cả</option>
+                    <option value="online" @selected($source === 'online')>Online</option>
+                    <option value="offline" @selected($source === 'offline')>Trực tiếp</option>
+                </select>
+            </div>
+
+            <div style="display:flex; gap:8px;">
+                <button type="submit" class="btn-main">
+                    <i class="ri-search-line"></i>
+                    Tìm
+                </button>
+
+                <a href="{{ route('employees.patient-profiles.index') }}" class="btn-main btn-light">
+                    Xóa
+                </a>
+            </div>
+        </div>
     </form>
 </div>
 
-<div class="profile-card">
-    @if($profiles->count())
-        <table class="profile-table">
-            <thead>
-                <tr>
-                    <th>Bệnh nhân</th>
-                    <th>Liên hệ</th>
-                    <th>Thông tin cá nhân</th>
-                    <th>Nguồn hồ sơ</th>
-                    <th>Lần khám gần nhất</th>
-                </tr>
-            </thead>
+@if($profiles->isEmpty())
+    <div class="empty-box">Không tìm thấy hồ sơ phù hợp.</div>
+@else
+    <div class="profile-grid">
+        @foreach($profiles as $profile)
+            @php
+                $latestAppointment = $profile->appointments->first();
+            @endphp
 
-            <tbody>
-                @foreach($profiles as $profile)
-                    <tr>
-                        <td>
-                            <div class="patient-name">{{ $profile->full_name }}</div>
-                            <div class="muted">Mã hồ sơ: #{{ $profile->id }}</div>
-                        </td>
+            <div class="profile-card">
+                <div class="profile-name">{{ $profile->full_name ?: 'Bệnh nhân #' . $profile->id }}</div>
 
-                        <td>
-                            <div><strong>SĐT:</strong> {{ $profile->phone }}</div>
-                            <div class="muted">{{ $profile->email ?: 'Chưa có email' }}</div>
-                        </td>
+                <div class="profile-meta">
+                    <span><i class="ri-phone-line"></i> {{ $profile->phone ?: 'Chưa có SĐT' }}</span>
+                    <span><i class="ri-id-card-line"></i> {{ $profile->identity_number ?: 'Chưa có CCCD' }}</span>
+                    <span><i class="ri-map-pin-line"></i> {{ $profile->address ?: 'Chưa có địa chỉ' }}</span>
+                </div>
 
-                        <td>
-                            <div><strong>Ngày sinh:</strong> {{ $profile->dob ? $profile->dob->format('d/m/Y') : 'Chưa cập nhật' }}</div>
-                            <div><strong>Giới tính:</strong> {{ $profile->gender_label }}</div>
-                            <div class="muted">{{ $profile->address ?: 'Chưa có địa chỉ' }}</div>
-                        </td>
+                <div class="visit-box">
+                    <div class="visit-title">Thông tin khám gần nhất</div>
 
-                        <td>
-                            <span class="badge">{{ $profile->source_label }}</span>
-                            @if($profile->is_temporary)
-                                <div class="muted" style="margin-top: 6px;">Hồ sơ tạm</div>
-                            @endif
-                        </td>
+                    @if($latestAppointment)
+                        <div class="visit-line">
+                            {{ $latestAppointment->appointment_date?->format('d/m/Y H:i') }} -
+                            {{ $latestAppointment->service?->name ?? 'Dịch vụ' }}
+                        </div>
 
-                        <td>
-                            {{ $profile->last_visit_at ? $profile->last_visit_at->format('d/m/Y H:i') : 'Chưa có lượt khám' }}
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
+                        <div class="visit-line">
+                            Bác sĩ: {{ $latestAppointment->doctor?->name ?? 'Chưa rõ' }}
+                        </div>
 
-        <div class="pagination-wrap">
-            {{ $profiles->links() }}
-        </div>
-    @else
-        <div class="empty">
-            <i class="ri-user-search-line" style="font-size: 40px; color: var(--primary); display: block; margin-bottom: 10px;"></i>
-            Không tìm thấy hồ sơ bệnh nhân phù hợp.
-        </div>
-    @endif
-</div>
+                        <div class="visit-line">
+                            Trạng thái: {{ $latestAppointment->status_label ?? $latestAppointment->status }}
+                        </div>
+                    @else
+                        <div class="visit-line">Chưa có lượt khám.</div>
+                    @endif
+                </div>
+
+                <div class="card-actions">
+                    <a href="{{ route('employees.patient-profiles.show', $profile->id) }}" class="btn-main">
+                        <i class="ri-eye-line"></i>
+                        Xem hồ sơ
+                    </a>
+                </div>
+            </div>
+        @endforeach
+    </div>
+
+    <div class="pagination-wrap">
+        {{ $profiles->links() }}
+    </div>
+@endif
 @endsection

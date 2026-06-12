@@ -8,12 +8,20 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+
+    @php
+        $patientRecordUrl = \Illuminate\Support\Facades\Route::has('patient.patient-records.index')
+            ? route('patient.patient-records.index')
+            : (\Illuminate\Support\Facades\Route::has('patient.medical-records')
+                ? route('patient.medical-records')
+                : '#');
+    @endphp
+
     <style>
         :root {
             --font-title: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-            /* Theme color: Sky Blue */
             --primary: #0ea5e9;
             --primary-hover: #0284c7;
             --primary-light: #e0f2fe;
@@ -63,7 +71,6 @@
                 radial-gradient(at 100% 100%, rgba(56, 189, 248, 0.05) 0px, transparent 50%);
         }
 
-        /* Sidebar Navigation */
         .sidebar {
             width: 280px;
             background: var(--sidebar-bg);
@@ -179,7 +186,6 @@
             margin: 18px 0;
         }
 
-        /* Main Content */
         .main-content {
             flex: 1;
             margin-left: 280px;
@@ -193,7 +199,6 @@
             margin: 0 auto;
         }
 
-        /* Header */
         .header {
             display: flex;
             justify-content: space-between;
@@ -223,7 +228,6 @@
             align-items: center;
         }
 
-        /* Buttons */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -281,7 +285,6 @@
             border-radius: var(--radius-sm);
         }
 
-        /* Alert */
         .alert {
             padding: 14px 18px;
             margin-bottom: 22px;
@@ -321,7 +324,6 @@
             gap: 10px;
         }
 
-        /* Card */
         .card {
             background: var(--card-bg);
             backdrop-filter: blur(8px);
@@ -338,7 +340,6 @@
             box-shadow: var(--shadow-lg);
         }
 
-        /* User Profile */
         .user-profile {
             display: flex;
             align-items: center;
@@ -418,7 +419,6 @@
             color: #ef4444;
         }
 
-        /* Responsive */
         @media (max-width: 1024px) {
             .sidebar { width: 240px; padding: 20px 12px; }
             .main-content { margin-left: 240px; padding: 28px; }
@@ -430,27 +430,56 @@
                 padding: 20px 8px;
                 align-items: center;
             }
-            .sidebar-logo-text, .menu-group-title { display: none; }
-            .sidebar-logo { padding: 0; justify-content: center; margin-bottom: 24px; }
-            .main-content { margin-left: 72px; padding: 20px; }
-            .nav-link { padding: 11px; justify-content: center; }
-            .nav-link span:not(.nav-icon) { display: none; }
-            .user-profile { padding: 8px; justify-content: center; }
-            .user-info, .logout-btn { display: none; }
+
+            .sidebar-logo-text,
+            .menu-group-title {
+                display: none;
+            }
+
+            .sidebar-logo {
+                padding: 0;
+                justify-content: center;
+                margin-bottom: 24px;
+            }
+
+            .main-content {
+                margin-left: 72px;
+                padding: 20px;
+            }
+
+            .nav-link {
+                padding: 11px;
+                justify-content: center;
+            }
+
+            .nav-link span:not(.nav-icon) {
+                display: none;
+            }
+
+            .user-profile {
+                padding: 8px;
+                justify-content: center;
+            }
+
+            .user-info,
+            .logout-btn {
+                display: none;
+            }
         }
     </style>
+
     @yield('styles')
 </head>
 <body>
-    <!-- Sidebar Navigation -->
     <aside class="sidebar">
         <div class="sidebar-logo">
-            <div class="sidebar-logo-icon"><i class="ri-tooth-fill"></i></div>
+            <div class="sidebar-logo-icon">
+                <i class="ri-tooth-fill"></i>
+            </div>
             <span class="sidebar-logo-text">DentalCare</span>
         </div>
 
         <ul class="nav-menu">
-            <!-- Dashboard -->
             <li class="nav-item">
                 <a href="{{ route('patient.dashboard') }}" class="nav-link @if(request()->routeIs('patient.dashboard')) active @endif">
                     <i class="nav-icon ri-dashboard-3-line"></i>
@@ -458,7 +487,6 @@
                 </a>
             </li>
 
-            <!-- Lịch khám hẹn -->
             <div class="menu-group-title">Lịch khám</div>
 
             <li class="nav-item">
@@ -475,24 +503,16 @@
                 </a>
             </li>
 
-            <!-- Hồ sơ sức khỏe -->
             <div class="menu-group-title">Hồ sơ</div>
 
             <li class="nav-item">
-    <a href="{{ route('patient.medical-records') }}" class="nav-link @if(request()->routeIs('patient.medical-records')) active @endif">
-        <i class="nav-icon ri-history-line"></i>
-        <span>Lịch sử khám</span>
-    </a>
-</li>
-
-            <li class="nav-item">
-                <a href="{{ route('patient.health-profile') }}" class="nav-link @if(request()->routeIs('patient.health-profile')) active @endif">
-                    <i class="nav-icon ri-heart-pulse-line"></i>
-                    <span>Hồ sơ sức khỏe</span>
+                <a href="{{ $patientRecordUrl }}"
+                   class="nav-link @if(request()->routeIs('patient.patient-records*') || request()->routeIs('patient.medical-records') || request()->routeIs('patient.health-profile')) active @endif">
+                    <i class="nav-icon ri-folder-user-line"></i>
+                    <span>Hồ sơ bệnh án cá nhân</span>
                 </a>
             </li>
 
-            <!-- Thanh toán & Hóa đơn -->
             <div class="menu-group-title">Tài chính</div>
 
             <li class="nav-item">
@@ -509,7 +529,6 @@
                 </a>
             </li>
 
-            <!-- Dịch vụ & Giá -->
             <div class="menu-group-title">Dịch vụ</div>
 
             <li class="nav-item">
@@ -519,7 +538,6 @@
                 </a>
             </li>
 
-            <!-- Cài đặt -->
             <div class="menu-group-title">Cài đặt</div>
 
             <li class="nav-item">
@@ -530,41 +548,40 @@
             </li>
         </ul>
 
-        <!-- User Profile -->
         @auth
-        <div class="user-profile">
-            <div class="user-avatar">
-                {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+            <div class="user-profile">
+                <div class="user-avatar">
+                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                </div>
+
+                <div class="user-info">
+                    <h4>{{ Auth::user()->name }}</h4>
+                    <p>Bệnh nhân</p>
+                </div>
+
+                <form action="{{ route('logout') }}" method="POST" style="margin: 0;">
+                    @csrf
+                    <button type="submit" class="logout-btn" title="Đăng xuất">
+                        <i class="ri-logout-box-r-line"></i>
+                    </button>
+                </form>
             </div>
-            <div class="user-info">
-                <h4>{{ Auth::user()->name }}</h4>
-                <p>Bệnh nhân</p>
-            </div>
-            <form action="{{ route('logout') }}" method="POST" style="margin: 0;">
-                @csrf
-                <button type="submit" class="logout-btn" title="Đăng xuất">
-                    <i class="ri-logout-box-r-line"></i>
-                </button>
-            </form>
-        </div>
         @endauth
     </aside>
 
-    <!-- Main Content -->
     <main class="main-content">
         <div class="container">
-            <!-- Header -->
             <div class="header">
                 <div class="header-left">
                     <h1>@yield('page-title')</h1>
                     <p class="header-subtitle">@yield('page-subtitle')</p>
                 </div>
+
                 <div class="header-right">
                     @yield('header-actions')
                 </div>
             </div>
 
-            <!-- Alerts -->
             @if(session('success'))
                 <div class="alert success">
                     <i class="ri-checkbox-circle-line" style="font-size:18px;flex-shrink:0;"></i>
@@ -586,7 +603,6 @@
                 </div>
             @endif
 
-            <!-- Errors Display -->
             @if ($errors->any())
                 <div class="alert error">
                     <i class="ri-error-warning-line" style="font-size:18px;flex-shrink:0;"></i>
@@ -599,7 +615,6 @@
                 </div>
             @endif
 
-            <!-- Content -->
             @yield('content')
         </div>
     </main>
