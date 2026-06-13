@@ -10,10 +10,15 @@
         Quay lại
     </a>
 
-    <button type="button" class="btn btn-primary no-print" onclick="window.print()">
+    <a
+        href="{{ route('employees.invoices.print', $invoice) }}"
+        class="btn btn-primary no-print"
+        target="_blank"
+        rel="noopener"
+    >
         <i class="ri-printer-line"></i>
         In hóa đơn
-    </button>
+    </a>
 @endsection
 
 @section('styles')
@@ -1148,12 +1153,10 @@
                     </div>
 
                     <div class="qr-modal-image">
-                        <img src="{{ $vietQrUrl }}" alt="QR chuyển khoản hóa đơn {{ $invoice->invoice_code }}">
+                        <img src="{{ $vietQrUrl }}" alt="QR chuyển khoản hóa đơn ">
                     </div>
 
-                    <div class="transfer-note">
-                        Mã QR này đã gắn đúng tài khoản nhận, số tiền và nội dung hóa đơn. Sau khi khách chuyển khoản, thu ngân kiểm tra giao dịch rồi xác nhận thanh toán.
-                    </div>
+                    
                 </div>
             </div>
         @endif

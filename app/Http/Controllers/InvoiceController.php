@@ -97,6 +97,8 @@ class InvoiceController extends Controller
         $invoice->load([
             'appointment.medicalRecord',
             'appointment.room',
+            'appointment.service',
+            'appointment.doctor',
             'patient',
             'patientProfile',
             'doctor',
@@ -119,6 +121,8 @@ class InvoiceController extends Controller
         $invoice->load([
             'appointment.medicalRecord',
             'appointment.room',
+            'appointment.service',
+            'appointment.doctor',
             'patient',
             'patientProfile',
             'doctor',
@@ -127,19 +131,13 @@ class InvoiceController extends Controller
             'payments',
         ]);
 
-        $medicines = Medicine::active()
-            ->orderBy('name')
-            ->get();
-
-        $printMode = true;
-
-        return view('employees.invoices.show', compact('invoice', 'medicines', 'printMode'));
+        return view('employees.invoices.print', compact('invoice'));
     }
 
     public function addMedicine(Request $request, Invoice $invoice)
     {
         if (!$invoice->isUnpaid()) {
-            return back()->with('error', 'Chỉ có thể thêm thuốc vào hóa đơn đang chờ thanh toán.');
+            return $this->backToInvoice($invoice, 'error', 'Chỉ có thể thêm thuốc vào hóa đơn đang chờ thanh toán.');
         }
 
         $validated = $request->validate([
@@ -170,7 +168,7 @@ class InvoiceController extends Controller
         }
 
         if (!$medicine->hasEnoughStock($newQuantity)) {
-            return back()->with('error', "Thuốc {$medicine->display_name} không đủ tồn kho.");
+            return $this->backToInvoice($invoice, 'error', "Thuốc {$medicine->display_name} không đủ tồn kho.");
         }
 
         $newItem = [
@@ -193,19 +191,19 @@ class InvoiceController extends Controller
         $invoice->recalculateTotals();
         $invoice->save();
 
-        return back()->with('success', 'Đã thêm thuốc vào hóa đơn.');
+        return $this->backToInvoice($invoice, 'success', 'Đã thêm thuốc vào hóa đơn.');
     }
 
     public function removeMedicine(Invoice $invoice, int $index)
     {
         if (!$invoice->isUnpaid()) {
-            return back()->with('error', 'Chỉ có thể xóa thuốc khỏi hóa đơn đang chờ thanh toán.');
+            return $this->backToInvoice($invoice, 'error', 'Chỉ có thể xóa thuốc khỏi hóa đơn đang chờ thanh toán.');
         }
 
         $items = collect($invoice->medicine_items ?: [])->values();
 
         if (!$items->has($index)) {
-            return back()->with('error', 'Dòng thuốc không tồn tại.');
+            return $this->backToInvoice($invoice, 'error', 'Dòng thuốc không tồn tại.');
         }
 
         $items->forget($index);
@@ -214,13 +212,13 @@ class InvoiceController extends Controller
         $invoice->recalculateTotals();
         $invoice->save();
 
-        return back()->with('success', 'Đã xóa thuốc khỏi hóa đơn.');
+        return $this->backToInvoice($invoice, 'success', 'Đã xóa thuốc khỏi hóa đơn.');
     }
 
     public function updateExtras(Request $request, Invoice $invoice)
     {
         if (!$invoice->isUnpaid()) {
-            return back()->with('error', 'Chỉ có thể cập nhật chi phí khi hóa đơn chưa thanh toán.');
+            return $this->backToInvoice($invoice, 'error', 'Chỉ có thể cập nhật chi phí khi hóa đơn chưa thanh toán.');
         }
 
         $validated = $request->validate([
@@ -256,7 +254,7 @@ class InvoiceController extends Controller
         $invoice->recalculateTotals();
         $invoice->save();
 
-        return back()->with('success', 'Đã cập nhật hóa đơn.');
+        return $this->backToInvoice($invoice, 'success', 'Đã cập nhật hóa đơn.');
     }
 
     public function confirmPayment(Request $request, Invoice $invoice)
@@ -575,5 +573,12 @@ class InvoiceController extends Controller
         }
 
         return 0;
+    }
+
+    private function backToInvoice(Invoice $invoice, string $type, string $message)
+    {
+        return redirect()
+            ->route('employees.invoices.show', $invoice->id)
+            ->with($type, $message);
     }
 }
