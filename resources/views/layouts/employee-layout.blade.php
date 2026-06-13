@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+
     <style>
         :root {
             --font-title: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -190,6 +191,11 @@
         .nav-badge.info {
             background: #0ea5e9;
             box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.18);
+        }
+
+        .nav-badge.warning {
+            background: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18);
         }
 
         .menu-group-title {
@@ -509,6 +515,7 @@
     </style>
     @yield('styles')
 </head>
+
 <body>
     @php
         $todayReceptionCount = \App\Models\Appointment::whereDate('appointment_date', now()->toDateString())
@@ -522,6 +529,10 @@
             ->whereIn('status', ['checked_in', 'waiting', 'in_progress'])
             ->count();
 
+        $unpaidInvoiceCount = class_exists(\App\Models\Invoice::class)
+            ? \App\Models\Invoice::where('status', 'unpaid')->count()
+            : 0;
+
         $receptionUrl = \Illuminate\Support\Facades\Route::has('employees.reception')
             ? route('employees.reception')
             : '#';
@@ -532,6 +543,10 @@
 
         $patientProfilesUrl = \Illuminate\Support\Facades\Route::has('employees.patient-profiles.index')
             ? route('employees.patient-profiles.index')
+            : '#';
+
+        $invoicesUrl = \Illuminate\Support\Facades\Route::has('employees.invoices.index')
+            ? route('employees.invoices.index')
             : '#';
     @endphp
 
@@ -616,16 +631,18 @@
             <div class="menu-group-title">Thanh toán</div>
 
             <li class="nav-item">
-                <a href="{{ route('employees.payment') }}" class="nav-link @if(request()->routeIs('employees.payment')) active @endif">
-                    <i class="nav-icon ri-bank-card-line"></i>
-                    <span>Thanh toán</span>
-                </a>
-            </li>
+                <a href="{{ $invoicesUrl }}"
+                   class="nav-link nav-link-with-badge @if(request()->routeIs('employees.invoices.*')) active @endif">
+                    <span class="nav-link-main">
+                        <i class="nav-icon ri-file-list-3-line"></i>
+                        <span>Hóa đơn & Thanh toán</span>
+                    </span>
 
-            <li class="nav-item">
-                <a href="{{ route('employees.invoice') }}" class="nav-link @if(request()->routeIs('employees.invoice')) active @endif">
-                    <i class="nav-icon ri-file-list-3-line"></i>
-                    <span>Hóa đơn</span>
+                    @if($unpaidInvoiceCount > 0)
+                        <span class="nav-badge warning">
+                            {{ $unpaidInvoiceCount > 99 ? '99+' : $unpaidInvoiceCount }}
+                        </span>
+                    @endif
                 </a>
             </li>
 

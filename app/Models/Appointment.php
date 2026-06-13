@@ -44,7 +44,6 @@ class Appointment extends Model
         'duration_minutes' => 'integer',
         'actual_used_minutes' => 'integer',
         'queue_number' => 'integer',
-
         'patient_snapshot' => 'array',
 
         'appointment_date' => 'datetime',
@@ -60,52 +59,59 @@ class Appointment extends Model
 
     // ==================== RELATIONSHIPS ====================
 
-    /**
-     * Tài khoản bệnh nhân nếu lịch online có user đăng nhập.
-     */
     public function patient()
     {
         return $this->belongsTo(User::class, 'patient_id');
     }
 
-    /**
-     * Hồ sơ bệnh nhân dùng chung cho online/offline.
-     */
     public function patientProfile()
     {
         return $this->belongsTo(PatientProfile::class, 'patient_profile_id');
     }
 
-    /**
-     * Bác sĩ phụ trách.
-     */
     public function doctor()
     {
         return $this->belongsTo(Employee::class, 'doctor_id');
     }
 
-    /**
-     * Dịch vụ khám.
-     */
     public function service()
     {
         return $this->belongsTo(Service::class);
     }
 
-    /**
-     * Phòng khám.
-     */
     public function room()
     {
         return $this->belongsTo(Room::class);
     }
 
-    /**
-     * Hồ sơ bệnh án của lượt khám này.
-     */
     public function medicalRecord()
     {
         return $this->hasOne(MedicalRecord::class, 'appointment_id');
+    }
+
+    public function clinicalImages()
+    {
+        return $this->hasMany(ClinicalImage::class, 'appointment_id')
+            ->latest('taken_date')
+            ->latest('created_at');
+    }
+
+    /**
+     * Hóa đơn chính của ca khám.
+     * Mỗi ca khám chỉ nên có 1 hóa đơn.
+     */
+    public function invoice()
+    {
+        return $this->hasOne(Invoice::class, 'appointment_id');
+    }
+
+    /**
+     * Giữ quan hệ dạng hasMany nếu sau này cần tra cứu lịch sử hóa đơn phụ.
+     * Luồng hiện tại vẫn dùng invoice().
+     */
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class, 'appointment_id');
     }
 
     // ==================== SCOPES ====================
@@ -188,7 +194,13 @@ class Appointment extends Model
     public function scopeUpcoming($query)
     {
         return $query->where('appointment_date', '>=', now())
-            ->whereIn('status', ['pending', 'confirmed', 'checked_in', 'waiting', 'in_progress'])
+            ->whereIn('status', [
+                'pending',
+                'confirmed',
+                'checked_in',
+                'waiting',
+                'in_progress',
+            ])
             ->orderBy('appointment_date', 'asc');
     }
 
@@ -228,13 +240,18 @@ class Appointment extends Model
         return $query->whereDate('appointment_date', $date);
     }
 
-    // ==================== HELPERS ====================
-public function clinicalImages()
-{
-    return $this->hasMany(ClinicalImage::class, 'appointment_id')
-        ->latest('taken_date')
-        ->latest('created_at');
-}
+    public function scopeBillable($query)
+    {
+        return $query->where('status', 'completed');
+    }
+
+    public function scopeUnbilled($query)
+    {
+        return $query->whereDoesntHave('invoice');
+    }
+
+    // ==================== STATUS HELPERS ====================
+
     public function isPast()
     {
         return $this->appointment_date && $this->appointment_date->lt(now());
@@ -316,6 +333,18 @@ public function clinicalImages()
             && $this->started_at !== null;
     }
 
+    public function canGenerateInvoice()
+    {
+        return $this->status === 'completed';
+    }
+
+    public function hasInvoice()
+    {
+        return $this->invoice()->exists();
+    }
+
+    // ==================== TIME HELPERS ====================
+
     public function getExpectedEndTimeAttribute()
     {
         if (!$this->appointment_date) {
@@ -351,13 +380,8 @@ public function clinicalImages()
         return max(0, $estimatedEnd->diffInMinutes(now()));
     }
 
-    /**
-     * Tên bệnh nhân ưu tiên lấy từ:
-     * 1. patient_profiles
-     * 2. patient_snapshot
-     * 3. users
-     * 4. fallback theo patient_id
-     */
+    // ==================== DISPLAY HELPERS ====================
+
     public function getPatientDisplayNameAttribute()
     {
         return $this->patientProfile?->full_name
@@ -366,13 +390,6 @@ public function clinicalImages()
             ?? 'Bệnh nhân #' . ($this->patient_id ?? $this->id);
     }
 
-    /**
-     * SĐT bệnh nhân ưu tiên lấy từ:
-     * 1. patient_profiles
-     * 2. patient_snapshot
-     * 3. users nếu có cột phone/phone_number/tel
-     * 4. notes theo dạng "SĐT: ..."
-     */
     public function getPatientDisplayPhoneAttribute()
     {
         $phone = $this->patientProfile?->phone
@@ -425,6 +442,21 @@ public function clinicalImages()
             ?? 'Chưa cập nhật';
     }
 
+    public function getDoctorDisplayNameAttribute()
+    {
+        return $this->doctor?->name ?? $this->doctor?->user?->name ?? 'Chưa có bác sĩ';
+    }
+
+    public function getServiceDisplayNameAttribute()
+    {
+        return $this->service?->name ?? 'Chưa có dịch vụ';
+    }
+
+    public function getRoomDisplayNameAttribute()
+    {
+        return $this->room?->name ?? 'Chưa có phòng';
+    }
+
     public function getStatusLabelAttribute()
     {
         $statuses = [
@@ -458,9 +490,8 @@ public function clinicalImages()
             : '-';
     }
 
-    /**
-     * Tạo snapshot từ hồ sơ bệnh nhân hiện tại.
-     */
+    // ==================== SNAPSHOT HELPERS ====================
+
     public function syncPatientSnapshotFromProfile()
     {
         if (!$this->patientProfile) {

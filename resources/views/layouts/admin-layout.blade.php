@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet">
+
     <style>
         :root {
             --font-title: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -48,7 +49,11 @@
             --shadow-lg: 0 10px 30px -5px rgba(15, 23, 42, 0.12);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             font-family: var(--font-body);
@@ -405,8 +410,15 @@
         }
 
         @media (max-width: 1024px) {
-            .sidebar { width: 240px; padding: 20px 12px; }
-            .main-content { margin-left: 240px; padding: 28px; }
+            .sidebar {
+                width: 240px;
+                padding: 20px 12px;
+            }
+
+            .main-content {
+                margin-left: 240px;
+                padding: 28px;
+            }
         }
 
         @media (max-width: 768px) {
@@ -415,21 +427,59 @@
                 padding: 20px 8px;
                 align-items: center;
             }
-            .sidebar-logo-text, .nav-group-title { display: none; }
-            .sidebar-logo { padding: 0; justify-content: center; margin-bottom: 24px; }
-            .main-content { margin-left: 72px; padding: 20px; }
-            .nav-link { padding: 11px; justify-content: center; }
-            .nav-link span:not(.nav-icon) { display: none; }
-            .user-profile { padding: 8px; justify-content: center; }
-            .user-profile-info, .logout-icon-btn { display: none; }
+
+            .sidebar-logo-text,
+            .nav-group-title {
+                display: none;
+            }
+
+            .sidebar-logo {
+                padding: 0;
+                justify-content: center;
+                margin-bottom: 24px;
+            }
+
+            .main-content {
+                margin-left: 72px;
+                padding: 20px;
+            }
+
+            .nav-link {
+                padding: 11px;
+                justify-content: center;
+            }
+
+            .nav-link span:not(.nav-icon) {
+                display: none;
+            }
+
+            .user-profile {
+                padding: 8px;
+                justify-content: center;
+            }
+
+            .user-profile-info,
+            .logout-icon-btn {
+                display: none;
+            }
         }
     </style>
+
     @yield('styles')
 </head>
+
 <body>
     @php
         $patientRecordsUrl = \Illuminate\Support\Facades\Route::has('admin.patient-records.index')
             ? route('admin.patient-records.index')
+            : '#';
+
+        $medicinesUrl = \Illuminate\Support\Facades\Route::has('admin.medicines.index')
+            ? route('admin.medicines.index')
+            : '#';
+
+        $revenueUrl = \Illuminate\Support\Facades\Route::has('admin.revenue.index')
+            ? route('admin.revenue.index')
             : '#';
     @endphp
 
@@ -521,22 +571,42 @@
                     <span>Quản lý phòng khám</span>
                 </a>
             </li>
+
+            <div class="nav-group-title">Kho thuốc</div>
+            <li class="nav-item">
+                <a href="{{ $medicinesUrl }}" class="nav-link @if(request()->routeIs('admin.medicines.*')) active @endif">
+                    <i class="nav-icon ri-capsule-line"></i>
+                    <span>Quản lý thuốc</span>
+                </a>
+            </li>
+
+            <div class="nav-group-title">Tài chính</div>
+            <li class="nav-item">
+                <a href="{{ $revenueUrl }}" class="nav-link @if(request()->routeIs('admin.revenue.*')) active @endif">
+                    <i class="nav-icon ri-bar-chart-grouped-line"></i>
+                    <span>Thống kê doanh thu</span>
+                </a>
+            </li>
         </ul>
 
         @auth
-        <div class="user-profile">
-            <div class="user-avatar">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</div>
-            <div class="user-profile-info">
-                <h4>{{ Auth::user()->name }}</h4>
-                <p>Quản trị viên</p>
+            <div class="user-profile">
+                <div class="user-avatar">
+                    {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                </div>
+
+                <div class="user-profile-info">
+                    <h4>{{ Auth::user()->name }}</h4>
+                    <p>Quản trị viên</p>
+                </div>
+
+                <form action="{{ route('logout') }}" method="POST" style="margin: 0;">
+                    @csrf
+                    <button type="submit" class="logout-icon-btn" title="Đăng xuất">
+                        <i class="ri-logout-box-r-line"></i>
+                    </button>
+                </form>
             </div>
-            <form action="{{ route('logout') }}" method="POST" style="margin: 0;">
-                @csrf
-                <button type="submit" class="logout-icon-btn" title="Đăng xuất">
-                    <i class="ri-logout-box-r-line"></i>
-                </button>
-            </form>
-        </div>
         @endauth
     </aside>
 
@@ -550,6 +620,7 @@
                         @yield('page-subtitle')
                     </p>
                 </div>
+
                 <div class="header-right">
                     @yield('header-actions')
                 </div>

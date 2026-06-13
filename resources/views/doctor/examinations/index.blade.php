@@ -80,6 +80,39 @@
         font-size: 21px;
     }
 
+    .history-search-wrap {
+        min-width: 280px;
+        max-width: 420px;
+        width: 100%;
+        position: relative;
+    }
+
+    .history-search-wrap i {
+        position: absolute;
+        left: 13px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        font-size: 18px;
+    }
+
+    .history-search-input {
+        width: 100%;
+        height: 42px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md);
+        padding: 0 14px 0 40px;
+        font-size: 14px;
+        outline: none;
+        background: #fff;
+        color: var(--text-main);
+    }
+
+    .history-search-input:focus {
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.12);
+    }
+
     .appointment-list {
         display: flex;
         flex-direction: column;
@@ -208,6 +241,10 @@
         border-bottom: none;
     }
 
+    .history-item.is-hidden {
+        display: none;
+    }
+
     .history-head {
         padding: 18px 22px;
         display: grid;
@@ -296,6 +333,25 @@
         line-height: 1.45;
     }
 
+    .history-empty-search {
+        display: none;
+        padding: 34px 22px;
+        text-align: center;
+        color: var(--text-muted);
+        border-top: 1px solid var(--border-color);
+    }
+
+    .history-empty-search.show {
+        display: block;
+    }
+
+    .history-empty-search i {
+        display: block;
+        font-size: 38px;
+        color: var(--primary);
+        margin-bottom: 10px;
+    }
+
     @media (max-width: 900px) {
         .appointment-row,
         .history-head {
@@ -313,6 +369,15 @@
         .history-detail-grid {
             grid-template-columns: 1fr;
         }
+
+        .panel-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .history-search-wrap {
+            max-width: 100%;
+        }
     }
 </style>
 @endsection
@@ -322,6 +387,7 @@
     $inProgress = $inProgress ?? collect();
     $waitingAppointments = $waitingAppointments ?? collect();
     $completedToday = $completedToday ?? collect();
+    $completedHistory = $completedHistory ?? collect();
 
     $getSnapshot = function ($appointment) {
         $snapshot = $appointment->patient_snapshot ?? [];
@@ -382,6 +448,14 @@
             'gender' => $gender,
         ];
     };
+
+    $profileUrl = function ($appointment) {
+        if ($appointment->patient_profile_id) {
+            return route('doctor.patient-profiles.show', $appointment->patient_profile_id);
+        }
+
+        return route('doctor.examinations.show', $appointment->id);
+    };
 @endphp
 
 <div class="summary-grid">
@@ -406,6 +480,14 @@
         <div>
             <div class="summary-label">Đã khám hôm nay</div>
             <div class="summary-value">{{ $completedToday->count() }}</div>
+        </div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-icon"><i class="ri-history-line"></i></div>
+        <div>
+            <div class="summary-label">Lịch sử trước đây</div>
+            <div class="summary-value">{{ $completedHistory->count() }}</div>
         </div>
     </div>
 </div>
@@ -537,27 +619,114 @@
 <section class="panel">
     <div class="panel-header">
         <div class="panel-title">
-            <i class="ri-history-line"></i>
-            Lịch sử ca khám hôm nay
+            <i class="ri-check-double-line"></i>
+            Đã hoàn thành hôm nay
         </div>
     </div>
 
     @if($completedToday->isEmpty())
         <div class="empty">
             <i class="ri-file-list-3-line"></i>
-            <h3>Chưa có ca hoàn thành</h3>
+            <h3>Chưa có ca hoàn thành hôm nay</h3>
         </div>
     @else
         <div class="appointment-list">
             @foreach($completedToday as $appointment)
                 @php
                     $patientInfo = $getPatientInfo($appointment);
+                @endphp
+
+                <div class="appointment-row">
+                    <div class="queue-no">{{ $appointment->queue_number ?? '-' }}</div>
+
+                    <div>
+                        <div class="patient-name">{{ $patientInfo['name'] }}</div>
+
+                        <div class="patient-sub">
+                            <span><i class="ri-phone-line"></i>{{ $patientInfo['phone'] }}</span>
+
+                            @if($patientInfo['gender'])
+                                <span><i class="ri-user-line"></i>{{ $patientInfo['gender'] }}</span>
+                            @endif
+
+                            @if($patientInfo['dob'])
+                                <span><i class="ri-calendar-line"></i>{{ $patientInfo['dob'] }}</span>
+                            @endif
+                        </div>
+
+                        <div class="meta">
+                            <span><i class="ri-stethoscope-line"></i>{{ $appointment->service?->name ?? 'Dịch vụ' }}</span>
+                            <span><i class="ri-check-double-line"></i>Hoàn thành: {{ $appointment->completed_at?->format('H:i') ?? '-' }}</span>
+                            <span><i class="ri-timer-line"></i>Thực tế: {{ $appointment->actual_used_minutes ?? '-' }} phút</span>
+                        </div>
+                    </div>
+
+                    <div class="actions">
+                        <span class="status status-done"><i class="ri-check-line"></i>Hoàn thành</span>
+                        <a href="{{ $profileUrl($appointment) }}" class="btn btn-secondary btn-sm">
+                            <i class="ri-file-user-line"></i>
+                            Xem bệnh án
+                        </a>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    @endif
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <div class="panel-title">
+            <i class="ri-history-line"></i>
+            Lịch sử ca khám các ngày trước
+            <span id="historyResultText" style="font-size: 13px; color: var(--text-muted); font-weight: 700;"></span>
+        </div>
+
+        <div class="history-search-wrap">
+            <i class="ri-search-line"></i>
+            <input
+                type="text"
+                id="historySearchInput"
+                class="history-search-input"
+                placeholder="Tìm tên, SĐT, ngày khám, dịch vụ, chẩn đoán..."
+                autocomplete="off"
+            >
+        </div>
+    </div>
+
+    @if($completedHistory->isEmpty())
+        <div class="empty">
+            <i class="ri-folder-history-line"></i>
+            <h3>Chưa có lịch sử ca khám trước đây</h3>
+        </div>
+    @else
+        <div class="appointment-list" id="historyList">
+            @foreach($completedHistory as $appointment)
+                @php
+                    $patientInfo = $getPatientInfo($appointment);
                     $record = $appointment->medicalRecord;
                     $actualMinutes = $appointment->actual_used_minutes ?? '-';
                     $diagnosis = $record?->diagnosis ?: 'Chưa cập nhật';
+
+                    $searchText = implode(' ', [
+                        $patientInfo['name'],
+                        $patientInfo['phone'],
+                        $patientInfo['dob'],
+                        $patientInfo['gender'],
+                        $appointment->appointment_date?->format('d/m/Y H:i'),
+                        $appointment->completed_at?->format('d/m/Y H:i'),
+                        $appointment->service?->name,
+                        $appointment->room?->name,
+                        $diagnosis,
+                        $record?->chief_complaint,
+                        $record?->clinical_findings,
+                        $record?->treatment_plan,
+                        $record?->prescription,
+                        $record?->doctor_notes,
+                    ]);
                 @endphp
 
-                <div class="history-item">
+                <div class="history-item js-history-item" data-search="{{ \Illuminate\Support\Str::lower($searchText) }}">
                     <div class="history-head">
                         <div class="queue-no">{{ $appointment->queue_number ?? '-' }}</div>
 
@@ -577,8 +746,10 @@
                             </div>
 
                             <div class="meta">
+                                <span><i class="ri-calendar-line"></i>Ngày khám: {{ $appointment->appointment_date?->format('d/m/Y H:i') ?? '-' }}</span>
                                 <span><i class="ri-stethoscope-line"></i>{{ $appointment->service?->name ?? 'Dịch vụ' }}</span>
-                                <span><i class="ri-check-double-line"></i>Hoàn thành: {{ $appointment->completed_at?->format('H:i') ?? '-' }}</span>
+                                <span><i class="ri-door-open-line"></i>{{ $appointment->room?->name ?? 'Chưa có phòng' }}</span>
+                                <span><i class="ri-check-double-line"></i>Hoàn thành: {{ $appointment->completed_at?->format('H:i d/m/Y') ?? '-' }}</span>
                                 <span><i class="ri-timer-line"></i>Thực tế: {{ $actualMinutes }} phút</span>
                             </div>
 
@@ -594,9 +765,9 @@
                                 <i class="ri-arrow-down-s-line"></i>
                             </button>
 
-                            <a href="{{ route('doctor.examinations.show', $appointment->id) }}" class="btn btn-secondary btn-sm">
-                                <i class="ri-eye-line"></i>
-                                Xem hồ sơ
+                            <a href="{{ $profileUrl($appointment) }}" class="btn btn-secondary btn-sm">
+                                <i class="ri-file-user-line"></i>
+                                Xem bệnh án
                             </a>
                         </div>
                     </div>
@@ -633,19 +804,6 @@
                                     <div class="detail-label">Ghi chú bác sĩ</div>
                                     <div class="detail-value">{{ $record->doctor_notes ?: 'Chưa cập nhật.' }}</div>
                                 </div>
-
-                                <div class="detail-box full">
-                                    <div class="detail-label">Thông tin xử lý</div>
-                                    <div class="detail-value">
-                                        Bắt đầu: {{ $appointment->started_at?->format('H:i d/m/Y') ?? 'Chưa cập nhật' }}
-                                        <br>
-                                        Hoàn thành: {{ $appointment->completed_at?->format('H:i d/m/Y') ?? 'Chưa cập nhật' }}
-                                        <br>
-                                        Thời lượng dự kiến: {{ $appointment->duration_minutes ?? 30 }} phút
-                                        <br>
-                                        Thời lượng thực tế: {{ $actualMinutes }} phút
-                                    </div>
-                                </div>
                             </div>
                         @else
                             <div class="history-detail-grid">
@@ -659,6 +817,12 @@
                 </div>
             @endforeach
         </div>
+
+        <div class="history-empty-search" id="historyEmptySearch">
+            <i class="ri-search-eye-line"></i>
+            <h3>Không tìm thấy ca khám phù hợp</h3>
+            <p>Thử nhập tên bệnh nhân, số điện thoại, dịch vụ, ngày khám hoặc chẩn đoán khác.</p>
+        </div>
     @endif
 </section>
 @endsection
@@ -666,6 +830,17 @@
 @section('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    function normalizeText(value) {
+        return String(value || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd')
+            .replace(/Đ/g, 'd')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
     document.querySelectorAll('.history-toggle').forEach(function (button) {
         button.addEventListener('click', function () {
             const currentItem = button.closest('.history-item');
@@ -685,6 +860,46 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
+
+    const historySearchInput = document.getElementById('historySearchInput');
+    const historyItems = Array.from(document.querySelectorAll('.js-history-item'));
+    const historyEmptySearch = document.getElementById('historyEmptySearch');
+    const historyResultText = document.getElementById('historyResultText');
+
+    function applyHistorySearch() {
+        const keyword = normalizeText(historySearchInput ? historySearchInput.value : '');
+        let visibleCount = 0;
+
+        historyItems.forEach(function (item) {
+            const searchText = normalizeText(item.dataset.search || item.textContent);
+            const matched = keyword === '' || searchText.includes(keyword);
+
+            item.classList.toggle('is-hidden', !matched);
+
+            if (!matched) {
+                item.classList.remove('open');
+            }
+
+            if (matched) {
+                visibleCount++;
+            }
+        });
+
+        if (historyEmptySearch) {
+            historyEmptySearch.classList.toggle('show', keyword !== '' && visibleCount === 0);
+        }
+
+        if (historyResultText) {
+            historyResultText.textContent = keyword
+                ? `(${visibleCount} kết quả)`
+                : `(${historyItems.length} ca)`;
+        }
+    }
+
+    if (historySearchInput) {
+        historySearchInput.addEventListener('input', applyHistorySearch);
+        applyHistorySearch();
+    }
 });
 </script>
 @endsection

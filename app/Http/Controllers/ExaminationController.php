@@ -22,6 +22,7 @@ class ExaminationController extends Controller
                 'service',
                 'room',
                 'medicalRecord',
+                'invoice',
             ])
             ->where('doctor_id', $doctor->id)
             ->where('status', 'in_progress')
@@ -33,6 +34,7 @@ class ExaminationController extends Controller
                 'patientProfile',
                 'service',
                 'room',
+                'invoice',
             ])
             ->where('doctor_id', $doctor->id)
             ->where(function ($query) use ($today) {
@@ -52,6 +54,7 @@ class ExaminationController extends Controller
                 'service',
                 'room',
                 'medicalRecord',
+                'invoice',
             ])
             ->where('doctor_id', $doctor->id)
             ->where('status', 'completed')
@@ -62,10 +65,33 @@ class ExaminationController extends Controller
             ->orderByDesc('completed_at')
             ->get();
 
+        $completedHistory = Appointment::with([
+                'patient',
+                'patientProfile',
+                'service',
+                'room',
+                'medicalRecord',
+                'invoice',
+            ])
+            ->where('doctor_id', $doctor->id)
+            ->where('status', 'completed')
+            ->where(function ($query) use ($today) {
+                $query->whereDate('completed_at', '<', $today)
+                    ->orWhere(function ($q) use ($today) {
+                        $q->whereNull('completed_at')
+                            ->whereDate('appointment_date', '<', $today);
+                    });
+            })
+            ->orderByDesc('completed_at')
+            ->orderByDesc('appointment_date')
+            ->limit(30)
+            ->get();
+
         return view('doctor.examinations.index', compact(
             'inProgress',
             'waitingAppointments',
-            'completedToday'
+            'completedToday',
+            'completedHistory'
         ));
     }
 
@@ -113,6 +139,7 @@ class ExaminationController extends Controller
             'service',
             'room',
             'medicalRecord',
+            'invoice',
         ]);
 
         return view('doctor.examinations.show', compact('appointment'));
@@ -127,21 +154,34 @@ class ExaminationController extends Controller
             return back()->with('error', 'Chỉ có thể hoàn thành ca đang khám.');
         }
 
-        $appointment->loadMissing(['patientProfile']);
+        $appointment->loadMissing([
+            'patient',
+            'patientProfile',
+            'service',
+            'doctor',
+            'room',
+            'invoice',
+        ]);
 
         if (!$appointment->patient_id && !$appointment->patient_profile_id) {
             return back()->with('error', 'Ca khám này chưa có hồ sơ bệnh nhân, không thể tạo bệnh án.');
         }
 
+        if (!$appointment->service_id || !$appointment->service) {
+            return back()->with('error', 'Ca khám này chưa có dịch vụ, không thể tạo hóa đơn.');
+        }
+
         $validated = $request->validate([
-            'chief_complaint' => 'nullable|string|max:1000',
-            'diagnosis' => 'required|string|max:2000',
-            'treatment_plan' => 'nullable|string|max:2000',
-            'prescription' => 'nullable|string|max:2000',
-            'doctor_notes' => 'nullable|string|max:2000',
-            'follow_up_date' => 'nullable|date|after_or_equal:today',
+            'chief_complaint' => ['nullable', 'string', 'max:1000'],
+            'clinical_exam' => ['nullable', 'string', 'max:2000'],
+            'diagnosis' => ['required', 'string', 'max:2000'],
+            'treatment_plan' => ['nullable', 'string', 'max:2000'],
+            'prescription' => ['nullable', 'string', 'max:2000'],
+            'doctor_notes' => ['nullable', 'string', 'max:2000'],
+            'follow_up_date' => ['nullable', 'date', 'after_or_equal:today'],
         ], [
             'diagnosis.required' => 'Vui lòng nhập chẩn đoán.',
+            'follow_up_date.after_or_equal' => 'Ngày tái khám không được nhỏ hơn ngày hiện tại.',
         ]);
 
         DB::transaction(function () use ($appointment, $validated) {
@@ -153,6 +193,7 @@ class ExaminationController extends Controller
                     'doctor_id' => $appointment->doctor_id,
                     'service_id' => $appointment->service_id,
                     'chief_complaint' => $validated['chief_complaint'] ?? null,
+                    'clinical_exam' => $validated['clinical_exam'] ?? null,
                     'diagnosis' => $validated['diagnosis'],
                     'treatment_plan' => $validated['treatment_plan'] ?? null,
                     'prescription' => $validated['prescription'] ?? null,
@@ -162,7 +203,7 @@ class ExaminationController extends Controller
             );
 
             $actualMinutes = $appointment->started_at
-                ? max(1, $appointment->started_at->diffInMinutes(now()))
+                ? max(1, (int) $appointment->started_at->diffInMinutes(now()))
                 : null;
 
             $appointment->update([
@@ -178,9 +219,24 @@ class ExaminationController extends Controller
             }
         });
 
+        $appointment->refresh();
+        $appointment->loadMissing([
+            'patient',
+            'patientProfile',
+            'doctor',
+            'service',
+            'room',
+            'medicalRecord',
+            'invoice',
+        ]);
+
+        if (!$appointment->invoice) {
+            app(InvoiceController::class)->ensureInvoiceForAppointment($appointment);
+        }
+
         return redirect()
             ->route('doctor.examinations.index')
-            ->with('success', 'Đã hoàn thành ca khám và cập nhật hồ sơ bệnh án.');
+            ->with('success', 'Đã hoàn thành ca khám, cập nhật hồ sơ bệnh án và tạo hóa đơn chờ thanh toán.');
     }
 
     private function currentDoctor(): Employee

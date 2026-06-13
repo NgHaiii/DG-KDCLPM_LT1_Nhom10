@@ -440,16 +440,164 @@
         font-size: 12px;
     }
 
-    .record-edit {
-        display: none;
-        margin-top: 14px;
-        padding: 14px;
-        border-radius: 14px;
-        border: 1px dashed #bfdbfe;
-        background: #f8fafc;
-    }
-    .record-edit.active { display: block; }
+    .clinical-visit {
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    background: #fff;
+    overflow: hidden;
+}
 
+.clinical-visit + .clinical-visit {
+    margin-top: 12px;
+}
+
+.clinical-visit-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: center;
+    padding: 14px 16px;
+    background: #f8fafc;
+}
+
+.clinical-visit-title {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+}
+
+.clinical-visit-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.clinical-toggle {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    border: 1px solid #dbe3ef;
+    background: #fff;
+    color: #0f172a;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 22px;
+    flex-shrink: 0;
+}
+
+.clinical-toggle:hover {
+    border-color: #38bdf8;
+    color: #0284c7;
+    background: #f0f9ff;
+}
+
+.clinical-toggle i {
+    transition: transform 0.2s ease;
+}
+
+.clinical-visit.open .clinical-toggle i {
+    transform: rotate(180deg);
+}
+
+.clinical-body {
+    display: none;
+    padding: 16px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.clinical-visit.open .clinical-body {
+    display: block;
+}
+
+.record-view {
+    display: grid;
+    gap: 12px;
+}
+
+.clinical-visit.editing .record-view {
+    display: none;
+}
+
+.record-edit {
+    display: none;
+    margin-top: 0;
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid #bae6fd;
+    background: #f0f9ff;
+}
+
+.record-edit.active {
+    display: block;
+}
+
+.record-edit-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding-bottom: 12px;
+    margin-bottom: 14px;
+    border-bottom: 1px dashed #bae6fd;
+}
+
+.record-edit-title {
+    font-size: 16px;
+    font-weight: 900;
+    color: #0f172a;
+}
+
+.record-edit-subtitle {
+    margin-top: 4px;
+    color: #64748b;
+    font-size: 13px;
+}
+
+.record-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.record-form-grid .form-group.full {
+    grid-column: 1 / -1;
+}
+
+.record-form-grid textarea.form-control {
+    min-height: 76px;
+}
+
+.record-form-grid textarea[name="diagnosis"],
+.record-form-grid textarea[name="treatment_plan"] {
+    min-height: 88px;
+}
+
+.record-form-actions {
+    margin-top: 14px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+    .clinical-visit-head {
+        grid-template-columns: 1fr;
+    }
+
+    .clinical-toggle {
+        width: 100%;
+    }
+
+    .record-form-grid {
+        grid-template-columns: 1fr;
+    }
+}
     .form-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -839,7 +987,7 @@
                                 Lưu thay đổi
                             </button>
 
-                            
+                                
                         </div>
                     </div>
                 </div>
@@ -922,142 +1070,195 @@
             </div>
 
             <div class="tab-pane" id="tab-clinical">
-                <div class="ehr-card">
-                    <div class="ehr-card-title">
-                        <span class="ehr-card-title-main">
-                            <i class="ri-stethoscope-line"></i>
-                            Ghi chú lâm sàng
-                        </span>
-                    </div>
+    <div class="ehr-card">
+        <div class="ehr-card-title">
+            <span class="ehr-card-title-main">
+                <i class="ri-stethoscope-line"></i>
+                Ghi chú lâm sàng & bệnh án
+            </span>
+        </div>
 
-                    <div class="ehr-card-body">
-                        @if($sortedAppointments->isEmpty())
-                            <div class="empty-box">
-                                <i class="ri-file-list-3-line"></i>
-                                Chưa có lượt khám để cập nhật bệnh án.
+        <div class="ehr-card-body">
+            @if($sortedAppointments->isEmpty())
+                <div class="empty-box">
+                    <i class="ri-file-list-3-line"></i>
+                    Chưa có lượt khám để cập nhật bệnh án.
+                </div>
+            @else
+                <div class="clinical-accordion">
+                    @foreach($sortedAppointments as $appointment)
+                        @php
+                            $record = $appointment->medicalRecord;
+                            $appointmentDate = $appointment->appointment_date
+                                ? $appointment->appointment_date->format('d/m/Y H:i')
+                                : 'Chưa có ngày';
+                            $serviceName = $appointment->service?->name ?? 'Dịch vụ khám';
+                        @endphp
+
+                        <div class="clinical-visit" id="clinical-visit-{{ $appointment->id }}">
+                            <div class="clinical-visit-head">
+                                <div class="clinical-visit-title">
+                                    <div class="visit-date">{{ $appointmentDate }}</div>
+                                    <div class="visit-name">{{ $serviceName }}</div>
+
+                                    <div class="clinical-visit-summary">
+                                        <span><i class="ri-user-star-line"></i> {{ $appointment->doctor?->name ?? 'Bác sĩ phụ trách' }}</span>
+                                        <span><i class="ri-door-open-line"></i> {{ $appointment->room?->name ?? 'Chưa gán phòng' }}</span>
+                                        <span><i class="ri-check-double-line"></i> {{ $appointment->status_label ?? $appointment->status }}</span>
+                                        @if($record?->diagnosis)
+                                            <span><i class="ri-heart-pulse-line"></i> {{ $record->diagnosis }}</span>
+                                        @else
+                                            <span><i class="ri-alert-line"></i> Chưa có chẩn đoán</span>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                <button type="button"
+                                        class="clinical-toggle"
+                                        onclick="toggleClinicalVisit({{ $appointment->id }})"
+                                        title="Xem chi tiết">
+                                    <i class="ri-arrow-down-s-line"></i>
+                                </button>
                             </div>
-                        @else
-                            <div class="clinical-grid">
-                                @foreach($sortedAppointments as $appointment)
-                                    @php
-                                        $record = $appointment->medicalRecord;
-                                    @endphp
 
-                                    <div class="clinical-field">
-                                        <div class="visit-top">
+                            <div class="clinical-body">
+                                <div class="record-view">
+                                    <div class="clinical-grid">
+                                        <div class="clinical-field">
+                                            <div class="clinical-label">Lý do khám / Triệu chứng chính</div>
+                                            <div class="clinical-value">{{ $record?->chief_complaint ?: 'Chưa cập nhật' }}</div>
+                                        </div>
+
+                                        <div class="clinical-field">
+                                            <div class="clinical-label">Khám lâm sàng / Tình trạng trong miệng</div>
+                                            <div class="clinical-value">{{ $record?->clinical_findings ?: 'Chưa cập nhật' }}</div>
+                                        </div>
+
+                                        <div class="clinical-field">
+                                            <div class="clinical-label">Chẩn đoán</div>
+                                            <div class="clinical-value">{{ $record?->diagnosis ?: 'Chưa cập nhật' }}</div>
+                                        </div>
+
+                                        <div class="clinical-field">
+                                            <div class="clinical-label">Kế hoạch điều trị</div>
+                                            <div class="clinical-value">{{ $record?->treatment_plan ?: 'Chưa cập nhật' }}</div>
+                                        </div>
+
+                                        <div class="clinical-field">
+                                            <div class="clinical-label">Đơn thuốc / Chỉ định</div>
+                                            <div class="clinical-value">{{ $record?->prescription ?: 'Không có' }}</div>
+                                        </div>
+
+                                        <div class="clinical-field">
+                                            <div class="clinical-label">Ghi chú bác sĩ</div>
+                                            <div class="clinical-value">{{ $record?->doctor_notes ?: 'Không có' }}</div>
+                                        </div>
+                                    </div>
+
+                                    <div style="margin-top:12px; display:flex; justify-content:flex-end;">
+                                        <button type="button"
+                                                class="ehr-btn ehr-btn-primary ehr-btn-sm"
+                                                onclick="toggleRecordEdit({{ $appointment->id }})">
+                                            <i class="ri-edit-line"></i>
+                                            Chỉnh sửa bệnh án
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="record-edit" id="record-edit-{{ $appointment->id }}">
+                                    @if(\Illuminate\Support\Facades\Route::has('doctor.patient-profiles.medical-records.update'))
+                                        <div class="record-edit-head">
                                             <div>
-                                                <div class="visit-date">
-                                                    {{ $appointment->appointment_date ? $appointment->appointment_date->format('d/m/Y H:i') : 'Chưa có ngày' }}
-                                                </div>
-
-                                                <div class="visit-name">
-                                                    {{ $appointment->service?->name ?? 'Dịch vụ khám' }}
+                                                <div class="record-edit-title">Chỉnh sửa bệnh án</div>
+                                                <div class="record-edit-subtitle">
+                                                    {{ $appointmentDate }} · {{ $serviceName }}
                                                 </div>
                                             </div>
 
-                                            <button type="button" class="ehr-btn ehr-btn-sm" onclick="toggleRecordEdit({{ $appointment->id }})">
-                                                <i class="ri-edit-line"></i>
-                                                Chỉnh sửa
+                                            <button type="button"
+                                                    class="ehr-btn ehr-btn-sm"
+                                                    onclick="closeRecordEdit({{ $appointment->id }})">
+                                                <i class="ri-close-line"></i>
+                                                Đóng
                                             </button>
                                         </div>
 
-                                        <div class="clinical-grid" style="margin-top:12px;">
-                                            <div class="clinical-field">
-                                                <div class="clinical-label">Lý do khám / Triệu chứng chính</div>
-                                                <div class="clinical-value">{{ $record?->chief_complaint ?: 'Chưa cập nhật' }}</div>
-                                            </div>
+                                        <form method="POST" action="{{ route('doctor.patient-profiles.medical-records.update', $appointment->id) }}">
+                                            @csrf
+                                            @method('PUT')
 
-                                            <div class="clinical-field">
-                                                <div class="clinical-label">Khám lâm sàng / Tình trạng trong miệng</div>
-                                                <div class="clinical-value">{{ $record?->clinical_findings ?: 'Chưa cập nhật' }}</div>
-                                            </div>
-
-                                            <div class="clinical-field">
-                                                <div class="clinical-label">Chẩn đoán</div>
-                                                <div class="clinical-value">{{ $record?->diagnosis ?: 'Chưa cập nhật' }}</div>
-                                            </div>
-
-                                            <div class="clinical-field">
-                                                <div class="clinical-label">Kế hoạch điều trị</div>
-                                                <div class="clinical-value">{{ $record?->treatment_plan ?: 'Chưa cập nhật' }}</div>
-                                            </div>
-
-                                            <div class="clinical-field">
-                                                <div class="clinical-label">Đơn thuốc / Chỉ định</div>
-                                                <div class="clinical-value">{{ $record?->prescription ?: 'Không có' }}</div>
-                                            </div>
-                                        </div>
-
-                                        <div class="record-edit" id="record-edit-{{ $appointment->id }}">
-                                            @if(\Illuminate\Support\Facades\Route::has('doctor.patient-profiles.medical-records.update'))
-                                                <form method="POST" action="{{ route('doctor.patient-profiles.medical-records.update', $appointment->id) }}">
-                                                    @csrf
-                                                    @method('PUT')
-
-                                                    <div class="form-grid">
-                                                        <div class="form-group full">
-                                                            <label class="form-label">Lý do khám / Triệu chứng chính</label>
-                                                            <textarea name="chief_complaint" class="form-control">{{ old('chief_complaint', $record?->chief_complaint) }}</textarea>
-                                                        </div>
-
-                                                        <div class="form-group full">
-                                                            <label class="form-label">Khám lâm sàng / Tình trạng trong miệng</label>
-                                                            <textarea name="clinical_findings" class="form-control">{{ old('clinical_findings', $record?->clinical_findings) }}</textarea>
-                                                        </div>
-
-                                                        <div class="form-group full">
-                                                            <label class="form-label">Chẩn đoán</label>
-                                                            <textarea name="diagnosis" class="form-control">{{ old('diagnosis', $record?->diagnosis) }}</textarea>
-                                                        </div>
-
-                                                        <div class="form-group full">
-                                                            <label class="form-label">Kế hoạch điều trị</label>
-                                                            <textarea name="treatment_plan" class="form-control">{{ old('treatment_plan', $record?->treatment_plan) }}</textarea>
-                                                        </div>
-
-                                                        <div class="form-group full">
-                                                            <label class="form-label">Đơn thuốc / Chỉ định</label>
-                                                            <textarea name="prescription" class="form-control">{{ old('prescription', $record?->prescription) }}</textarea>
-                                                        </div>
-
-                                                        <div class="form-group">
-                                                            <label class="form-label">Ngày tái khám</label>
-                                                            <input type="date"
-                                                                   name="follow_up_date"
-                                                                   class="form-control"
-                                                                   value="{{ old('follow_up_date', $record?->follow_up_date ? $record->follow_up_date->format('Y-m-d') : '') }}">
-                                                        </div>
-
-                                                        <div class="form-group">
-                                                            <label class="form-label">Ghi chú bác sĩ</label>
-                                                            <input type="text"
-                                                                   name="doctor_notes"
-                                                                   class="form-control"
-                                                                   value="{{ old('doctor_notes', $record?->doctor_notes) }}">
-                                                        </div>
-                                                    </div>
-
-                                                    <div style="margin-top:12px; display:flex; justify-content:flex-end;">
-                                                        <button type="submit" class="ehr-btn ehr-btn-primary">
-                                                            <i class="ri-save-line"></i>
-                                                            Lưu bệnh án
-                                                        </button>
-                                                    </div>
-                                                </form>
-                                            @else
-                                                <div class="alert-soft alert-warning">
-                                                    <strong>Thiếu route cập nhật bệnh án</strong>
-                                                    Cần tạo route `doctor.patient-profiles.medical-records.update`.
+                                            <div class="record-form-grid">
+                                                <div class="form-group full">
+                                                    <label class="form-label">Lý do khám / Triệu chứng chính</label>
+                                                    <textarea name="chief_complaint" class="form-control">{{ old('chief_complaint', $record?->chief_complaint) }}</textarea>
                                                 </div>
-                                            @endif
+
+                                                <div class="form-group full">
+                                                    <label class="form-label">Khám lâm sàng / Tình trạng trong miệng</label>
+                                                    <textarea name="clinical_findings" class="form-control">{{ old('clinical_findings', $record?->clinical_findings) }}</textarea>
+                                                </div>
+
+                                                <div class="form-group full">
+                                                    <label class="form-label">Chẩn đoán</label>
+                                                    <textarea name="diagnosis" class="form-control">{{ old('diagnosis', $record?->diagnosis) }}</textarea>
+                                                </div>
+
+                                                <div class="form-group full">
+                                                    <label class="form-label">Kế hoạch điều trị</label>
+                                                    <textarea name="treatment_plan" class="form-control">{{ old('treatment_plan', $record?->treatment_plan) }}</textarea>
+                                                </div>
+
+                                                <div class="form-group full">
+                                                    <label class="form-label">Đơn thuốc / Chỉ định</label>
+                                                    <textarea name="prescription" class="form-control">{{ old('prescription', $record?->prescription) }}</textarea>
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label class="form-label">Ngày tái khám</label>
+                                                    <input type="date"
+                                                           name="follow_up_date"
+                                                           class="form-control"
+                                                           value="{{ old('follow_up_date', $record?->follow_up_date ? $record->follow_up_date->format('Y-m-d') : '') }}">
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label class="form-label">Ghi chú bác sĩ</label>
+                                                    <input type="text"
+                                                           name="doctor_notes"
+                                                           class="form-control"
+                                                           value="{{ old('doctor_notes', $record?->doctor_notes) }}">
+                                                </div>
+                                            </div>
+
+                                            <div class="record-form-actions">
+                                                <button type="button"
+                                                        class="ehr-btn"
+                                                        onclick="closeRecordEdit({{ $appointment->id }})">
+                                                    <i class="ri-close-line"></i>
+                                                    Hủy
+                                                </button>
+
+                                                <button type="submit" class="ehr-btn ehr-btn-primary">
+                                                    <i class="ri-save-line"></i>
+                                                    Lưu bệnh án
+                                                </button>
+                                            </div>
+                                        </form>
+                                    @else
+                                        <div class="alert-soft alert-warning">
+                                            <strong>Thiếu route cập nhật bệnh án</strong>
+                                            Cần tạo route `doctor.patient-profiles.medical-records.update`.
                                         </div>
-                                    </div>
-                                @endforeach
+                                    @endif
+                                </div>
                             </div>
-                        @endif
-                    </div>
+                        </div>
+                    @endforeach
                 </div>
-            </div>
+            @endif
+        </div>
+    </div>
+</div>
 
             <div class="tab-pane" id="tab-images">
                 <div class="ehr-card">
@@ -1487,26 +1688,76 @@
         }
     }
 
-    function toggleRecordEdit(appointmentId) {
-        const section = document.getElementById('record-edit-' + appointmentId);
+    function toggleClinicalVisit(appointmentId) {
+    const item = document.getElementById('clinical-visit-' + appointmentId);
 
-        if (section) {
-            section.classList.toggle('active');
-            section.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
+    if (!item) {
+        return;
     }
 
-    function openLatestRecordEdit() {
-        const firstEdit = document.querySelector('.record-edit');
+    item.classList.toggle('open');
 
-        if (firstEdit && !firstEdit.classList.contains('active')) {
-            firstEdit.classList.add('active');
-        }
-
-        if (firstEdit) {
-            firstEdit.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
+    if (item.classList.contains('open')) {
+        item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
+}
+
+function toggleRecordEdit(appointmentId) {
+    const item = document.getElementById('clinical-visit-' + appointmentId);
+    const section = document.getElementById('record-edit-' + appointmentId);
+
+    if (!item || !section) {
+        return;
+    }
+
+    document.querySelectorAll('.record-edit.active').forEach(function (activeSection) {
+        if (activeSection.id !== 'record-edit-' + appointmentId) {
+            activeSection.classList.remove('active');
+
+            const activeItem = activeSection.closest('.clinical-visit');
+
+            if (activeItem) {
+                activeItem.classList.remove('editing');
+            }
+        }
+    });
+
+    item.classList.add('open');
+    section.classList.toggle('active');
+    item.classList.toggle('editing', section.classList.contains('active'));
+
+    if (section.classList.contains('active')) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+function closeRecordEdit(appointmentId) {
+    const item = document.getElementById('clinical-visit-' + appointmentId);
+    const section = document.getElementById('record-edit-' + appointmentId);
+
+    if (section) {
+        section.classList.remove('active');
+    }
+
+    if (item) {
+        item.classList.remove('editing');
+        item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+function openLatestRecordEdit() {
+    const firstVisit = document.querySelector('.clinical-visit');
+
+    if (!firstVisit) {
+        return;
+    }
+
+    const appointmentId = firstVisit.id.replace('clinical-visit-', '');
+
+    switchTab('clinical');
+    firstVisit.classList.add('open');
+    toggleRecordEdit(appointmentId);
+}
 
     async function loadDentalChart() {
         if (!dentalChartShowUrl) {
