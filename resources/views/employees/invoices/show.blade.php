@@ -303,6 +303,43 @@
         grid-template-columns: 1fr 100px;
         gap: 10px;
     }
+    .medicine-picker-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 90px;
+    gap: 10px;
+    align-items: end;
+}
+
+.medicine-helper {
+    margin-top: -6px;
+    margin-bottom: 12px;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 650;
+    line-height: 1.45;
+}
+
+.medicine-empty-note {
+    display: none;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    color: #9a3412;
+    font-size: 13px;
+    font-weight: 750;
+}
+
+.medicine-empty-note.show {
+    display: block;
+}
+
+@media (max-width: 720px) {
+    .medicine-picker-grid {
+        grid-template-columns: 1fr;
+    }
+}
 
     .extra-row {
         display: grid;
@@ -475,6 +512,41 @@
     object-fit: contain;
     background: #fff;
     border-radius: 10px;
+}
+
+.proof-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.proof-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.proof-action-btn {
+    height: 32px;
+    padding: 0 10px;
+    border-radius: 10px;
+    border: 1px solid #bae6fd;
+    background: #f0f9ff;
+    color: #0369a1;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    font-size: 12px;
+    font-weight: 850;
+}
+
+.proof-action-btn:hover {
+    background: #e0f2fe;
+    color: #075985;
 }
     .send-grid {
         display: grid;
@@ -656,8 +728,16 @@
         : null;
 
     $medicineItems = $invoice->medicine_items ?: [];
-    $extraItems = collect($invoice->extra_items ?: [])->values()->all();
-    $extraRows = max(3, count($extraItems) + 1);
+$extraItems = collect($invoice->extra_items ?: [])->values()->all();
+$extraRows = max(3, count($extraItems) + 1);
+
+$medicineCategories = collect($medicines ?? [])
+    ->pluck('category')
+    ->filter(fn ($category) => trim((string) $category) !== '')
+    ->map(fn ($category) => trim((string) $category))
+    ->unique()
+    ->sort()
+    ->values();
 @endphp
 
 <div id="invoiceDynamicRoot" class="invoice-shell">
@@ -967,34 +1047,62 @@
 
                 <div class="panel-body">
                     <form method="POST" action="{{ route('employees.invoices.medicines.add', $invoice) }}" class="js-ajax-invoice-form" data-success-message="Đã thêm thuốc vào hóa đơn.">
-                        @csrf
+    @csrf
 
-                        <div class="inline-grid">
-                            <div class="form-group">
-                                <label>Thuốc</label>
-                                <select name="medicine_id" class="form-control" required>
-                                    <option value="">-- Chọn thuốc --</option>
-                                    @foreach($medicines ?? [] as $medicine)
-                                        <option value="{{ $medicine->id }}">
-                                            {{ $medicine->display_name ?? $medicine->name }}
-                                            · Tồn {{ $medicine->stock_quantity ?? 0 }} {{ $medicine->unit ?? '' }}
-                                            · {{ $medicine->formatted_price ?? number_format((float) ($medicine->selling_price ?? $medicine->price ?? 0), 0, ',', '.') . ' đ' }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
+    <div class="medicine-picker-grid">
+        <div class="form-group">
+            <label>Danh mục thuốc</label>
+            <select id="medicineCategorySelect" class="form-control" required>
+                <option value="">-- Chọn danh mục --</option>
 
-                            <div class="form-group">
-                                <label>SL</label>
-                                <input type="number" name="quantity" class="form-control" min="1" value="1" required>
-                            </div>
-                        </div>
+                @foreach($medicineCategories as $category)
+                    <option value="{{ $category }}">{{ $category }}</option>
+                @endforeach
+            </select>
+        </div>
 
-                        <button class="btn btn-primary btn-full" type="submit">
-                            <i class="ri-add-line"></i>
-                            Thêm thuốc
-                        </button>
-                    </form>
+        <div class="form-group">
+            <label>Loại thuốc</label>
+            <select name="medicine_id" id="medicineSelect" class="form-control" required disabled>
+                <option value="">-- Chọn danh mục trước --</option>
+
+                @foreach($medicines ?? [] as $medicine)
+                    @php
+                        $medicineCategory = trim((string) ($medicine->category ?? ''));
+                        $medicinePrice = $medicine->formatted_price
+                            ?? number_format((float) ($medicine->sale_price ?? $medicine->selling_price ?? $medicine->price ?? 0), 0, ',', '.') . ' đ';
+                    @endphp
+
+                    <option
+                        value="{{ $medicine->id }}"
+                        data-category="{{ e($medicineCategory) }}"
+                        data-stock="{{ (int) ($medicine->stock_quantity ?? 0) }}"
+                        data-unit="{{ e($medicine->unit ?? '') }}"
+                        hidden
+                    >
+                        {{ $medicine->display_name ?? $medicine->name }}
+                        · Tồn {{ $medicine->stock_quantity ?? 0 }} {{ $medicine->unit ?? '' }}
+                        · {{ $medicinePrice }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>SL</label>
+            <input type="number" name="quantity" class="form-control" min="1" value="1" required>
+        </div>
+    </div>
+
+    <div class="medicine-empty-note" id="medicineEmptyNote">
+        Không có thuốc còn hoạt động trong danh mục này.
+    </div>
+
+    <button class="btn btn-primary btn-full" type="submit">
+        <i class="ri-add-line"></i>
+        Thêm thuốc
+    </button>
+</form>
 
                     @if(count($medicineItems))
                         <div style="margin-top:16px;">
@@ -1278,8 +1386,84 @@
         }
 
         bindQrModal();
-        bindInvoiceAjaxForms();
+bindInvoiceAjaxForms();
+bindMedicineCategoryFilter();
     }
+
+    function bindMedicineCategoryFilter() {
+    const categorySelect = document.getElementById('medicineCategorySelect');
+    const medicineSelect = document.getElementById('medicineSelect');
+    const emptyNote = document.getElementById('medicineEmptyNote');
+
+    if (!categorySelect || !medicineSelect) {
+        return;
+    }
+
+    function normalizeText(value) {
+        return String(value || '')
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd')
+            .trim();
+    }
+
+    function resetMedicineSelect(label = '-- Chọn danh mục trước --') {
+        medicineSelect.value = '';
+
+        Array.from(medicineSelect.options).forEach((option, index) => {
+            if (index === 0) {
+                option.textContent = label;
+                option.hidden = false;
+                return;
+            }
+
+            option.hidden = true;
+        });
+    }
+
+    function filterMedicinesByCategory() {
+        const selectedCategory = normalizeText(categorySelect.value);
+        let visibleCount = 0;
+
+        resetMedicineSelect(selectedCategory ? '-- Chọn thuốc --' : '-- Chọn danh mục trước --');
+
+        if (!selectedCategory) {
+            medicineSelect.disabled = true;
+
+            if (emptyNote) {
+                emptyNote.classList.remove('show');
+            }
+
+            return;
+        }
+
+        Array.from(medicineSelect.options).forEach((option, index) => {
+            if (index === 0) {
+                return;
+            }
+
+            const optionCategory = normalizeText(option.dataset.category);
+            const stock = Number(option.dataset.stock || 0);
+            const matched = optionCategory === selectedCategory && stock > 0;
+
+            option.hidden = !matched;
+
+            if (matched) {
+                visibleCount++;
+            }
+        });
+
+        medicineSelect.disabled = visibleCount === 0;
+
+        if (emptyNote) {
+            emptyNote.classList.toggle('show', visibleCount === 0);
+        }
+    }
+
+    categorySelect.onchange = filterMedicinesByCategory;
+    resetMedicineSelect();
+}
 
     function bindQrModal() {
         const modal = document.getElementById('qrModal');
