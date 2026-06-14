@@ -1,8 +1,8 @@
-@extends('layouts.admin-layout')
+@extends('layouts.employee-layout')
 
 @section('title', 'Thống kê doanh thu')
 @section('page-title', 'Thống kê doanh thu')
-@section('page-subtitle', 'Theo dõi doanh thu từ hóa đơn đã thanh toán')
+@section('page-subtitle', 'Theo dõi doanh thu từ các hóa đơn đã thanh toán')
 
 @section('styles')
 <style>
@@ -13,8 +13,7 @@
 
     .filter-card,
     .metric-card,
-    .report-card,
-    .chart-card {
+    .report-card {
         background: #fff;
         border: 1px solid #e2e8f0;
         border-radius: 18px;
@@ -46,11 +45,11 @@
         border: 1px solid #dbe3ef;
         border-radius: 12px;
         padding: 0 12px;
-        outline: none;
         color: #0f172a;
         background: #fff;
         font-size: 13px;
         font-weight: 650;
+        outline: none;
     }
 
     .form-control:focus {
@@ -67,8 +66,8 @@
     .metric-card {
         padding: 18px;
         display: flex;
-        gap: 14px;
         align-items: center;
+        gap: 14px;
         min-width: 0;
     }
 
@@ -82,8 +81,8 @@
         flex-shrink: 0;
     }
 
-    .metric-icon.blue { background: #e0f2fe; color: #0284c7; }
     .metric-icon.green { background: #dcfce7; color: #16a34a; }
+    .metric-icon.blue { background: #e0f2fe; color: #0284c7; }
     .metric-icon.amber { background: #fef3c7; color: #d97706; }
     .metric-icon.purple { background: #ede9fe; color: #7c3aed; }
     .metric-icon.red { background: #fee2e2; color: #dc2626; }
@@ -104,10 +103,10 @@
     }
 
     .metric-sub {
-        margin-top: 5px;
         color: #64748b;
         font-size: 12px;
         font-weight: 700;
+        margin-top: 5px;
         line-height: 1.4;
     }
 
@@ -126,8 +125,7 @@
         gap: 20px;
     }
 
-    .report-card,
-    .chart-card {
+    .report-card {
         overflow: hidden;
     }
 
@@ -184,13 +182,12 @@
     }
 
     .daily-chart {
-        position: relative;
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(42px, 1fr));
         gap: 10px;
         align-items: end;
         min-height: 280px;
-        padding: 8px 0 0;
+        padding-top: 8px;
         border-bottom: 1px solid #e2e8f0;
         background:
             linear-gradient(to bottom, rgba(226, 232, 240, .7) 1px, transparent 1px) 0 0 / 100% 25%;
@@ -203,7 +200,6 @@
         grid-template-rows: 1fr auto;
         gap: 8px;
         text-align: center;
-        position: relative;
     }
 
     .daily-bar-holder {
@@ -219,8 +215,8 @@
         border-radius: 12px 12px 5px 5px;
         background: linear-gradient(180deg, #38bdf8 0%, #0284c7 100%);
         box-shadow: 0 10px 18px rgba(14, 165, 233, .2);
-        transition: transform .2s ease, filter .2s ease;
         position: relative;
+        transition: transform .2s ease, filter .2s ease;
     }
 
     .daily-bar:hover {
@@ -309,7 +305,6 @@
         display: grid;
         grid-template-columns: 14px minmax(0, 1fr);
         gap: 10px;
-        align-items: start;
         padding: 13px 14px;
         border: 1px solid #e2e8f0;
         border-radius: 16px;
@@ -343,7 +338,6 @@
         line-height: 1.4;
     }
 
-    .breakdown-list,
     .rank-list {
         display: grid;
         gap: 14px;
@@ -358,7 +352,6 @@
         display: flex;
         justify-content: space-between;
         gap: 12px;
-        align-items: flex-start;
         color: #0f172a;
         font-size: 13px;
         font-weight: 900;
@@ -646,7 +639,7 @@
 
 <div class="revenue-page">
     <div class="filter-card">
-        <form method="GET" action="{{ route('admin.revenue.index') }}" class="filter-form">
+        <form method="GET" action="{{ route('employees.revenue.index') }}" class="filter-form">
             <div class="form-group">
                 <label>Từ ngày</label>
                 <input type="date" name="start_date" class="form-control" value="{{ $startDate->format('Y-m-d') }}">
@@ -707,7 +700,7 @@
                 Lọc báo cáo
             </button>
 
-            <a href="{{ route('admin.revenue.index') }}" class="btn btn-secondary">
+            <a href="{{ route('employees.revenue.index') }}" class="btn btn-secondary">
                 <i class="ri-close-line"></i>
                 Xóa lọc
             </a>
@@ -810,7 +803,7 @@
     </div>
 
     <div class="chart-grid">
-        <div class="chart-card">
+        <div class="report-card">
             <div class="report-head">
                 <div>
                     <div class="report-title">
@@ -840,11 +833,7 @@
 
                                 <div class="daily-column">
                                     <div class="daily-bar-holder">
-                                        <div
-                                            class="daily-bar"
-                                            style="height: {{ $height }}px;"
-                                            data-value="{{ $tooltip }}"
-                                        ></div>
+                                        <div class="daily-bar" style="height: {{ $height }}px;" data-value="{{ $tooltip }}"></div>
                                     </div>
                                     <div class="daily-label">{{ \Carbon\Carbon::parse($day->report_date)->format('d/m') }}</div>
                                 </div>
@@ -860,7 +849,7 @@
             </div>
         </div>
 
-        <div class="chart-card">
+        <div class="report-card">
             <div class="report-head">
                 <div>
                     <div class="report-title">
@@ -988,7 +977,7 @@
             </div>
 
             <div class="report-body">
-                <div class="breakdown-list">
+                <div class="rank-list">
                     @forelse($paymentItems as $item)
                         <div class="rank-item">
                             <div class="rank-top">
@@ -1019,7 +1008,7 @@
             </div>
 
             <div class="report-body">
-                <div class="breakdown-list">
+                <div class="rank-list">
                     @forelse($sourceItems as $item)
                         <div class="rank-item">
                             <div class="rank-top">
@@ -1077,7 +1066,7 @@
                             $methodLabel = $paymentLabels[$method] ?? $method;
 
                             $paidAt = $invoice->paid_at ?? $invoice->updated_at ?? $invoice->created_at;
-                            $detailUrl = route('admin.revenue.invoices.show', $invoice);
+                            $detailUrl = route('employees.revenue.invoices.show', $invoice);
                         @endphp
 
                         <tr>

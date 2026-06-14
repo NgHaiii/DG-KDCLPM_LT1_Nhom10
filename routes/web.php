@@ -139,6 +139,10 @@ Route::middleware('auth')->group(function () {
         Route::get('revenue', [RevenueReportController::class, 'index'])
             ->name('revenue.index');
 
+        Route::get('revenue/invoices/{invoice}', [RevenueReportController::class, 'showInvoice'])
+            ->whereNumber('invoice')
+            ->name('revenue.invoices.show');
+
         // ----- Quản lý hồ sơ bệnh án cho admin -----
         Route::prefix('patient-records')->name('patient-records.')->group(function () {
             Route::get('/', [AdminPatientRecordController::class, 'index'])->name('index');
@@ -352,43 +356,50 @@ Route::middleware('auth')->group(function () {
             ->name('reception.walk-in');
 
         // ----- Thanh toán / hóa đơn khám bệnh -----
-        Route::prefix('invoices')->name('invoices.')->group(function () {
-            Route::get('/', [InvoiceController::class, 'index'])->name('index');
+Route::prefix('invoices')->name('invoices.')->group(function () {
+    Route::get('/', [InvoiceController::class, 'index'])->name('index');
 
-            Route::get('{invoice}', [InvoiceController::class, 'show'])
-                ->whereNumber('invoice')
-                ->name('show');
+    Route::get('{invoice}', [InvoiceController::class, 'show'])
+        ->whereNumber('invoice')
+        ->name('show');
 
-            Route::get('{invoice}/print', [InvoiceController::class, 'print'])
-                ->whereNumber('invoice')
-                ->name('print');
+    Route::get('{invoice}/print', [InvoiceController::class, 'print'])
+        ->whereNumber('invoice')
+        ->name('print');
 
-            Route::post('{invoice}/medicines', [InvoiceController::class, 'addMedicine'])
-                ->whereNumber('invoice')
-                ->name('medicines.add');
+    Route::post('{invoice}/medicines', [InvoiceController::class, 'addMedicine'])
+        ->whereNumber('invoice')
+        ->name('medicines.add');
 
-            Route::delete('{invoice}/medicines/{index}', [InvoiceController::class, 'removeMedicine'])
-                ->whereNumber('invoice')
-                ->whereNumber('index')
-                ->name('medicines.remove');
+    Route::delete('{invoice}/medicines/{index}', [InvoiceController::class, 'removeMedicine'])
+        ->whereNumber('invoice')
+        ->whereNumber('index')
+        ->name('medicines.remove');
 
-            Route::put('{invoice}/extras', [InvoiceController::class, 'updateExtras'])
-                ->whereNumber('invoice')
-                ->name('extras.update');
+    Route::put('{invoice}/extras', [InvoiceController::class, 'updateExtras'])
+        ->whereNumber('invoice')
+        ->name('extras.update');
 
-            Route::post('{invoice}/send-to-patient', [InvoiceController::class, 'sendToPatient'])
-                ->whereNumber('invoice')
-                ->name('send-to-patient');
+    Route::post('{invoice}/send-to-patient', [InvoiceController::class, 'sendToPatient'])
+        ->whereNumber('invoice')
+        ->name('send-to-patient');
 
-            Route::post('{invoice}/pay', [InvoiceController::class, 'confirmPayment'])
-                ->whereNumber('invoice')
-                ->name('pay');
+    Route::post('{invoice}/pay', [InvoiceController::class, 'confirmPayment'])
+        ->whereNumber('invoice')
+        ->name('pay');
 
-            Route::post('{invoice}/cancel', [InvoiceController::class, 'cancel'])
-                ->whereNumber('invoice')
-                ->name('cancel');
-        });
+    Route::post('{invoice}/cancel', [InvoiceController::class, 'cancel'])
+        ->whereNumber('invoice')
+        ->name('cancel');
+});
 
+// ----- Thống kê doanh thu cho nhân viên -----
+Route::get('revenue', [RevenueReportController::class, 'employeeIndex'])
+    ->name('revenue.index');
+
+Route::get('revenue/invoices/{invoice}', [RevenueReportController::class, 'employeeShowInvoice'])
+    ->whereNumber('invoice')
+    ->name('revenue.invoices.show');
         // Giữ route cũ để menu/link cũ không bị lỗi
         Route::get('payment', function () {
             return redirect()->route('employees.invoices.index');
@@ -446,6 +457,7 @@ Route::middleware('auth')->group(function () {
 
         Route::get('services', function () {
             $services = \App\Models\Service::with('currentPrice')->get();
+
             return view('employees.services', compact('services'));
         })->name('services');
 

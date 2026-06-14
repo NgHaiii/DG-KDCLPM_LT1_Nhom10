@@ -18,6 +18,30 @@ class RevenueReportController extends Controller
 
     public function index(Request $request)
     {
+        return $this->renderRevenueReport($request, 'admin.revenue.index');
+    }
+
+    public function showInvoice(Invoice $invoice)
+    {
+        $this->loadInvoiceDetail($invoice);
+
+        return view('admin.revenue.invoice-show', compact('invoice'));
+    }
+
+    public function employeeIndex(Request $request)
+    {
+        return $this->renderRevenueReport($request, 'employees.revenue.index');
+    }
+
+    public function employeeShowInvoice(Invoice $invoice)
+    {
+        $this->loadInvoiceDetail($invoice);
+
+        return view('employees.revenue.invoice-show', compact('invoice'));
+    }
+
+    private function renderRevenueReport(Request $request, string $view)
+    {
         [$startDate, $endDate] = $this->resolveDateRange($request);
 
         $serviceId = $request->input('service_id');
@@ -76,7 +100,7 @@ class RevenueReportController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('admin.revenue.index', compact(
+        return view($view, compact(
             'startDate',
             'endDate',
             'serviceId',
@@ -94,6 +118,21 @@ class RevenueReportController extends Controller
             'services',
             'doctors'
         ));
+    }
+
+    private function loadInvoiceDetail(Invoice $invoice): void
+    {
+        $invoice->load([
+            'appointment.service',
+            'appointment.doctor',
+            'appointment.room',
+            'appointment.medicalRecord',
+            'patient',
+            'patientProfile',
+            'doctor',
+            'service',
+            'cashier',
+        ]);
     }
 
     private function resolveDateRange(Request $request): array

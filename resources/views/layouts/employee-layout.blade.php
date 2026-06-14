@@ -544,10 +544,13 @@
         $patientProfilesUrl = \Illuminate\Support\Facades\Route::has('employees.patient-profiles.index')
             ? route('employees.patient-profiles.index')
             : '#';
+$invoicesUrl = \Illuminate\Support\Facades\Route::has('employees.invoices.index')
+    ? route('employees.invoices.index')
+    : '#';
 
-        $invoicesUrl = \Illuminate\Support\Facades\Route::has('employees.invoices.index')
-            ? route('employees.invoices.index')
-            : '#';
+$revenueUrl = \Illuminate\Support\Facades\Route::has('employees.revenue.index')
+    ? route('employees.revenue.index')
+    : '#';
     @endphp
 
     <aside class="sidebar">
@@ -630,21 +633,29 @@
 
             <div class="menu-group-title">Thanh toán</div>
 
-            <li class="nav-item">
-                <a href="{{ $invoicesUrl }}"
-                   class="nav-link nav-link-with-badge @if(request()->routeIs('employees.invoices.*')) active @endif">
-                    <span class="nav-link-main">
-                        <i class="nav-icon ri-file-list-3-line"></i>
-                        <span>Hóa đơn & Thanh toán</span>
-                    </span>
+<li class="nav-item">
+    <a href="{{ $invoicesUrl }}"
+       class="nav-link nav-link-with-badge @if(request()->routeIs('employees.invoices.*')) active @endif">
+        <span class="nav-link-main">
+            <i class="nav-icon ri-file-list-3-line"></i>
+            <span>Hóa đơn & Thanh toán</span>
+        </span>
 
-                    @if($unpaidInvoiceCount > 0)
-                        <span class="nav-badge warning">
-                            {{ $unpaidInvoiceCount > 99 ? '99+' : $unpaidInvoiceCount }}
-                        </span>
-                    @endif
-                </a>
-            </li>
+        @if($unpaidInvoiceCount > 0)
+            <span class="nav-badge warning">
+                {{ $unpaidInvoiceCount > 99 ? '99+' : $unpaidInvoiceCount }}
+            </span>
+        @endif
+    </a>
+</li>
+
+<li class="nav-item">
+    <a href="{{ $revenueUrl }}"
+       class="nav-link @if(request()->routeIs('employees.revenue.*')) active @endif">
+        <i class="nav-icon ri-line-chart-line"></i>
+        <span>Thống kê doanh thu</span>
+    </a>
+</li>
 
             <li class="nav-item">
                 <a href="{{ route('employees.services') }}" class="nav-link @if(request()->routeIs('employees.services')) active @endif">
