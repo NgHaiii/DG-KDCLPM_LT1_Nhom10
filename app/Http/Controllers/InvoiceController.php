@@ -10,6 +10,7 @@ use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class InvoiceController extends Controller
@@ -34,10 +35,12 @@ class InvoiceController extends Controller
                 'appointment.room',
                 'appointment.medicalRecord',
                 'patient',
-                'patientProfile',
+                'patientProfile.user',
                 'doctor',
                 'service',
                 'cashier',
+                'verifier',
+                'sentToPatientBy',
             ])
             ->when($status && $status !== 'all', function ($query) use ($status) {
                 $query->where('status', $status);
@@ -67,6 +70,8 @@ class InvoiceController extends Controller
 
         $unpaidCount = Invoice::where('status', 'unpaid')->count();
 
+        $paymentPendingCount = Invoice::where('status', 'payment_pending')->count();
+
         $paidTodayCount = Invoice::where('status', 'paid')
             ->whereDate('paid_at', today())
             ->count();
@@ -85,6 +90,7 @@ class InvoiceController extends Controller
             'status',
             'date',
             'unpaidCount',
+            'paymentPendingCount',
             'paidTodayCount',
             'paidTodayTotal',
             'cancelledCount',
@@ -100,10 +106,12 @@ class InvoiceController extends Controller
             'appointment.service',
             'appointment.doctor',
             'patient',
-            'patientProfile',
+            'patientProfile.user',
             'doctor',
             'service',
             'cashier',
+            'verifier',
+            'sentToPatientBy',
             'payments',
         ]);
 
@@ -124,10 +132,12 @@ class InvoiceController extends Controller
             'appointment.service',
             'appointment.doctor',
             'patient',
-            'patientProfile',
+            'patientProfile.user',
             'doctor',
             'service',
             'cashier',
+            'verifier',
+            'sentToPatientBy',
             'payments',
         ]);
 
@@ -138,6 +148,10 @@ class InvoiceController extends Controller
     {
         if (!$invoice->isUnpaid()) {
             return $this->backToInvoice($invoice, 'error', 'Chỉ có thể thêm thuốc vào hóa đơn đang chờ thanh toán.');
+        }
+
+        if ($invoice->isSentToPatient()) {
+            return $this->backToInvoice($invoice, 'error', 'Hóa đơn đã gửi cho bệnh nhân, không thể chỉnh thuốc. Hãy hủy gửi hoặc tạo hóa đơn điều chỉnh nếu cần.');
         }
 
         $validated = $request->validate([
@@ -200,6 +214,10 @@ class InvoiceController extends Controller
             return $this->backToInvoice($invoice, 'error', 'Chỉ có thể xóa thuốc khỏi hóa đơn đang chờ thanh toán.');
         }
 
+        if ($invoice->isSentToPatient()) {
+            return $this->backToInvoice($invoice, 'error', 'Hóa đơn đã gửi cho bệnh nhân, không thể chỉnh thuốc.');
+        }
+
         $items = collect($invoice->medicine_items ?: [])->values();
 
         if (!$items->has($index)) {
@@ -219,6 +237,10 @@ class InvoiceController extends Controller
     {
         if (!$invoice->isUnpaid()) {
             return $this->backToInvoice($invoice, 'error', 'Chỉ có thể cập nhật chi phí khi hóa đơn chưa thanh toán.');
+        }
+
+        if ($invoice->isSentToPatient()) {
+            return $this->backToInvoice($invoice, 'error', 'Hóa đơn đã gửi cho bệnh nhân, không thể chỉnh phụ phí/giảm giá.');
         }
 
         $validated = $request->validate([
@@ -257,10 +279,49 @@ class InvoiceController extends Controller
         return $this->backToInvoice($invoice, 'success', 'Đã cập nhật hóa đơn.');
     }
 
+    public function sendToPatient(Request $request, Invoice $invoice)
+    {
+        $invoice->loadMissing(['patientProfile.user', 'patient']);
+
+        if (!$invoice->isUnpaid()) {
+            return $this->backToInvoice($invoice, 'error', 'Chỉ có thể gửi hóa đơn đang chờ thanh toán cho bệnh nhân.');
+        }
+
+        if ($invoice->isSentToPatient()) {
+            return $this->backToInvoice($invoice, 'error', 'Hóa đơn này đã được gửi cho bệnh nhân.');
+        }
+
+        if (!$invoice->hasPatientAccount()) {
+            return $this->backToInvoice($invoice, 'error', 'Bệnh nhân chưa có tài khoản, không thể gửi hóa đơn thanh toán online. Vui lòng thu tại quầy.');
+        }
+
+        $invoice->recalculateTotals();
+        $invoice->save();
+
+        if ((float) $invoice->total_amount <= 0) {
+            return $this->backToInvoice($invoice, 'error', 'Tổng tiền hóa đơn không hợp lệ, không thể gửi cho bệnh nhân.');
+        }
+
+        $validated = $request->validate([
+            'payment_due_at' => ['nullable', 'date', 'after:now'],
+        ], [
+            'payment_due_at.date' => 'Hạn thanh toán không hợp lệ.',
+            'payment_due_at.after' => 'Hạn thanh toán phải lớn hơn thời điểm hiện tại.',
+        ]);
+
+        $dueAt = !empty($validated['payment_due_at'])
+            ? $validated['payment_due_at']
+            : now()->addDays(3)->endOfDay();
+
+        $invoice->sendToPatient(Auth::id(), $dueAt);
+
+        return $this->backToInvoice($invoice, 'success', 'Đã gửi hóa đơn thanh toán online cho bệnh nhân.');
+    }
+
     public function confirmPayment(Request $request, Invoice $invoice)
     {
-        if (!$invoice->isUnpaid()) {
-            return back()->with('error', 'Hóa đơn này không còn ở trạng thái chờ thanh toán.');
+        if (!$invoice->isUnpaid() && !$invoice->isPaymentPending()) {
+            return back()->with('error', 'Hóa đơn này không còn ở trạng thái có thể xác nhận thanh toán.');
         }
 
         $validated = $request->validate([
@@ -278,7 +339,7 @@ class InvoiceController extends Controller
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                if (!$lockedInvoice->isUnpaid()) {
+                if (!$lockedInvoice->isUnpaid() && !$lockedInvoice->isPaymentPending()) {
                     throw new \Exception('Hóa đơn này đã được xử lý trước đó.');
                 }
 
@@ -392,6 +453,7 @@ class InvoiceController extends Controller
                 'service',
                 'payments',
             ])
+            ->visibleToPatients()
             ->where(function ($query) use ($userId) {
                 $query->where('patient_id', $userId)
                     ->orWhereHas('patientProfile', function ($profileQuery) use ($userId) {
@@ -425,7 +487,57 @@ class InvoiceController extends Controller
             abort(403, 'Bạn không có quyền xem hóa đơn này.');
         }
 
+        if (!$invoice->isSentToPatient() && !$invoice->isPaymentPending() && !$invoice->isPaid()) {
+            abort(403, 'Hóa đơn này chưa được gửi cho bệnh nhân.');
+        }
+
         return view('patient.invoices.show', compact('invoice'));
+    }
+
+    public function patientSubmitPaymentProof(Request $request, Invoice $invoice)
+    {
+        $userId = Auth::id();
+
+        $invoice->load(['patientProfile']);
+
+        $allowed = (int) $invoice->patient_id === (int) $userId
+            || (int) optional($invoice->patientProfile)->user_id === (int) $userId;
+
+        if (!$allowed) {
+            abort(403, 'Bạn không có quyền thanh toán hóa đơn này.');
+        }
+
+        if (!$invoice->canPatientSubmitPayment()) {
+            return redirect()
+                ->route('patient.invoices.show', $invoice->id)
+                ->with('error', 'Hóa đơn này không thể gửi xác nhận thanh toán. Có thể đã quá hạn, đã thanh toán hoặc chưa được gửi cho bạn.');
+        }
+
+        $validated = $request->validate([
+            'payment_proof' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'patient_payment_note' => ['nullable', 'string', 'max:1000'],
+        ], [
+            'payment_proof.required' => 'Vui lòng tải ảnh bill chuyển khoản.',
+            'payment_proof.image' => 'File tải lên phải là hình ảnh.',
+            'payment_proof.mimes' => 'Ảnh bill phải có định dạng JPG, JPEG, PNG hoặc WEBP.',
+            'payment_proof.max' => 'Ảnh bill không được vượt quá 5MB.',
+            'patient_payment_note.max' => 'Ghi chú không được vượt quá 1000 ký tự.',
+        ]);
+
+        if ($invoice->patient_payment_proof && Storage::disk('public')->exists($invoice->patient_payment_proof)) {
+            Storage::disk('public')->delete($invoice->patient_payment_proof);
+        }
+
+        $proofPath = $request->file('payment_proof')->store('payment-proofs', 'public');
+
+        $invoice->markPaymentPending(
+            $proofPath,
+            $validated['patient_payment_note'] ?? null
+        );
+
+        return redirect()
+            ->route('patient.invoices.show', $invoice->id)
+            ->with('success', 'Đã gửi bill chuyển khoản. Thu ngân sẽ kiểm tra và xác nhận thanh toán.');
     }
 
     // ==================== AUTO GENERATE INVOICE ====================

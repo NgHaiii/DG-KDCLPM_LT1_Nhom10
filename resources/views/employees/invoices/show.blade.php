@@ -2,7 +2,7 @@
 
 @section('title', 'Chi tiết hóa đơn')
 @section('page-title', 'Chi tiết hóa đơn')
-@section('page-subtitle', 'Kiểm tra chi phí khám, đơn thuốc, phụ phí và xác nhận thanh toán')
+@section('page-subtitle', 'Kiểm tra hóa đơn, gửi cho bệnh nhân, xác nhận thanh toán và in hóa đơn')
 
 @section('header-actions')
     <a href="{{ route('employees.invoices.index') }}" class="btn btn-secondary no-print">
@@ -10,12 +10,7 @@
         Quay lại
     </a>
 
-    <a
-        href="{{ route('employees.invoices.print', $invoice) }}"
-        class="btn btn-primary no-print"
-        target="_blank"
-        rel="noopener"
-    >
+    <a href="{{ route('employees.invoices.print', $invoice) }}" class="btn btn-primary no-print" target="_blank" rel="noopener">
         <i class="ri-printer-line"></i>
         In hóa đơn
     </a>
@@ -25,7 +20,7 @@
 <style>
     .invoice-shell {
         display: grid;
-        grid-template-columns: minmax(0, 1.35fr) 420px;
+        grid-template-columns: minmax(0, 1fr) 390px;
         gap: 22px;
         align-items: start;
     }
@@ -34,26 +29,26 @@
         background: #fff;
         border: 1px solid #e2e8f0;
         border-radius: 18px;
-        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .06);
         overflow: hidden;
-        margin-bottom: 22px;
+        margin-bottom: 18px;
     }
 
     .panel-head {
-        padding: 18px 22px;
+        padding: 16px 20px;
         border-bottom: 1px solid #e2e8f0;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 14px;
+        gap: 12px;
     }
 
     .panel-title {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 9px;
         color: #0f172a;
-        font-size: 20px;
+        font-size: 19px;
         font-weight: 900;
     }
 
@@ -62,45 +57,44 @@
     }
 
     .panel-body {
-        padding: 22px;
+        padding: 20px;
     }
 
-    .invoice-print-box {
-        background: #fff;
+    .invoice-box {
         border: 1px solid #dbe3ef;
-        border-radius: 18px;
-        padding: 28px;
+        border-radius: 16px;
+        padding: 24px;
+        background: #fff;
     }
 
-    .print-header {
+    .invoice-top {
         display: flex;
         justify-content: space-between;
         gap: 18px;
         border-bottom: 2px solid #0f172a;
-        padding-bottom: 18px;
-        margin-bottom: 20px;
+        padding-bottom: 16px;
+        margin-bottom: 18px;
     }
 
     .brand {
         display: flex;
-        gap: 14px;
         align-items: center;
+        gap: 13px;
     }
 
     .brand-logo {
-        width: 54px;
-        height: 54px;
-        border-radius: 15px;
+        width: 52px;
+        height: 52px;
+        border-radius: 14px;
         background: linear-gradient(135deg, #38bdf8, #0ea5e9);
         color: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        display: grid;
+        place-items: center;
         font-size: 26px;
     }
 
     .brand-name {
-        font-size: 25px;
+        font-size: 24px;
         font-weight: 950;
         color: #0f172a;
         letter-spacing: .03em;
@@ -117,31 +111,38 @@
     }
 
     .invoice-meta h2 {
-        font-size: 24px;
+        margin: 0 0 8px;
         color: #0f172a;
-        margin-bottom: 8px;
+        font-size: 23px;
+        font-weight: 950;
     }
 
     .invoice-code {
         color: #0284c7;
+        font-weight: 950;
         font-size: 16px;
-        font-weight: 900;
     }
 
     .status-badge {
         display: inline-flex;
         align-items: center;
         gap: 6px;
+        width: fit-content;
         padding: 7px 12px;
         border-radius: 999px;
         font-size: 12px;
         font-weight: 850;
-        margin-top: 8px;
+        white-space: nowrap;
     }
 
     .status-badge.unpaid {
         background: #fef3c7;
         color: #92400e;
+    }
+
+    .status-badge.payment_pending {
+        background: #e0f2fe;
+        color: #075985;
     }
 
     .status-badge.paid {
@@ -157,15 +158,15 @@
     .info-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 14px;
-        margin-bottom: 20px;
+        gap: 12px;
+        margin-bottom: 18px;
     }
 
     .info-box {
         background: #f8fafc;
         border: 1px solid #e2e8f0;
         border-radius: 14px;
-        padding: 14px;
+        padding: 13px;
     }
 
     .info-label {
@@ -178,34 +179,9 @@
 
     .info-value {
         color: #0f172a;
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 850;
         line-height: 1.4;
-    }
-
-    .prescription-box {
-        margin: 18px 0 20px;
-        padding: 16px;
-        border: 1px solid #bae6fd;
-        border-radius: 15px;
-        background: #f0f9ff;
-    }
-
-    .prescription-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        color: #0369a1;
-        font-size: 15px;
-        font-weight: 900;
-        margin-bottom: 10px;
-        text-transform: uppercase;
-    }
-
-    .prescription-content {
-        color: #0f172a;
-        line-height: 1.65;
-        white-space: pre-line;
     }
 
     .bill-table {
@@ -221,13 +197,13 @@
         color: #334155;
         font-size: 12px;
         text-transform: uppercase;
-        padding: 12px;
+        padding: 11px;
         text-align: left;
         border: 1px solid #e2e8f0;
     }
 
     .bill-table td {
-        padding: 12px;
+        padding: 11px;
         border: 1px solid #e2e8f0;
         color: #0f172a;
         vertical-align: top;
@@ -238,7 +214,7 @@
     }
 
     .money {
-        font-weight: 900;
+        font-weight: 950;
         white-space: nowrap;
     }
 
@@ -267,8 +243,29 @@
         color: #0f172a;
     }
 
+    .note-box {
+        padding: 13px;
+        border-radius: 14px;
+        border: 1px solid #bae6fd;
+        background: #f0f9ff;
+        color: #0f172a;
+        line-height: 1.55;
+        white-space: pre-line;
+    }
+
+    .note-title {
+        color: #0369a1;
+        font-size: 13px;
+        font-weight: 900;
+        text-transform: uppercase;
+        margin-bottom: 7px;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+    }
+
     .form-group {
-        margin-bottom: 15px;
+        margin-bottom: 14px;
     }
 
     .form-group label {
@@ -281,18 +278,18 @@
 
     .form-control {
         width: 100%;
-        min-height: 44px;
+        min-height: 43px;
         border: 1px solid #dbe3ef;
         border-radius: 12px;
-        padding: 0 13px;
+        padding: 0 12px;
         outline: none;
         color: #0f172a;
         background: #fff;
     }
 
     textarea.form-control {
-        min-height: 92px;
-        padding: 12px 13px;
+        min-height: 86px;
+        padding: 11px 12px;
         resize: vertical;
     }
 
@@ -303,15 +300,15 @@
 
     .inline-grid {
         display: grid;
-        grid-template-columns: 1fr 110px;
+        grid-template-columns: 1fr 100px;
         gap: 10px;
     }
 
     .extra-row {
         display: grid;
-        grid-template-columns: 1fr 90px 130px;
+        grid-template-columns: 1fr 76px 116px;
         gap: 8px;
-        margin-bottom: 9px;
+        margin-bottom: 8px;
     }
 
     .btn-full {
@@ -333,10 +330,10 @@
         justify-content: space-between;
         gap: 12px;
         align-items: center;
-        padding: 12px;
+        padding: 11px;
         border: 1px solid #e2e8f0;
         border-radius: 13px;
-        margin-bottom: 9px;
+        margin-bottom: 8px;
         background: #f8fafc;
     }
 
@@ -360,6 +357,40 @@
         border-radius: 10px;
         cursor: pointer;
         font-size: 17px;
+    }
+
+    .locked-box,
+    .paid-box,
+    .cancelled-box,
+    .pending-box {
+        padding: 14px;
+        border-radius: 14px;
+        font-weight: 750;
+        line-height: 1.5;
+    }
+
+    .locked-box {
+        background: #f8fafc;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+    }
+
+    .paid-box {
+        background: #ecfdf5;
+        color: #166534;
+        border: 1px solid #bbf7d0;
+    }
+
+    .pending-box {
+        background: #f0f9ff;
+        color: #075985;
+        border: 1px solid #bae6fd;
+    }
+
+    .cancelled-box {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
     }
 
     .bank-transfer-panel {
@@ -386,13 +417,12 @@
 
     .qr-wrap {
         width: 100%;
-        display: flex;
-        justify-content: center;
-        padding: 12px;
-        background: #fff;
         border: 1px solid #dbeafe;
         border-radius: 14px;
-        margin-bottom: 12px;
+        background: #fff;
+        padding: 12px;
+        display: flex;
+        justify-content: center;
         cursor: zoom-in;
     }
 
@@ -413,10 +443,6 @@
         font-size: 13px;
     }
 
-    .transfer-row:last-child {
-        border-bottom: 0;
-    }
-
     .transfer-row strong {
         color: #0f172a;
         text-align: right;
@@ -432,14 +458,29 @@
         line-height: 1.5;
     }
 
-    .transfer-warning {
-        padding: 12px;
-        border-radius: 12px;
-        background: #fff7ed;
-        border: 1px solid #fed7aa;
-        color: #9a3412;
-        line-height: 1.5;
-        font-weight: 750;
+    .proof-image {
+    width: 100%;
+    border: 1px solid #dbe3ef;
+    border-radius: 14px;
+    overflow: hidden;
+    background: #f8fafc;
+    margin-top: 12px;
+    padding: 12px;
+}
+
+.proof-image img {
+    width: 100%;
+    display: block;
+    max-height: 420px;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 10px;
+}
+    .send-grid {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: end;
     }
 
     .qr-modal {
@@ -459,7 +500,7 @@
     .qr-modal-backdrop {
         position: absolute;
         inset: 0;
-        background: rgba(15, 23, 42, 0.62);
+        background: rgba(15, 23, 42, .62);
         backdrop-filter: blur(3px);
     }
 
@@ -468,20 +509,8 @@
         width: min(460px, 100%);
         background: #fff;
         border-radius: 22px;
-        box-shadow: 0 28px 80px rgba(15, 23, 42, 0.35);
+        box-shadow: 0 28px 80px rgba(15, 23, 42, .35);
         padding: 22px;
-        animation: qrPop .18s ease;
-    }
-
-    @keyframes qrPop {
-        from {
-            transform: translateY(8px) scale(.98);
-            opacity: .6;
-        }
-        to {
-            transform: translateY(0) scale(1);
-            opacity: 1;
-        }
     }
 
     .qr-modal-close {
@@ -563,97 +592,23 @@
         pointer-events: none;
     }
 
-    .paid-box {
-        background: #ecfdf5;
-        color: #166534;
-        border: 1px solid #bbf7d0;
-        padding: 14px;
-        border-radius: 14px;
-        font-weight: 750;
-        line-height: 1.5;
-    }
-
-    .cancelled-box {
-        background: #fef2f2;
-        color: #991b1b;
-        border: 1px solid #fecaca;
-        padding: 14px;
-        border-radius: 14px;
-        font-weight: 750;
-        line-height: 1.5;
-    }
-
-    .print-footer {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 30px;
-        margin-top: 36px;
-        text-align: center;
-        color: #0f172a;
-    }
-
-    .signature-space {
-        height: 70px;
-    }
-
     @media (max-width: 1180px) {
         .invoice-shell {
             grid-template-columns: 1fr;
         }
     }
 
-    @media print {
-        @page {
-            size: A4;
-            margin: 12mm;
+    @media (max-width: 720px) {
+        .invoice-top,
+        .info-grid,
+        .send-grid,
+        .extra-row {
+            grid-template-columns: 1fr;
+            display: grid;
         }
 
-        body {
-            background: #fff !important;
-        }
-
-        .sidebar,
-        .header,
-        .no-print,
-        .right-column,
-        .alert,
-        .qr-modal,
-        .ajax-toast {
-            display: none !important;
-        }
-
-        .main-content {
-            margin-left: 0 !important;
-            padding: 0 !important;
-        }
-
-        .container {
-            max-width: none !important;
-            margin: 0 !important;
-        }
-
-        .invoice-shell {
-            display: block !important;
-        }
-
-        .panel {
-            box-shadow: none !important;
-            border: 0 !important;
-            margin: 0 !important;
-        }
-
-        .panel-head {
-            display: none !important;
-        }
-
-        .panel-body {
-            padding: 0 !important;
-        }
-
-        .invoice-print-box {
-            border: 0 !important;
-            border-radius: 0 !important;
-            padding: 0 !important;
+        .invoice-meta {
+            text-align: left;
         }
     }
 </style>
@@ -663,6 +618,27 @@
 @php
     $medicalRecord = $invoice->appointment?->medicalRecord;
     $doctorPrescription = trim((string) ($medicalRecord?->prescription ?? ''));
+
+    $statusLabel = $invoice->status_label ?? match ($invoice->status) {
+        'paid' => 'Đã thanh toán',
+        'payment_pending' => 'Chờ xác nhận chuyển khoản',
+        'cancelled' => 'Đã hủy',
+        default => 'Chờ thanh toán',
+    };
+
+    $isPaid = $invoice->status === 'paid';
+    $isCancelled = $invoice->status === 'cancelled';
+    $isPaymentPending = $invoice->status === 'payment_pending';
+    $isUnpaid = $invoice->status === 'unpaid';
+    $isEditable = $isUnpaid && empty($invoice->sent_to_patient_at);
+
+    $hasPatientAccount = method_exists($invoice, 'hasPatientAccount')
+        ? $invoice->hasPatientAccount()
+        : !empty($invoice->patient_id);
+
+    $canSendToPatient = method_exists($invoice, 'canSendToPatient')
+        ? $invoice->canSendToPatient()
+        : ($isUnpaid && $hasPatientAccount && empty($invoice->sent_to_patient_at));
 
     $cashierDisplayName = $invoice->cashier?->name
         ?? auth()->user()?->name
@@ -678,429 +654,547 @@
     $vietQrUrl = ($bankId && $bankAccountNo)
         ? 'https://img.vietqr.io/image/' . $bankId . '-' . $bankAccountNo . '-compact2.png?amount=' . $transferAmount . '&addInfo=' . urlencode($transferContent) . '&accountName=' . urlencode($bankAccountName)
         : null;
+
+    $medicineItems = $invoice->medicine_items ?: [];
+    $extraItems = collect($invoice->extra_items ?: [])->values()->all();
+    $extraRows = max(3, count($extraItems) + 1);
 @endphp
 
-    <div id="invoiceDynamicRoot" class="invoice-shell">
-        <div class="left-column">
-            <div class="panel">
-                <div class="panel-head no-print">
-                    <div class="panel-title">
-                        <i class="ri-file-paper-2-line"></i>
-                        Hóa đơn khám bệnh
-                    </div>
-
-                    <span class="status-badge {{ $invoice->status }}">
-                        {{ $invoice->status_label }}
-                    </span>
+<div id="invoiceDynamicRoot" class="invoice-shell">
+    <main>
+        <div class="panel">
+            <div class="panel-head no-print">
+                <div class="panel-title">
+                    <i class="ri-file-paper-2-line"></i>
+                    Hóa đơn khám bệnh
                 </div>
 
-                <div class="panel-body">
-                    <div class="invoice-print-box" id="invoicePrintArea">
-                        <div class="print-header">
-                            <div class="brand">
-                                <div class="brand-logo">
-                                    <i class="ri-tooth-line"></i>
-                                </div>
-                                <div>
-                                    <div class="brand-name">DENTALCARE</div>
-                                    <div class="brand-sub">Phòng khám nha khoa</div>
-                                    <div class="brand-sub">Địa chỉ: Hà Đông, Hà Nội</div>
-                                    <div class="brand-sub">Hotline: 0327745018</div>
-                                </div>
+                <span class="status-badge {{ $invoice->status }}">
+                    @if($isPaid)
+                        <i class="ri-checkbox-circle-line"></i>
+                    @elseif($isCancelled)
+                        <i class="ri-close-circle-line"></i>
+                    @elseif($isPaymentPending)
+                        <i class="ri-bank-card-line"></i>
+                    @else
+                        <i class="ri-time-line"></i>
+                    @endif
+                    {{ $statusLabel }}
+                </span>
+            </div>
+
+            <div class="panel-body">
+                <div class="invoice-box">
+                    <div class="invoice-top">
+                        <div class="brand">
+                            <div class="brand-logo">
+                                <i class="ri-tooth-line"></i>
                             </div>
-
-                            <div class="invoice-meta">
-                                <h2>HÓA ĐƠN KHÁM BỆNH</h2>
-                                <div class="invoice-code">{{ $invoice->invoice_code }}</div>
-                                <div style="margin-top:6px;color:#64748b;">
-                                    Ngày lập: {{ optional($invoice->issued_at ?? $invoice->created_at)->format('d/m/Y H:i') }}
-                                </div>
-                                <div class="status-badge {{ $invoice->status }}">
-                                    {{ $invoice->status_label }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="info-grid">
-                            <div class="info-box">
-                                <div class="info-label">Bệnh nhân</div>
-                                <div class="info-value">{{ $invoice->display_patient_name }}</div>
-                                <div style="color:#64748b;margin-top:4px;">
-                                    SĐT: {{ $invoice->display_patient_phone }}
-                                </div>
-                            </div>
-
-                            <div class="info-box">
-                                <div class="info-label">Bác sĩ</div>
-                                <div class="info-value">{{ $invoice->display_doctor_name }}</div>
-                                <div style="color:#64748b;margin-top:4px;">
-                                    Dịch vụ: {{ $invoice->display_service_name }}
-                                </div>
-                            </div>
-
-                            <div class="info-box">
-                                <div class="info-label">Ngày khám</div>
-                                <div class="info-value">
-                                    {{ optional($invoice->appointment_date)->format('d/m/Y H:i') ?: 'Chưa có' }}
-                                </div>
-                            </div>
-
-                            <div class="info-box">
-                                <div class="info-label">Phòng khám</div>
-                                <div class="info-value">
-                                    {{ $invoice->appointment?->room?->name ?? 'Chưa có phòng' }}
-                                </div>
-                            </div>
-                        </div>
-
-                        @if($doctorPrescription !== '')
-                            <div class="prescription-box">
-                                <div class="prescription-title">
-                                    <i class="ri-capsule-line"></i>
-                                    Đơn thuốc / chỉ định bác sĩ kê
-                                </div>
-                                <div class="prescription-content">{{ $doctorPrescription }}</div>
-                            </div>
-                        @endif
-
-                        <table class="bill-table">
-                            <thead>
-                                <tr>
-                                    <th>Nội dung</th>
-                                    <th class="text-right">SL</th>
-                                    <th class="text-right">Đơn giá</th>
-                                    <th class="text-right">Thành tiền</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td>
-                                        <strong>{{ $invoice->display_service_name }}</strong>
-                                        <div style="color:#64748b;font-size:13px;margin-top:4px;">Chi phí dịch vụ khám/điều trị</div>
-                                    </td>
-                                    <td class="text-right">1</td>
-                                    <td class="text-right">{{ number_format($invoice->service_price, 0, ',', '.') }} đ</td>
-                                    <td class="text-right money">{{ number_format($invoice->service_price, 0, ',', '.') }} đ</td>
-                                </tr>
-
-                                @foreach(($invoice->medicine_items ?: []) as $item)
-                                    <tr>
-                                        <td>
-                                            <strong>{{ $item['name'] ?? 'Thuốc' }}</strong>
-                                            <div style="color:#64748b;font-size:13px;margin-top:4px;">
-                                                Mã: {{ $item['code'] ?? '-' }} · Đơn vị: {{ $item['unit'] ?? '-' }}
-                                            </div>
-                                        </td>
-                                        <td class="text-right">{{ $item['quantity'] ?? 0 }}</td>
-                                        <td class="text-right">{{ number_format((float) ($item['unit_price'] ?? 0), 0, ',', '.') }} đ</td>
-                                        <td class="text-right money">{{ number_format((float) ($item['total'] ?? 0), 0, ',', '.') }} đ</td>
-                                    </tr>
-                                @endforeach
-
-                                @foreach(($invoice->extra_items ?: []) as $item)
-                                    <tr>
-                                        <td><strong>{{ $item['name'] ?? 'Phụ phí' }}</strong></td>
-                                        <td class="text-right">{{ $item['quantity'] ?? 0 }}</td>
-                                        <td class="text-right">{{ number_format((float) ($item['unit_price'] ?? 0), 0, ',', '.') }} đ</td>
-                                        <td class="text-right money">{{ number_format((float) ($item['total'] ?? 0), 0, ',', '.') }} đ</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-
-                        <div class="summary">
-                            <div class="summary-row">
-                                <span>Tiền dịch vụ</span>
-                                <strong>{{ number_format($invoice->service_price, 0, ',', '.') }} đ</strong>
-                            </div>
-
-                            <div class="summary-row">
-                                <span>Tiền thuốc</span>
-                                <strong>{{ number_format($invoice->medicine_total, 0, ',', '.') }} đ</strong>
-                            </div>
-
-                            <div class="summary-row">
-                                <span>Phụ phí</span>
-                                <strong>{{ number_format($invoice->extra_total, 0, ',', '.') }} đ</strong>
-                            </div>
-
-                            <div class="summary-row">
-                                <span>Giảm giá</span>
-                                <strong>-{{ number_format($invoice->discount_amount, 0, ',', '.') }} đ</strong>
-                            </div>
-
-                            <div class="summary-row total">
-                                <span>Tổng thanh toán</span>
-                                <strong>{{ number_format($invoice->total_amount, 0, ',', '.') }} đ</strong>
-                            </div>
-
-                            <div class="summary-row">
-                                <span>Đã thanh toán</span>
-                                <strong>{{ number_format($invoice->paid_amount, 0, ',', '.') }} đ</strong>
-                            </div>
-
-                            <div class="summary-row">
-                                <span>Còn lại</span>
-                                <strong>{{ number_format($invoice->remaining_amount, 0, ',', '.') }} đ</strong>
-                            </div>
-                        </div>
-
-                        @if($invoice->notes)
-                            <div style="margin-top:20px;padding:14px;border:1px solid #e2e8f0;border-radius:14px;background:#f8fafc;">
-                                <strong>Ghi chú:</strong>
-                                <div style="margin-top:6px;white-space:pre-line;">{{ $invoice->notes }}</div>
-                            </div>
-                        @endif
-
-                        <div class="print-footer">
                             <div>
-                                <strong>Người thanh toán</strong>
-                                <div class="signature-space"></div>
-                                <div>{{ $invoice->display_patient_name }}</div>
+                                <div class="brand-name">DENTALCARE</div>
+                                <div class="brand-sub">Phòng khám nha khoa</div>
+                                <div class="brand-sub">Hà Đông, Hà Nội</div>
+                                <div class="brand-sub">Hotline: 0327745018</div>
                             </div>
+                        </div>
 
-                            <div>
-                                <strong>Thu ngân</strong>
-                                <div class="signature-space"></div>
-                                <div>{{ $cashierDisplayName }}</div>
+                        <div class="invoice-meta">
+                            <h2>HÓA ĐƠN KHÁM BỆNH</h2>
+                            <div class="invoice-code">{{ $invoice->invoice_code }}</div>
+                            <div style="margin-top:6px;color:#64748b;">
+                                Ngày lập: {{ optional($invoice->issued_at ?? $invoice->created_at)->format('d/m/Y H:i') }}
                             </div>
                         </div>
                     </div>
+
+                    <div class="info-grid">
+                        <div class="info-box">
+                            <div class="info-label">Bệnh nhân</div>
+                            <div class="info-value">{{ $invoice->display_patient_name ?? $invoice->patient_name ?? 'Chưa có tên' }}</div>
+                            <div style="color:#64748b;margin-top:4px;">
+                                SĐT: {{ $invoice->display_patient_phone ?? $invoice->patient_phone ?? 'Chưa có SĐT' }}
+                            </div>
+                        </div>
+
+                        <div class="info-box">
+                            <div class="info-label">Bác sĩ</div>
+                            <div class="info-value">{{ $invoice->display_doctor_name ?? $invoice->doctor_name ?? 'Chưa có bác sĩ' }}</div>
+                            <div style="color:#64748b;margin-top:4px;">
+                                Dịch vụ: {{ $invoice->display_service_name ?? $invoice->service_name ?? 'Chưa có dịch vụ' }}
+                            </div>
+                        </div>
+
+                        <div class="info-box">
+                            <div class="info-label">Ngày khám</div>
+                            <div class="info-value">
+                                {{ optional($invoice->appointment_date)->format('d/m/Y H:i') ?: 'Chưa có' }}
+                            </div>
+                        </div>
+
+                        <div class="info-box">
+                            <div class="info-label">Phòng khám</div>
+                            <div class="info-value">
+                                {{ $invoice->appointment?->room?->name ?? 'Chưa có phòng' }}
+                            </div>
+                        </div>
+                    </div>
+
+                    @if($doctorPrescription !== '')
+                        <div class="note-box" style="margin-bottom:18px;">
+                            <div class="note-title">
+                                <i class="ri-capsule-line"></i>
+                                Đơn thuốc / chỉ định bác sĩ kê
+                            </div>
+                            {{ $doctorPrescription }}
+                        </div>
+                    @endif
+
+                    <table class="bill-table">
+                        <thead>
+                            <tr>
+                                <th>Nội dung</th>
+                                <th class="text-right">SL</th>
+                                <th class="text-right">Đơn giá</th>
+                                <th class="text-right">Thành tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <strong>{{ $invoice->display_service_name ?? $invoice->service_name ?? 'Dịch vụ khám' }}</strong>
+                                    <div style="color:#64748b;font-size:13px;margin-top:4px;">Chi phí dịch vụ khám/điều trị</div>
+                                </td>
+                                <td class="text-right">1</td>
+                                <td class="text-right money">{{ number_format((float) ($invoice->service_price ?? $invoice->service_amount ?? 0), 0, ',', '.') }} đ</td>
+                                <td class="text-right money">{{ number_format((float) ($invoice->service_price ?? $invoice->service_amount ?? 0), 0, ',', '.') }} đ</td>
+                            </tr>
+
+                            @foreach($medicineItems as $item)
+                                <tr>
+                                    <td>
+                                        <strong>{{ $item['name'] ?? 'Thuốc' }}</strong>
+                                        @if(!empty($item['unit']))
+                                            <div style="color:#64748b;font-size:13px;margin-top:4px;">Đơn vị: {{ $item['unit'] }}</div>
+                                        @endif
+                                    </td>
+                                    <td class="text-right">{{ $item['quantity'] ?? 1 }}</td>
+                                    <td class="text-right money">{{ number_format((float) ($item['unit_price'] ?? 0), 0, ',', '.') }} đ</td>
+                                    <td class="text-right money">{{ number_format((float) ($item['total'] ?? 0), 0, ',', '.') }} đ</td>
+                                </tr>
+                            @endforeach
+
+                            @foreach($extraItems as $item)
+                                @if(!empty($item['name']))
+                                    <tr>
+                                        <td><strong>{{ $item['name'] }}</strong></td>
+                                        <td class="text-right">{{ $item['quantity'] ?? 1 }}</td>
+                                        <td class="text-right money">{{ number_format((float) ($item['unit_price'] ?? 0), 0, ',', '.') }} đ</td>
+                                        <td class="text-right money">{{ number_format((float) ($item['total'] ?? (($item['quantity'] ?? 1) * ($item['unit_price'] ?? 0))), 0, ',', '.') }} đ</td>
+                                    </tr>
+                                @endif
+                            @endforeach
+                        </tbody>
+                    </table>
+
+                    <div class="summary">
+                        <div class="summary-row">
+                            <span>Tiền dịch vụ</span>
+                            <strong>{{ number_format((float) ($invoice->service_price ?? $invoice->service_amount ?? 0), 0, ',', '.') }} đ</strong>
+                        </div>
+
+                        <div class="summary-row">
+                            <span>Tiền thuốc</span>
+                            <strong>{{ number_format((float) ($invoice->medicine_total ?? 0), 0, ',', '.') }} đ</strong>
+                        </div>
+
+                        <div class="summary-row">
+                            <span>Phụ phí</span>
+                            <strong>{{ number_format((float) ($invoice->extra_total ?? $invoice->extra_amount ?? 0), 0, ',', '.') }} đ</strong>
+                        </div>
+
+                        <div class="summary-row">
+                            <span>Giảm giá</span>
+                            <strong>-{{ number_format((float) ($invoice->discount_amount ?? 0), 0, ',', '.') }} đ</strong>
+                        </div>
+
+                        <div class="summary-row total">
+                            <span>Tổng thanh toán</span>
+                            <strong>{{ $invoice->formatted_total ?? number_format((float) ($invoice->total_amount ?? 0), 0, ',', '.') . ' đ' }}</strong>
+                        </div>
+
+                        <div class="summary-row">
+                            <span>Đã thanh toán</span>
+                            <strong>{{ number_format((float) ($invoice->paid_amount ?? 0), 0, ',', '.') }} đ</strong>
+                        </div>
+
+                        <div class="summary-row">
+                            <span>Còn lại</span>
+                            <strong>{{ number_format((float) ($invoice->remaining_amount ?? max(($invoice->total_amount ?? 0) - ($invoice->paid_amount ?? 0), 0)), 0, ',', '.') }} đ</strong>
+                        </div>
+                    </div>
+
+                    @if($invoice->notes)
+                        <div class="note-box" style="margin-top:18px;">
+                            <div class="note-title">
+                                <i class="ri-sticky-note-line"></i>
+                                Ghi chú hóa đơn
+                            </div>
+                            {{ $invoice->notes }}
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
+    </main>
 
-        <aside class="right-column no-print">
-            @if($invoice->isUnpaid())
-                <div class="panel">
-                    <div class="panel-head">
-                        <div class="panel-title">
-                            <i class="ri-capsule-line"></i>
-                            Thêm thuốc tính phí
-                        </div>
-                    </div>
-
-                    <div class="panel-body">
-                        <form method="POST" action="{{ route('employees.invoices.medicines.add', $invoice) }}" class="js-ajax-invoice-form" data-success-message="Đã thêm thuốc vào hóa đơn.">
-                            @csrf
-
-                            <div class="inline-grid">
-                                <div class="form-group">
-                                    <label>Thuốc</label>
-                                    <select name="medicine_id" class="form-control" required>
-                                        <option value="">-- Chọn thuốc --</option>
-                                        @foreach($medicines as $medicine)
-                                            <option value="{{ $medicine->id }}">
-                                                {{ $medicine->display_name }} · Tồn {{ $medicine->stock_quantity }} {{ $medicine->unit }} · {{ $medicine->formatted_price }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
-                                <div class="form-group">
-                                    <label>SL</label>
-                                    <input type="number" name="quantity" class="form-control" min="1" value="1" required>
-                                </div>
-                            </div>
-
-                            <button class="btn btn-primary btn-full" type="submit">
-                                <i class="ri-add-line"></i>
-                                Thêm thuốc
-                            </button>
-                        </form>
-
-                        @if(count($invoice->medicine_items ?: []))
-                            <div style="margin-top:16px;">
-                                @foreach(($invoice->medicine_items ?: []) as $index => $item)
-                                    <div class="medicine-line">
-                                        <div>
-                                            <div class="medicine-name">{{ $item['name'] ?? 'Thuốc' }}</div>
-                                            <div class="medicine-meta">
-                                                SL: {{ $item['quantity'] ?? 0 }} ·
-                                                {{ number_format((float) ($item['total'] ?? 0), 0, ',', '.') }} đ
-                                            </div>
-                                        </div>
-
-                                        <form method="POST" action="{{ route('employees.invoices.medicines.remove', [$invoice, $index]) }}" class="js-ajax-invoice-form" data-success-message="Đã xóa thuốc khỏi hóa đơn.">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button class="danger-link" type="submit" title="Xóa thuốc">
-                                                <i class="ri-delete-bin-line"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                @endforeach
-                            </div>
-                        @endif
+    <aside class="right-column no-print">
+        @if($isUnpaid)
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-title">
+                        <i class="ri-send-plane-line"></i>
+                        Gửi hóa đơn cho bệnh nhân
                     </div>
                 </div>
 
-                <div class="panel">
-                    <div class="panel-head">
-                        <div class="panel-title">
-                            <i class="ri-money-dollar-circle-line"></i>
-                            Phụ phí / giảm giá
+                <div class="panel-body">
+                    @if($invoice->sent_to_patient_at)
+                        <div class="pending-box">
+                            <i class="ri-check-line"></i>
+                            Hóa đơn đã gửi cho bệnh nhân lúc {{ optional($invoice->sent_to_patient_at)->format('d/m/Y H:i') }}.
+                            @if($invoice->payment_due_at)
+                                <br>Hạn thanh toán: {{ optional($invoice->payment_due_at)->format('d/m/Y H:i') }}.
+                            @endif
                         </div>
-                    </div>
-
-                    <div class="panel-body">
-                        <form method="POST" action="{{ route('employees.invoices.extras.update', $invoice) }}" class="js-ajax-invoice-form" data-success-message="Đã cập nhật phụ phí và giảm giá.">
+                    @elseif($canSendToPatient)
+                        <form method="POST" action="{{ route('employees.invoices.send-to-patient', $invoice) }}" onsubmit="return confirm('Gửi hóa đơn này cho bệnh nhân thanh toán trên tài khoản cá nhân?');">
                             @csrf
-                            @method('PUT')
-
-                            @php
-                                $extraItems = collect($invoice->extra_items ?: [])->values()->all();
-                                $extraRows = max(3, count($extraItems) + 1);
-                            @endphp
-
-                            @for($i = 0; $i < $extraRows; $i++)
-                                @php $extra = $extraItems[$i] ?? []; @endphp
-                                <div class="extra-row">
+                            <div class="send-grid">
+                                <div class="form-group" style="margin-bottom:0;">
+                                    <label>Hạn thanh toán</label>
                                     <input
-                                        type="text"
-                                        name="extra_items[{{ $i }}][name]"
+                                        type="datetime-local"
+                                        name="payment_due_at"
                                         class="form-control"
-                                        placeholder="Tên phụ phí"
-                                        value="{{ $extra['name'] ?? '' }}"
-                                    >
-
-                                    <input
-                                        type="number"
-                                        name="extra_items[{{ $i }}][quantity]"
-                                        class="form-control"
-                                        placeholder="SL"
-                                        min="0"
-                                        step="1"
-                                        value="{{ $extra['quantity'] ?? 1 }}"
-                                    >
-
-                                    <input
-                                        type="number"
-                                        name="extra_items[{{ $i }}][unit_price]"
-                                        class="form-control"
-                                        placeholder="Đơn giá"
-                                        min="0"
-                                        step="1000"
-                                        value="{{ $extra['unit_price'] ?? 0 }}"
+                                        value="{{ now()->addDays(3)->format('Y-m-d\TH:i') }}"
                                     >
                                 </div>
-                            @endfor
 
-                            <div class="form-group">
-                                <label>Giảm giá</label>
-                                <input
-                                    type="number"
-                                    name="discount_amount"
-                                    class="form-control"
-                                    min="0"
-                                    step="1000"
-                                    value="{{ $invoice->discount_amount }}"
-                                >
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="ri-send-plane-line"></i>
+                                    Gửi BN
+                                </button>
                             </div>
-
-                            <div class="form-group">
-                                <label>Ghi chú hóa đơn</label>
-                                <textarea name="notes" class="form-control">{{ $invoice->notes }}</textarea>
-                            </div>
-
-                            <button type="submit" class="btn btn-secondary btn-full">
-                                <i class="ri-save-line"></i>
-                                Cập nhật hóa đơn
-                            </button>
                         </form>
+                    @elseif(!$hasPatientAccount)
+                        <div class="locked-box">
+                            <i class="ri-user-unfollow-line"></i>
+                            Bệnh nhân này chưa có tài khoản, không thể gửi hóa đơn để thanh toán online. Thu ngân xử lý thanh toán trực tiếp tại quầy.
+                        </div>
+                    @else
+                        <div class="locked-box">
+                            Không thể gửi hóa đơn này cho bệnh nhân ở trạng thái hiện tại.
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endif
+
+        @if($isPaymentPending)
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-title">
+                        <i class="ri-image-line"></i>
+                        Bill bệnh nhân gửi
                     </div>
                 </div>
 
-                <div class="panel">
-                    <div class="panel-head">
-                        <div class="panel-title">
-                            <i class="ri-bank-card-line"></i>
-                            Xác nhận thanh toán
-                        </div>
+                <div class="panel-body">
+                    <div class="pending-box">
+                        Bệnh nhân đã gửi xác nhận thanh toán lúc {{ optional($invoice->patient_paid_submitted_at)->format('d/m/Y H:i') }}.
+                        Thu ngân cần kiểm tra tiền đã vào tài khoản trước khi xác nhận.
                     </div>
 
-                    <div class="panel-body">
-                        <form method="POST" action="{{ route('employees.invoices.pay', $invoice) }}" onsubmit="return confirm('Xác nhận bệnh nhân đã thanh toán hóa đơn này?');">
-                            @csrf
-
-                            <div class="form-group">
-                                <label>Thu ngân</label>
-                                <input type="text" class="form-control" value="{{ $cashierDisplayName }}" readonly>
+                    @if($invoice->patient_payment_note)
+                        <div class="note-box" style="margin-top:12px;">
+                            <div class="note-title">
+                                <i class="ri-message-2-line"></i>
+                                Ghi chú bệnh nhân
                             </div>
+                            {{ $invoice->patient_payment_note }}
+                        </div>
+                    @endif
 
+                    @if($invoice->patient_payment_proof_url ?? false)
+    <div class="proof-image">
+        <div class="proof-head">
+            <div class="info-label" style="margin-bottom:0;">Ảnh bill bệnh nhân đã gửi</div>
+
+            <div class="proof-actions">
+                <a href="{{ $invoice->patient_payment_proof_url }}" target="_blank" rel="noopener" class="proof-action-btn">
+                    <i class="ri-external-link-line"></i>
+                    Mở ảnh
+                </a>
+
+                <a href="{{ $invoice->patient_payment_proof_url }}" download class="proof-action-btn">
+                    <i class="ri-download-2-line"></i>
+                    Tải ảnh
+                </a>
+            </div>
+        </div>
+
+        <img src="{{ $invoice->patient_payment_proof_url }}" alt="Bill thanh toán của bệnh nhân">
+    </div>
+@elseif($invoice->patient_payment_proof)
+    <div class="locked-box" style="margin-top:12px;">
+        Không tải được ảnh bill. Vui lòng kiểm tra `php artisan storage:link`.
+        <br>
+        File đang lưu: {{ $invoice->patient_payment_proof }}
+    </div>
+@endif
+                </div>
+            </div>
+        @endif
+
+        @if($isEditable)
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-title">
+                        <i class="ri-capsule-line"></i>
+                        Thuốc tính tiền
+                    </div>
+                </div>
+
+                <div class="panel-body">
+                    <form method="POST" action="{{ route('employees.invoices.medicines.add', $invoice) }}" class="js-ajax-invoice-form" data-success-message="Đã thêm thuốc vào hóa đơn.">
+                        @csrf
+
+                        <div class="inline-grid">
                             <div class="form-group">
-                                <label>Phương thức thanh toán</label>
-                                <select name="payment_method" id="paymentMethodSelect" class="form-control" required>
-                                    <option value="cash">Tiền mặt</option>
-                                    <option value="bank_transfer">Chuyển khoản</option>
-                                    <option value="card">Thẻ</option>
-                                    <option value="momo">MoMo</option>
-                                    <option value="other">Khác</option>
+                                <label>Thuốc</label>
+                                <select name="medicine_id" class="form-control" required>
+                                    <option value="">-- Chọn thuốc --</option>
+                                    @foreach($medicines ?? [] as $medicine)
+                                        <option value="{{ $medicine->id }}">
+                                            {{ $medicine->display_name ?? $medicine->name }}
+                                            · Tồn {{ $medicine->stock_quantity ?? 0 }} {{ $medicine->unit ?? '' }}
+                                            · {{ $medicine->formatted_price ?? number_format((float) ($medicine->selling_price ?? $medicine->price ?? 0), 0, ',', '.') . ' đ' }}
+                                        </option>
+                                    @endforeach
                                 </select>
                             </div>
 
-                            <div class="bank-transfer-panel" id="bankTransferPanel">
-                                <div class="bank-transfer-title">
-                                    <i class="ri-qr-code-line"></i>
-                                    QR chuyển khoản cho hóa đơn này
+                            <div class="form-group">
+                                <label>SL</label>
+                                <input type="number" name="quantity" class="form-control" min="1" value="1" required>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary btn-full" type="submit">
+                            <i class="ri-add-line"></i>
+                            Thêm thuốc
+                        </button>
+                    </form>
+
+                    @if(count($medicineItems))
+                        <div style="margin-top:16px;">
+                            @foreach($medicineItems as $index => $item)
+                                <div class="medicine-line">
+                                    <div>
+                                        <div class="medicine-name">{{ $item['name'] ?? 'Thuốc' }}</div>
+                                        <div class="medicine-meta">
+                                            SL: {{ $item['quantity'] ?? 0 }} ·
+                                            {{ number_format((float) ($item['total'] ?? 0), 0, ',', '.') }} đ
+                                        </div>
+                                    </div>
+
+                                    <form method="POST" action="{{ route('employees.invoices.medicines.remove', [$invoice, $index]) }}" class="js-ajax-invoice-form" data-success-message="Đã xóa thuốc khỏi hóa đơn.">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="danger-link" type="submit" title="Xóa thuốc">
+                                            <i class="ri-delete-bin-line"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-title">
+                        <i class="ri-money-dollar-circle-line"></i>
+                        Phụ phí / giảm giá
+                    </div>
+                </div>
+
+                <div class="panel-body">
+                    <form method="POST" action="{{ route('employees.invoices.extras.update', $invoice) }}" class="js-ajax-invoice-form" data-success-message="Đã cập nhật phụ phí và giảm giá.">
+                        @csrf
+                        @method('PUT')
+
+                        @for($i = 0; $i < $extraRows; $i++)
+                            @php $extra = $extraItems[$i] ?? []; @endphp
+                            <div class="extra-row">
+                                <input
+                                    type="text"
+                                    name="extra_items[{{ $i }}][name]"
+                                    class="form-control"
+                                    placeholder="Tên phụ phí"
+                                    value="{{ $extra['name'] ?? '' }}"
+                                >
+
+                                <input
+                                    type="number"
+                                    name="extra_items[{{ $i }}][quantity]"
+                                    class="form-control"
+                                    placeholder="SL"
+                                    min="0"
+                                    step="1"
+                                    value="{{ $extra['quantity'] ?? 1 }}"
+                                >
+
+                                <input
+                                    type="number"
+                                    name="extra_items[{{ $i }}][unit_price]"
+                                    class="form-control"
+                                    placeholder="Đơn giá"
+                                    min="0"
+                                    step="1000"
+                                    value="{{ $extra['unit_price'] ?? 0 }}"
+                                >
+                            </div>
+                        @endfor
+
+                        <div class="form-group">
+                            <label>Giảm giá</label>
+                            <input
+                                type="number"
+                                name="discount_amount"
+                                class="form-control"
+                                min="0"
+                                step="1000"
+                                value="{{ $invoice->discount_amount ?? 0 }}"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label>Ghi chú hóa đơn</label>
+                            <textarea name="notes" class="form-control">{{ $invoice->notes }}</textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-secondary btn-full">
+                            <i class="ri-save-line"></i>
+                            Cập nhật hóa đơn
+                        </button>
+                    </form>
+                </div>
+            </div>
+        @elseif($isUnpaid && $invoice->sent_to_patient_at)
+            <div class="panel">
+                <div class="panel-body">
+                    <div class="locked-box">
+                        <i class="ri-lock-line"></i>
+                        Hóa đơn đã gửi cho bệnh nhân nên không chỉnh thuốc/phụ phí tại đây để tránh lệch số tiền bệnh nhân đang thanh toán.
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if($isUnpaid || $isPaymentPending)
+            <div class="panel">
+                <div class="panel-head">
+                    <div class="panel-title">
+                        <i class="ri-bank-card-line"></i>
+                        Xác nhận thanh toán
+                    </div>
+                </div>
+
+                <div class="panel-body">
+                    <form method="POST" action="{{ route('employees.invoices.pay', $invoice) }}" onsubmit="return confirm('Xác nhận hóa đơn này đã thanh toán?');">
+                        @csrf
+
+                        <div class="form-group">
+                            <label>Thu ngân</label>
+                            <input type="text" class="form-control" value="{{ $cashierDisplayName }}" readonly>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Phương thức thanh toán</label>
+                            <select name="payment_method" id="paymentMethodSelect" class="form-control" required>
+                                <option value="cash">Tiền mặt</option>
+                                <option value="bank_transfer" @selected($isPaymentPending)>Chuyển khoản</option>
+                                <option value="card">Thẻ</option>
+                                <option value="momo">MoMo</option>
+                                <option value="other">Khác</option>
+                            </select>
+                        </div>
+
+                        <div class="bank-transfer-panel" id="bankTransferPanel">
+                            <div class="bank-transfer-title">
+                                <i class="ri-qr-code-line"></i>
+                                QR chuyển khoản cho hóa đơn này
+                            </div>
+
+                            @if($vietQrUrl)
+                                <button type="button" class="qr-wrap js-open-qr-modal" aria-label="Phóng to mã QR chuyển khoản">
+                                    <img src="{{ $vietQrUrl }}" alt="QR chuyển khoản hóa đơn {{ $invoice->invoice_code }}">
+                                </button>
+
+                                <div class="transfer-row">
+                                    <span>Ngân hàng</span>
+                                    <strong>{{ $bankId }}</strong>
                                 </div>
 
-                                @if($vietQrUrl)
-                                    <button type="button" class="qr-wrap js-open-qr-modal" aria-label="Phóng to mã QR chuyển khoản">
-                                        <img src="{{ $vietQrUrl }}" alt="QR chuyển khoản hóa đơn {{ $invoice->invoice_code }}">
-                                    </button>
+                                <div class="transfer-row">
+                                    <span>Số tài khoản</span>
+                                    <strong>{{ $bankAccountNo }}</strong>
+                                </div>
 
-                                    <div class="transfer-row">
-                                        <span>Ngân hàng</span>
-                                        <strong>{{ $bankId }}</strong>
-                                    </div>
+                                <div class="transfer-row">
+                                    <span>Chủ tài khoản</span>
+                                    <strong>{{ $bankAccountName }}</strong>
+                                </div>
 
-                                    <div class="transfer-row">
-                                        <span>Số tài khoản</span>
-                                        <strong>{{ $bankAccountNo }}</strong>
-                                    </div>
+                                <div class="transfer-row">
+                                    <span>Số tiền</span>
+                                    <strong>{{ number_format($transferAmount, 0, ',', '.') }} đ</strong>
+                                </div>
 
-                                    <div class="transfer-row">
-                                        <span>Chủ tài khoản</span>
-                                        <strong>{{ $bankAccountName }}</strong>
-                                    </div>
+                                <div class="transfer-row">
+                                    <span>Nội dung</span>
+                                    <strong>{{ $transferContent }}</strong>
+                                </div>
 
-                                    <div class="transfer-row">
-                                        <span>Số tiền</span>
-                                        <strong>{{ number_format($transferAmount, 0, ',', '.') }} đ</strong>
-                                    </div>
+                                <div class="transfer-note">
+                                    QR đã chứa đúng số tiền và nội dung hóa đơn. Thu ngân chỉ xác nhận sau khi kiểm tra giao dịch đã vào tài khoản.
+                                </div>
+                            @else
+                                <div class="locked-box">
+                                    Chưa cấu hình tài khoản ngân hàng. Thêm `BANK_ID`, `BANK_ACCOUNT_NO`, `BANK_ACCOUNT_NAME` trong file `.env`.
+                                </div>
+                            @endif
+                        </div>
 
-                                    <div class="transfer-row">
-                                        <span>Nội dung</span>
-                                        <strong>{{ $transferContent }}</strong>
-                                    </div>
+                        <div class="form-group">
+                            <label>Mã giao dịch</label>
+                            <input type="text" name="transaction_reference" class="form-control" placeholder="Nhập mã giao dịch nếu có">
+                        </div>
 
-                                    <div class="transfer-note">
-                                        QR đã chứa đúng số tiền và nội dung hóa đơn. Thu ngân chỉ bấm xác nhận sau khi kiểm tra giao dịch đã vào tài khoản.
-                                    </div>
-                                @else
-                                    <div class="transfer-warning">
-                                        Chưa cấu hình tài khoản ngân hàng. Thêm `BANK_ID`, `BANK_ACCOUNT_NO`, `BANK_ACCOUNT_NAME` trong file `.env` để hiển thị QR chuyển khoản.
-                                    </div>
-                                @endif
-                            </div>
+                        <div class="form-group">
+                            <label>Ghi chú thanh toán</label>
+                            <textarea name="note" class="form-control" placeholder="Ghi chú nếu cần..."></textarea>
+                        </div>
 
-                            <div class="form-group">
-                                <label>Mã giao dịch</label>
-                                <input type="text" name="transaction_reference" class="form-control" placeholder="Nhập mã giao dịch nếu có">
-                            </div>
+                        <button type="submit" class="btn btn-primary btn-full">
+                            <i class="ri-checkbox-circle-line"></i>
+                            Xác nhận đã thanh toán
+                        </button>
+                    </form>
 
-                            <div class="form-group">
-                                <label>Ghi chú thanh toán</label>
-                                <textarea name="note" class="form-control" placeholder="Ghi chú nếu cần..."></textarea>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary btn-full">
-                                <i class="ri-checkbox-circle-line"></i>
-                                Xác nhận đã thanh toán
-                            </button>
-                        </form>
-
+                    @if($isUnpaid)
                         <form method="POST" action="{{ route('employees.invoices.cancel', $invoice) }}" onsubmit="return confirm('Bạn chắc chắn muốn hủy hóa đơn này?');" style="margin-top:10px;">
                             @csrf
                             <button type="submit" class="btn btn-danger-soft btn-full">
@@ -1108,61 +1202,60 @@
                                 Hủy hóa đơn
                             </button>
                         </form>
+                    @endif
+                </div>
+            </div>
+        @elseif($isPaid)
+            <div class="panel">
+                <div class="panel-body">
+                    <div class="paid-box">
+                        <i class="ri-checkbox-circle-line"></i>
+                        Hóa đơn đã thanh toán lúc {{ optional($invoice->paid_at)->format('d/m/Y H:i') }}.
+                        <br>
+                        Phương thức: {{ $invoice->payment_method_label ?? $invoice->payment_method ?? 'Chưa cập nhật' }}.
+                        <br>
+                        Thu ngân: {{ $invoice->cashier?->name ?? $invoice->verifier?->name ?? $cashierDisplayName }}.
                     </div>
                 </div>
-            @elseif($invoice->isPaid())
-                <div class="panel">
-                    <div class="panel-body">
-                        <div class="paid-box">
-                            <i class="ri-checkbox-circle-line"></i>
-                            Hóa đơn đã thanh toán lúc {{ optional($invoice->paid_at)->format('d/m/Y H:i') }}.
-                            <br>
-                            Phương thức: {{ $invoice->payment_method_label }}.
-                            <br>
-                            Thu ngân: {{ $invoice->cashier?->name ?? $cashierDisplayName }}.
-                        </div>
+            </div>
+        @else
+            <div class="panel">
+                <div class="panel-body">
+                    <div class="cancelled-box">
+                        <i class="ri-close-circle-line"></i>
+                        Hóa đơn này đã bị hủy.
                     </div>
-                </div>
-            @else
-                <div class="panel">
-                    <div class="panel-body">
-                        <div class="cancelled-box">
-                            <i class="ri-close-circle-line"></i>
-                            Hóa đơn này đã bị hủy.
-                        </div>
-                    </div>
-                </div>
-            @endif
-        </aside>
-
-        @if($vietQrUrl)
-            <div class="qr-modal no-print" id="qrModal" aria-hidden="true">
-                <div class="qr-modal-backdrop js-close-qr-modal"></div>
-
-                <div class="qr-modal-card" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
-                    <button type="button" class="qr-modal-close js-close-qr-modal" aria-label="Đóng mã QR">
-                        <i class="ri-close-line"></i>
-                    </button>
-
-                    <div class="qr-modal-title" id="qrModalTitle">
-                        QR chuyển khoản hóa đơn
-                    </div>
-
-                    <div class="qr-modal-subtitle">
-                        {{ $invoice->invoice_code }} · {{ number_format($transferAmount, 0, ',', '.') }} đ · Nội dung: {{ $transferContent }}
-                    </div>
-
-                    <div class="qr-modal-image">
-                        <img src="{{ $vietQrUrl }}" alt="QR chuyển khoản hóa đơn ">
-                    </div>
-
-                    
                 </div>
             </div>
         @endif
-    </div>
+    </aside>
 
-    <div class="ajax-toast no-print" id="invoiceAjaxToast"></div>
+    @if($vietQrUrl)
+        <div class="qr-modal no-print" id="qrModal" aria-hidden="true">
+            <div class="qr-modal-backdrop js-close-qr-modal"></div>
+
+            <div class="qr-modal-card" role="dialog" aria-modal="true" aria-labelledby="qrModalTitle">
+                <button type="button" class="qr-modal-close js-close-qr-modal" aria-label="Đóng mã QR">
+                    <i class="ri-close-line"></i>
+                </button>
+
+                <div class="qr-modal-title" id="qrModalTitle">
+                    QR chuyển khoản hóa đơn
+                </div>
+
+                <div class="qr-modal-subtitle">
+                    {{ $invoice->invoice_code }} · {{ number_format($transferAmount, 0, ',', '.') }} đ · Nội dung: {{ $transferContent }}
+                </div>
+
+                <div class="qr-modal-image">
+                    <img src="{{ $vietQrUrl }}" alt="QR chuyển khoản hóa đơn {{ $invoice->invoice_code }}">
+                </div>
+            </div>
+        </div>
+    @endif
+</div>
+
+<div class="ajax-toast no-print" id="invoiceAjaxToast"></div>
 @endsection
 
 @section('scripts')
@@ -1180,7 +1273,6 @@
         }
 
         if (paymentMethodSelect) {
-            paymentMethodSelect.removeEventListener('change', toggleBankTransferPanel);
             paymentMethodSelect.addEventListener('change', toggleBankTransferPanel);
             toggleBankTransferPanel();
         }
@@ -1207,9 +1299,7 @@
         });
 
         closeButtons.forEach((button) => {
-            button.onclick = function () {
-                closeQrModal();
-            };
+            button.onclick = closeQrModal;
         });
     }
 
@@ -1308,12 +1398,4 @@
         });
     });
 </script>
-
-@if(!empty($printMode))
-<script>
-    window.addEventListener('load', () => {
-        setTimeout(() => window.print(), 300);
-    });
-</script>
-@endif
 @endsection

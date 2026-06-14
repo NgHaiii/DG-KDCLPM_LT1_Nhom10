@@ -376,6 +376,10 @@ Route::middleware('auth')->group(function () {
                 ->whereNumber('invoice')
                 ->name('extras.update');
 
+            Route::post('{invoice}/send-to-patient', [InvoiceController::class, 'sendToPatient'])
+                ->whereNumber('invoice')
+                ->name('send-to-patient');
+
             Route::post('{invoice}/pay', [InvoiceController::class, 'confirmPayment'])
                 ->whereNumber('invoice')
                 ->name('pay');
@@ -518,6 +522,10 @@ Route::middleware('auth')->group(function () {
             Route::get('{invoice}', [InvoiceController::class, 'patientShow'])
                 ->whereNumber('invoice')
                 ->name('show');
+
+            Route::post('{invoice}/submit-payment-proof', [InvoiceController::class, 'patientSubmitPaymentProof'])
+                ->whereNumber('invoice')
+                ->name('submit-payment-proof');
         });
 
         // Giữ route cũ để menu/link cũ không bị lỗi

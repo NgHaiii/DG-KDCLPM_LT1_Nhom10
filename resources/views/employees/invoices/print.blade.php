@@ -11,6 +11,8 @@
         'doctor',
         'service',
         'cashier',
+        'verifier',
+        'sentToPatientBy',
         'payments',
     ]);
 
@@ -19,30 +21,77 @@
         : ($invoice->created_at ? Carbon::parse($invoice->created_at) : now());
 
     $paidAt = $invoice->paid_at ? Carbon::parse($invoice->paid_at) : null;
+    $sentAt = $invoice->sent_to_patient_at ? Carbon::parse($invoice->sent_to_patient_at) : null;
+    $dueAt = $invoice->payment_due_at ? Carbon::parse($invoice->payment_due_at) : null;
+    $submittedAt = $invoice->patient_paid_submitted_at ? Carbon::parse($invoice->patient_paid_submitted_at) : null;
+    $verifiedAt = $invoice->verified_at ? Carbon::parse($invoice->verified_at) : null;
 
     $appointmentDate = $invoice->appointment_date
         ? Carbon::parse($invoice->appointment_date)
         : ($invoice->appointment?->appointment_date ? Carbon::parse($invoice->appointment->appointment_date) : null);
 
-    $patientName = $invoice->display_patient_name ?? $invoice->patientProfile?->full_name ?? $invoice->patient?->name ?? 'Chưa có tên';
-    $patientPhone = $invoice->display_patient_phone ?? $invoice->patientProfile?->phone ?? $invoice->patient?->phone ?? 'Chưa có SĐT';
-    $doctorName = $invoice->display_doctor_name ?? $invoice->doctor?->name ?? $invoice->appointment?->doctor?->name ?? 'Chưa có bác sĩ';
-    $serviceName = $invoice->display_service_name ?? $invoice->service?->name ?? $invoice->appointment?->service?->name ?? 'Chưa có dịch vụ';
+    $patientName = $invoice->display_patient_name
+        ?? $invoice->patientProfile?->full_name
+        ?? $invoice->patient?->name
+        ?? $invoice->patient_name
+        ?? 'Chưa có tên';
+
+    $patientPhone = $invoice->display_patient_phone
+        ?? $invoice->patientProfile?->phone
+        ?? $invoice->patient?->phone
+        ?? $invoice->patient_phone
+        ?? 'Chưa có SĐT';
+
+    $doctorName = $invoice->display_doctor_name
+        ?? $invoice->doctor?->name
+        ?? $invoice->appointment?->doctor?->name
+        ?? $invoice->doctor_name
+        ?? 'Chưa có bác sĩ';
+
+    $serviceName = $invoice->display_service_name
+        ?? $invoice->service?->name
+        ?? $invoice->appointment?->service?->name
+        ?? $invoice->service_name
+        ?? 'Chưa có dịch vụ';
 
     $room = $invoice->appointment?->room;
     $medicalRecord = $invoice->appointment?->medicalRecord;
     $doctorPrescription = trim((string) ($medicalRecord?->prescription ?? ''));
 
     $cashierName = $invoice->cashier?->name
+        ?? $invoice->verifier?->name
         ?? auth()->user()?->name
         ?? 'Nhân viên thu ngân';
 
     $medicineItems = collect($invoice->medicine_items ?: []);
     $extraItems = collect($invoice->extra_items ?: []);
 
-    $sourceLabel = $invoice->appointment?->source === 'online'
-        ? 'ĐẶT LỊCH ONLINE'
-        : 'KHÁM TRỰC TIẾP';
+    $source = $invoice->appointment?->source ?? $invoice->patientProfile?->source ?? 'online';
+    $sourceLabel = $source === 'offline' ? 'KHÁM TRỰC TIẾP' : 'ĐẶT LỊCH ONLINE';
+
+    $servicePrice = (float) ($invoice->service_price ?? $invoice->service_amount ?? 0);
+    $medicineTotal = (float) ($invoice->medicine_total ?? $medicineItems->sum(fn ($item) => (float) ($item['total'] ?? 0)));
+    $extraTotal = (float) ($invoice->extra_total ?? $invoice->extra_amount ?? $extraItems->sum(fn ($item) => (float) ($item['total'] ?? 0)));
+    $discountAmount = (float) ($invoice->discount_amount ?? 0);
+    $totalAmount = (float) ($invoice->total_amount ?? max($servicePrice + $medicineTotal + $extraTotal - $discountAmount, 0));
+    $paidAmount = (float) ($invoice->paid_amount ?? 0);
+    $remainingAmount = (float) ($invoice->remaining_amount ?? max($totalAmount - $paidAmount, 0));
+
+    $statusLabel = $invoice->status_label ?? match ($invoice->status) {
+        'paid' => 'Đã thanh toán',
+        'payment_pending' => 'Chờ xác nhận chuyển khoản',
+        'cancelled' => 'Đã hủy',
+        default => 'Chờ thanh toán',
+    };
+
+    $paymentMethodLabel = $invoice->payment_method_label ?? match ($invoice->payment_method) {
+        'cash' => 'Tiền mặt',
+        'bank_transfer' => 'Chuyển khoản',
+        'card' => 'Thẻ',
+        'momo' => 'MoMo',
+        'other' => 'Khác',
+        default => 'Chưa thanh toán',
+    };
 @endphp
 
 <!DOCTYPE html>
@@ -106,21 +155,16 @@
             margin-bottom: 4px;
         }
 
-        .ticket-subtitle {
-            text-align: center;
-            font-size: 13px;
-            margin-bottom: 2px;
-        }
-
+        .ticket-subtitle,
         .ticket-date {
             text-align: center;
             font-size: 13px;
-            margin-bottom: 12px;
+            margin-bottom: 3px;
         }
 
         .badge {
             width: fit-content;
-            margin: 0 auto 8px;
+            margin: 10px auto 8px;
             padding: 6px 14px;
             border: 1px solid #0f172a;
             border-radius: 999px;
@@ -142,17 +186,10 @@
             margin-bottom: 12px;
         }
 
-        .invoice-status.unpaid {
-            color: #92400e;
-        }
-
-        .invoice-status.paid {
-            color: #166534;
-        }
-
-        .invoice-status.cancelled {
-            color: #991b1b;
-        }
+        .invoice-status.unpaid { color: #92400e; }
+        .invoice-status.payment_pending { color: #075985; }
+        .invoice-status.paid { color: #166534; }
+        .invoice-status.cancelled { color: #991b1b; }
 
         .divider {
             border-top: 1px dashed #94a3b8;
@@ -263,13 +300,21 @@
             font-weight: 900;
         }
 
-        .prescription,
         .note-box {
             font-size: 12px;
             line-height: 1.5;
             white-space: pre-line;
             background: #f8fafc;
             border: 1px solid #cbd5e1;
+            padding: 9px;
+        }
+
+        .payment-note {
+            font-size: 12px;
+            line-height: 1.5;
+            border: 1px solid #bae6fd;
+            background: #f0f9ff;
+            color: #075985;
             padding: 9px;
         }
 
@@ -339,28 +384,16 @@
 
             <div class="invoice-code">{{ $invoice->invoice_code }}</div>
             <div class="invoice-status {{ $invoice->status }}">
-                {{ $invoice->status_label }}
+                {{ $statusLabel }}
             </div>
 
             <div class="divider"></div>
 
             <div class="info">
-                <div class="info-row">
-                    <strong>Bệnh nhân:</strong> {{ $patientName }}
-                </div>
-
-                <div class="info-row">
-                    <strong>SĐT:</strong> {{ $patientPhone }}
-                </div>
-
-                <div class="info-row">
-                    <strong>Dịch vụ:</strong> {{ $serviceName }}
-                </div>
-
-                <div class="info-row">
-                    <strong>Bác sĩ:</strong> {{ $doctorName }}
-                </div>
-
+                <div class="info-row"><strong>Bệnh nhân:</strong> {{ $patientName }}</div>
+                <div class="info-row"><strong>SĐT:</strong> {{ $patientPhone }}</div>
+                <div class="info-row"><strong>Dịch vụ:</strong> {{ $serviceName }}</div>
+                <div class="info-row"><strong>Bác sĩ:</strong> {{ $doctorName }}</div>
                 <div class="info-row">
                     <strong>Ngày khám:</strong>
                     {{ $appointmentDate ? $appointmentDate->format('H:i d/m/Y') : 'Chưa có' }}
@@ -381,9 +414,8 @@
 
             @if($doctorPrescription !== '')
                 <div class="divider"></div>
-
                 <div class="section-title">Đơn thuốc / chỉ định bác sĩ</div>
-                <div class="prescription">{{ $doctorPrescription }}</div>
+                <div class="note-box">{{ $doctorPrescription }}</div>
             @endif
 
             <div class="divider"></div>
@@ -406,7 +438,7 @@
                             <div class="item-meta">Dịch vụ khám/điều trị</div>
                         </td>
                         <td class="qty">1</td>
-                        <td class="money">{{ number_format($invoice->service_price, 0, ',', '.') }}đ</td>
+                        <td class="money">{{ number_format($servicePrice, 0, ',', '.') }}đ</td>
                     </tr>
 
                     @foreach($medicineItems as $item)
@@ -423,13 +455,17 @@
                     @endforeach
 
                     @foreach($extraItems as $item)
-                        <tr>
-                            <td>
-                                <strong>{{ $item['name'] ?? 'Phụ phí' }}</strong>
-                            </td>
-                            <td class="qty">{{ $item['quantity'] ?? 0 }}</td>
-                            <td class="money">{{ number_format((float) ($item['total'] ?? 0), 0, ',', '.') }}đ</td>
-                        </tr>
+                        @if(!empty($item['name']))
+                            <tr>
+                                <td>
+                                    <strong>{{ $item['name'] }}</strong>
+                                </td>
+                                <td class="qty">{{ $item['quantity'] ?? 1 }}</td>
+                                <td class="money">
+                                    {{ number_format((float) ($item['total'] ?? (($item['quantity'] ?? 1) * ($item['unit_price'] ?? 0))), 0, ',', '.') }}đ
+                                </td>
+                            </tr>
+                        @endif
                     @endforeach
                 </tbody>
             </table>
@@ -439,42 +475,42 @@
             <div class="summary">
                 <div class="summary-row">
                     <span>Tiền dịch vụ</span>
-                    <strong>{{ number_format($invoice->service_price, 0, ',', '.') }}đ</strong>
+                    <strong>{{ number_format($servicePrice, 0, ',', '.') }}đ</strong>
                 </div>
 
                 <div class="summary-row">
                     <span>Tiền thuốc</span>
-                    <strong>{{ number_format($invoice->medicine_total, 0, ',', '.') }}đ</strong>
+                    <strong>{{ number_format($medicineTotal, 0, ',', '.') }}đ</strong>
                 </div>
 
                 <div class="summary-row">
                     <span>Phụ phí</span>
-                    <strong>{{ number_format($invoice->extra_total, 0, ',', '.') }}đ</strong>
+                    <strong>{{ number_format($extraTotal, 0, ',', '.') }}đ</strong>
                 </div>
 
                 <div class="summary-row">
                     <span>Giảm giá</span>
-                    <strong>-{{ number_format($invoice->discount_amount, 0, ',', '.') }}đ</strong>
+                    <strong>-{{ number_format($discountAmount, 0, ',', '.') }}đ</strong>
                 </div>
 
                 <div class="summary-row total">
                     <span>Tổng tiền</span>
-                    <strong>{{ number_format($invoice->total_amount, 0, ',', '.') }}đ</strong>
+                    <strong>{{ number_format($totalAmount, 0, ',', '.') }}đ</strong>
                 </div>
 
                 <div class="summary-row">
                     <span>Đã thanh toán</span>
-                    <strong>{{ number_format($invoice->paid_amount, 0, ',', '.') }}đ</strong>
+                    <strong>{{ number_format($paidAmount, 0, ',', '.') }}đ</strong>
                 </div>
 
                 <div class="summary-row">
                     <span>Còn lại</span>
-                    <strong>{{ number_format($invoice->remaining_amount, 0, ',', '.') }}đ</strong>
+                    <strong>{{ number_format($remainingAmount, 0, ',', '.') }}đ</strong>
                 </div>
 
                 <div class="summary-row">
                     <span>Phương thức</span>
-                    <strong>{{ $invoice->payment_method_label ?? 'Chưa thanh toán' }}</strong>
+                    <strong>{{ $paymentMethodLabel }}</strong>
                 </div>
 
                 @if($paidAt)
@@ -485,9 +521,35 @@
                 @endif
             </div>
 
+            @if($sentAt || $submittedAt || $verifiedAt)
+                <div class="divider"></div>
+                <div class="section-title">Thông tin thanh toán online</div>
+
+                <div class="payment-note">
+                    @if($sentAt)
+                        <div><strong>Gửi hóa đơn:</strong> {{ $sentAt->format('H:i d/m/Y') }}</div>
+                    @endif
+
+                    @if($dueAt)
+                        <div><strong>Hạn thanh toán:</strong> {{ $dueAt->format('H:i d/m/Y') }}</div>
+                    @endif
+
+                    @if($submittedAt)
+                        <div><strong>Bệnh nhân gửi bill:</strong> {{ $submittedAt->format('H:i d/m/Y') }}</div>
+                    @endif
+
+                    @if($verifiedAt)
+                        <div><strong>Thu ngân xác nhận:</strong> {{ $verifiedAt->format('H:i d/m/Y') }}</div>
+                    @endif
+
+                    @if($invoice->patient_payment_note)
+                        <div><strong>Ghi chú BN:</strong> {{ $invoice->patient_payment_note }}</div>
+                    @endif
+                </div>
+            @endif
+
             @if($invoice->notes)
                 <div class="divider"></div>
-
                 <div class="section-title">Ghi chú</div>
                 <div class="note-box">{{ $invoice->notes }}</div>
             @endif

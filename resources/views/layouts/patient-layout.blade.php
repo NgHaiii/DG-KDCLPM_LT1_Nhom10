@@ -516,18 +516,12 @@
             <div class="menu-group-title">Tài chính</div>
 
             <li class="nav-item">
-                <a href="{{ route('patient.invoices') }}" class="nav-link @if(request()->routeIs('patient.invoices')) active @endif">
-                    <i class="nav-icon ri-file-list-3-line"></i>
-                    <span>Hóa đơn</span>
-                </a>
-            </li>
-
-            <li class="nav-item">
-                <a href="{{ route('patient.payments') }}" class="nav-link @if(request()->routeIs('patient.payments')) active @endif">
-                    <i class="nav-icon ri-bank-card-line"></i>
-                    <span>Thanh toán</span>
-                </a>
-            </li>
+    <a href="{{ route('patient.invoices.index') }}"
+       class="nav-link @if(request()->routeIs('patient.invoices.*') || request()->routeIs('patient.invoices')) active @endif">
+        <i class="nav-icon ri-file-list-3-line"></i>
+        <span>Hóa đơn & Thanh toán</span>
+    </a>
+</li>
 
             <div class="menu-group-title">Dịch vụ</div>
 

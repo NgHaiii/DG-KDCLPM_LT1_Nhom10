@@ -67,7 +67,7 @@
 
     .filter-form {
         display: grid;
-        grid-template-columns: minmax(260px, 1.5fr) 160px 180px auto auto;
+        grid-template-columns: minmax(280px, 1.5fr) 160px 190px auto auto;
         gap: 10px;
         align-items: end;
     }
@@ -144,11 +144,15 @@
         width: 100%;
     }
 
-    .invoice-list-head {
+    .invoice-list-head,
+    .invoice-row {
         display: grid;
-        grid-template-columns: 1.1fr 1.15fr .8fr 1.35fr 1fr 1fr 180px;
-        gap: 16px;
+        grid-template-columns: 1.05fr 1.15fr .85fr 1.3fr .95fr 1.15fr 230px;
+        gap: 14px;
         align-items: center;
+    }
+
+    .invoice-list-head {
         padding: 12px 20px;
         background: #f8fafc;
         border-bottom: 1px solid #e2e8f0;
@@ -160,10 +164,6 @@
     }
 
     .invoice-row {
-        display: grid;
-        grid-template-columns: 1.1fr 1.15fr .8fr 1.35fr 1fr 1fr 180px;
-        gap: 16px;
-        align-items: center;
         padding: 18px 20px;
         border-bottom: 1px solid #edf2f7;
         transition: background .18s ease;
@@ -179,11 +179,6 @@
 
     .cell {
         min-width: 0;
-    }
-
-    .cell-actions {
-        display: flex;
-        justify-content: flex-end;
     }
 
     .invoice-code {
@@ -242,6 +237,11 @@
         color: #92400e;
     }
 
+    .badge.payment_pending {
+        background: #e0f2fe;
+        color: #075985;
+    }
+
     .badge.paid {
         background: #dcfce7;
         color: #166534;
@@ -275,18 +275,45 @@
         align-items: start;
     }
 
-    .action-wrap {
-        display: inline-flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 8px;
-        flex-wrap: nowrap;
+    .sent-note {
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 700;
+        line-height: 1.35;
     }
 
-    .action-btn {
-        height: 38px;
-        min-width: 92px;
-        padding: 0 12px;
+    .actions-cell {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .action-panel {
+        width: 100%;
+        max-width: 230px;
+        display: grid;
+        grid-template-columns: 1fr 42px;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .action-main {
+        min-width: 0;
+    }
+
+    .action-secondary {
+        grid-column: 1 / -1;
+        display: flex;
+        gap: 8px;
+    }
+
+    .action-form {
+        margin: 0;
+        flex: 1;
+    }
+
+    .action-btn,
+    .mini-btn,
+    .icon-btn {
         border-radius: 12px;
         border: 1px solid #dbe3ef;
         background: #fff;
@@ -300,9 +327,32 @@
         font-weight: 900;
         transition: .18s ease;
         white-space: nowrap;
+        cursor: pointer;
     }
 
-    .action-btn:hover {
+    .action-btn {
+        width: 100%;
+        min-height: 42px;
+        padding: 0 12px;
+    }
+
+    .mini-btn {
+        width: 100%;
+        min-height: 36px;
+        padding: 0 10px;
+        font-size: 12px;
+    }
+
+    .icon-btn {
+        width: 42px;
+        height: 42px;
+        font-size: 18px;
+        flex: 0 0 42px;
+    }
+
+    .action-btn:hover,
+    .mini-btn:hover,
+    .icon-btn:hover {
         border-color: #0ea5e9;
         color: #0284c7;
         background: #f0f9ff;
@@ -313,35 +363,28 @@
         border-color: #0ea5e9;
         background: linear-gradient(135deg, #38bdf8, #0ea5e9);
         color: #fff;
-        box-shadow: 0 8px 18px rgba(14, 165, 233, .22);
+        box-shadow: 0 8px 18px rgba(14, 165, 233, .2);
     }
 
-    .action-btn.primary:hover {
-        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+    .action-btn.green {
+        border-color: #22c55e;
+        background: linear-gradient(135deg, #4ade80, #16a34a);
         color: #fff;
+        box-shadow: 0 8px 18px rgba(34, 197, 94, .18);
     }
 
-    .icon-btn {
-        width: 38px;
-        height: 38px;
-        border-radius: 12px;
-        border: 1px solid #dbe3ef;
-        background: #fff;
-        color: #0f172a;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        text-decoration: none;
-        font-size: 18px;
-        transition: .18s ease;
-        flex: 0 0 38px;
+    .mini-btn.send {
+        border-color: #bfdbfe;
+        background: #eff6ff;
+        color: #1d4ed8;
     }
 
-    .icon-btn:hover {
-        border-color: #0ea5e9;
-        color: #0284c7;
-        background: #f0f9ff;
-        transform: translateY(-1px);
+    .mini-btn.disabled {
+        border-color: #e2e8f0;
+        background: #f8fafc;
+        color: #94a3b8;
+        cursor: not-allowed;
+        transform: none;
     }
 
     .empty-state {
@@ -362,6 +405,14 @@
         border-top: 1px solid #e2e8f0;
     }
 
+    @media (max-width: 1420px) {
+        .invoice-list-head,
+        .invoice-row {
+            grid-template-columns: 1fr 1fr .8fr 1.15fr .9fr 1fr 220px;
+            gap: 12px;
+        }
+    }
+
     @media (max-width: 1280px) {
         .invoice-list-head {
             display: none;
@@ -373,13 +424,14 @@
             align-items: start;
         }
 
-        .cell-actions {
+        .actions-cell {
             grid-column: 1 / -1;
             justify-content: flex-start;
         }
 
-        .payment-stack {
-            justify-items: start;
+        .action-panel {
+            max-width: 420px;
+            grid-template-columns: 1fr 42px;
         }
     }
 
@@ -405,12 +457,8 @@
             flex-direction: column;
         }
 
-        .action-wrap {
-            width: 100%;
-        }
-
-        .action-btn {
-            flex: 1;
+        .action-panel {
+            max-width: 100%;
         }
     }
 </style>
@@ -424,7 +472,17 @@
             </div>
             <div>
                 <div class="stat-label">Chờ thanh toán</div>
-                <div class="stat-value">{{ $unpaidCount }}</div>
+                <div class="stat-value">{{ $unpaidCount ?? 0 }}</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <i class="ri-time-line"></i>
+            </div>
+            <div>
+                <div class="stat-label">Chờ xác nhận CK</div>
+                <div class="stat-value">{{ $paymentPendingCount ?? 0 }}</div>
             </div>
         </div>
 
@@ -434,7 +492,7 @@
             </div>
             <div>
                 <div class="stat-label">Đã thanh toán hôm nay</div>
-                <div class="stat-value">{{ $paidTodayCount }}</div>
+                <div class="stat-value">{{ $paidTodayCount ?? 0 }}</div>
             </div>
         </div>
 
@@ -444,17 +502,7 @@
             </div>
             <div>
                 <div class="stat-label">Doanh thu hôm nay</div>
-                <div class="stat-value">{{ number_format($paidTodayTotal, 0, ',', '.') }}đ</div>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-icon red">
-                <i class="ri-close-circle-line"></i>
-            </div>
-            <div>
-                <div class="stat-label">Hóa đơn đã hủy</div>
-                <div class="stat-value">{{ $cancelledCount ?? 0 }}</div>
+                <div class="stat-value">{{ number_format($paidTodayTotal ?? 0, 0, ',', '.') }}đ</div>
             </div>
         </div>
     </div>
@@ -470,10 +518,6 @@
                     placeholder="Nhập mã hóa đơn, tên bệnh nhân, SĐT, dịch vụ..."
                     autocomplete="off"
                 >
-                <div class="quick-note" id="quickSearchStatus">
-                    <i class="ri-flashlight-line"></i>
-                    Tìm nhanh theo dữ liệu đang hiển thị, không tải lại trang.
-                </div>
             </div>
 
             <div class="form-group">
@@ -489,10 +533,11 @@
             <div class="form-group">
                 <label>Trạng thái</label>
                 <select name="status" class="form-control">
-                    <option value="all" @selected($status === 'all')>Tất cả</option>
-                    <option value="unpaid" @selected($status === 'unpaid')>Chờ thanh toán</option>
-                    <option value="paid" @selected($status === 'paid')>Đã thanh toán</option>
-                    <option value="cancelled" @selected($status === 'cancelled')>Đã hủy</option>
+                    <option value="all" @selected(($status ?? 'all') === 'all')>Tất cả</option>
+                    <option value="unpaid" @selected(($status ?? 'all') === 'unpaid')>Chờ thanh toán</option>
+                    <option value="payment_pending" @selected(($status ?? 'all') === 'payment_pending')>Chờ xác nhận CK</option>
+                    <option value="paid" @selected(($status ?? 'all') === 'paid')>Đã thanh toán</option>
+                    <option value="cancelled" @selected(($status ?? 'all') === 'cancelled')>Đã hủy</option>
                 </select>
             </div>
 
@@ -534,14 +579,37 @@
                     $sourceLabel = $source === 'offline' ? 'Khám trực tiếp' : 'Đặt online';
                     $sourceClass = $source === 'offline' ? 'offline' : 'online';
 
+                    $isPaid = $invoice->status === 'paid';
+                    $isCancelled = $invoice->status === 'cancelled';
+                    $isPaymentPending = $invoice->status === 'payment_pending';
+                    $isUnpaid = $invoice->status === 'unpaid';
+
+                    $canSendToPatient = method_exists($invoice, 'canSendToPatient')
+                        ? $invoice->canSendToPatient()
+                        : ($isUnpaid && !empty($invoice->patient_id) && empty($invoice->sent_to_patient_at));
+
+                    $hasPatientAccount = method_exists($invoice, 'hasPatientAccount')
+                        ? $invoice->hasPatientAccount()
+                        : !empty($invoice->patient_id);
+
+                    $sentAt = $invoice->sent_to_patient_at ?? null;
+                    $dueAt = $invoice->payment_due_at ?? null;
+
+                    $statusLabel = $invoice->status_label ?? match ($invoice->status) {
+                        'paid' => 'Đã thanh toán',
+                        'payment_pending' => 'Chờ xác nhận CK',
+                        'cancelled' => 'Đã hủy',
+                        default => 'Chờ thanh toán',
+                    };
+
                     $searchText = implode(' ', array_filter([
                         $invoice->invoice_code,
-                        $invoice->display_patient_name,
-                        $invoice->display_patient_phone,
+                        $invoice->display_patient_name ?? $invoice->patient_name,
+                        $invoice->display_patient_phone ?? $invoice->patient_phone,
                         $sourceLabel,
-                        $invoice->display_service_name,
-                        $invoice->display_doctor_name,
-                        $invoice->status_label,
+                        $invoice->display_service_name ?? $invoice->service_name,
+                        $invoice->display_doctor_name ?? $invoice->doctor_name,
+                        $statusLabel,
                     ]));
                 @endphp
 
@@ -556,10 +624,10 @@
                     </div>
 
                     <div class="cell">
-                        <div class="primary-text">{{ $invoice->display_patient_name }}</div>
+                        <div class="primary-text">{{ $invoice->display_patient_name ?? $invoice->patient_name ?? 'Chưa có tên' }}</div>
                         <div class="muted inline-meta">
                             <i class="ri-phone-line"></i>
-                            {{ $invoice->display_patient_phone }}
+                            {{ $invoice->display_patient_phone ?? $invoice->patient_phone ?? 'Chưa có SĐT' }}
                         </div>
                     </div>
 
@@ -571,7 +639,7 @@
                     </div>
 
                     <div class="cell">
-                        <div class="primary-text">{{ $invoice->display_service_name }}</div>
+                        <div class="primary-text">{{ $invoice->display_service_name ?? $invoice->service_name ?? 'Chưa có dịch vụ' }}</div>
 
                         <div class="muted">
                             <span class="inline-meta">
@@ -587,43 +655,78 @@
                                     {{ $invoice->appointment->room->name }}
                                 </span>
                             </div>
+                        @elseif($invoice->appointment?->room_id)
+                            <div class="muted">
+                                <span class="inline-meta">
+                                    <i class="ri-building-line"></i>
+                                    Phòng #{{ $invoice->appointment->room_id }}
+                                </span>
+                            </div>
                         @endif
                     </div>
 
                     <div class="cell">
-                        <div class="primary-text">{{ $invoice->display_doctor_name }}</div>
+                        <div class="primary-text">{{ $invoice->display_doctor_name ?? $invoice->doctor_name ?? 'Chưa có bác sĩ' }}</div>
                     </div>
 
                     <div class="cell">
                         <div class="payment-stack">
-                            <div class="money">{{ $invoice->formatted_total }}</div>
+                            <div class="money">
+                                {{ $invoice->formatted_total ?? number_format($invoice->total_amount ?? 0, 0, ',', '.') . ' đ' }}
+                            </div>
 
                             <span class="badge {{ $invoice->status }}">
-                                @if($invoice->status === 'paid')
+                                @if($isPaid)
                                     <i class="ri-checkbox-circle-line"></i>
-                                @elseif($invoice->status === 'cancelled')
+                                @elseif($isCancelled)
                                     <i class="ri-close-circle-line"></i>
+                                @elseif($isPaymentPending)
+                                    <i class="ri-bank-card-line"></i>
                                 @else
                                     <i class="ri-time-line"></i>
                                 @endif
-                                {{ $invoice->status_label }}
+                                {{ $statusLabel }}
                             </span>
+
+                            @if($isPaymentPending && $invoice->patient_paid_submitted_at)
+                                <div class="sent-note">
+                                    BN gửi bill: {{ optional($invoice->patient_paid_submitted_at)->format('d/m/Y H:i') }}
+                                </div>
+                            @elseif($sentAt)
+                                <div class="sent-note">
+                                    Đã gửi BN: {{ optional($sentAt)->format('d/m/Y H:i') }}
+                                    @if($dueAt)
+                                        <br>Hạn: {{ optional($dueAt)->format('d/m/Y H:i') }}
+                                    @endif
+                                </div>
+                            @elseif($isUnpaid && !$hasPatientAccount)
+                                <div class="sent-note">
+                                    Bệnh nhân chưa có tài khoản, thu trực tiếp tại quầy.
+                                </div>
+                            @endif
                         </div>
                     </div>
 
-                    <div class="cell cell-actions">
-                        <div class="action-wrap">
-                            @if($invoice->isUnpaid())
-                                <a href="{{ route('employees.invoices.show', $invoice) }}" class="action-btn primary" title="Thanh toán hóa đơn">
-                                    <i class="ri-bank-card-line"></i>
-                                    Thanh toán
-                                </a>
-                            @else
-                                <a href="{{ route('employees.invoices.show', $invoice) }}" class="action-btn" title="Xem chi tiết hóa đơn">
-                                    <i class="ri-file-text-line"></i>
-                                    Chi tiết
-                                </a>
-                            @endif
+                    <div class="cell actions-cell">
+                        <div class="action-panel">
+                            <div class="action-main">
+                                @if($isPaymentPending)
+                                    <a href="{{ route('employees.invoices.show', $invoice) }}" class="action-btn green" title="Kiểm tra bill và xác nhận thanh toán">
+                                        <i class="ri-checkbox-circle-line"></i>
+                                        Xác nhận
+                                    </a>
+                                @elseif($isUnpaid)
+                                    <a href="{{ route('employees.invoices.show', $invoice) }}" class="action-btn primary" title="Thu tiền tại quầy hoặc xử lý thanh toán">
+                                        <i class="ri-bank-card-line"></i>
+                                        Thu tiền
+                                    </a>
+                                @else
+                                    <a href="{{ route('employees.invoices.show', $invoice) }}" class="action-btn" title="Xem chi tiết hóa đơn">
+                                        <i class="ri-file-text-line"></i>
+                                        Chi tiết
+                                    </a>
+                                @endif
+                            </div>
 
                             <a
                                 href="{{ route('employees.invoices.print', $invoice) }}"
@@ -634,6 +737,35 @@
                             >
                                 <i class="ri-printer-line"></i>
                             </a>
+
+                            @if($isUnpaid)
+                                <div class="action-secondary">
+                                    @if($canSendToPatient)
+                                        <form
+                                            method="POST"
+                                            action="{{ route('employees.invoices.send-to-patient', $invoice) }}"
+                                            class="action-form"
+                                            onsubmit="return confirm('Gửi hóa đơn này cho bệnh nhân thanh toán trên tài khoản cá nhân?');"
+                                        >
+                                            @csrf
+                                            <button type="submit" class="mini-btn send" title="Gửi hóa đơn cho bệnh nhân">
+                                                <i class="ri-send-plane-line"></i>
+                                                Gửi BN
+                                            </button>
+                                        </form>
+                                    @elseif($sentAt)
+                                        <button type="button" class="mini-btn disabled" disabled>
+                                            <i class="ri-send-plane-fill"></i>
+                                            Đã gửi BN
+                                        </button>
+                                    @elseif(!$hasPatientAccount)
+                                        <button type="button" class="mini-btn disabled" disabled title="Chỉ gửi online được cho bệnh nhân có tài khoản">
+                                            <i class="ri-user-unfollow-line"></i>
+                                            Không có TK
+                                        </button>
+                                    @endif
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -682,7 +814,7 @@
         let visible = 0;
 
         rows.forEach(row => {
-            const text = normalizeText(row.dataset.search + ' ' + row.innerText);
+            const text = normalizeText((row.dataset.search || '') + ' ' + row.innerText);
             const matched = keyword === '' || text.includes(keyword);
 
             row.style.display = matched ? '' : 'none';
@@ -703,7 +835,7 @@
         if (statusEl) {
             statusEl.innerHTML = keyword
                 ? `<i class="ri-search-line"></i> Đang hiển thị ${visible} kết quả phù hợp.`
-                : `<i class="ri-flashlight-line"></i> Tìm nhanh theo dữ liệu đang hiển thị, không tải lại trang.`;
+                : `<i class="ri-flashlight-line"></i> Tìm nhanh trên dữ liệu đang hiển thị, không tải lại trang.`;
         }
     }
 
