@@ -19,6 +19,9 @@ class Service extends Model
         'slots_required',
         'duration_minutes',
         'actual_duration',
+
+        // Hệ số xử lý dùng để tính lương bác sĩ.
+        'salary_complexity_coefficient',
     ];
 
     protected $casts = [
@@ -27,6 +30,7 @@ class Service extends Model
         'slots_required' => 'integer',
         'duration_minutes' => 'integer',
         'actual_duration' => 'integer',
+        'salary_complexity_coefficient' => 'decimal:2',
     ];
 
     /**
@@ -44,6 +48,33 @@ class Service extends Model
         $durationMinutes = (int) ($this->attributes['duration_minutes'] ?? 30);
 
         $this->attributes['actual_duration'] = $slotsRequired * $durationMinutes;
+    }
+
+    /**
+     * Đảm bảo hệ số lương dịch vụ luôn nằm trong khoảng hợp lệ.
+     * Mặc định:
+     * - Khám: thấp
+     * - Điều trị / Thẩm mỹ: trung bình
+     * - Phẫu thuật: cao
+     */
+    protected function setSalaryComplexityCoefficientAttribute($value)
+    {
+        if ($value === null || $value === '') {
+            $this->attributes['salary_complexity_coefficient'] = 0.00;
+            return;
+        }
+
+        $coefficient = (float) $value;
+
+        if ($coefficient < 0) {
+            $coefficient = 0;
+        }
+
+        if ($coefficient > 0.5) {
+            $coefficient = 0.5;
+        }
+
+        $this->attributes['salary_complexity_coefficient'] = round($coefficient, 2);
     }
 
     /**
@@ -97,6 +128,16 @@ class Service extends Model
         return 'Chưa có giá';
     }
 
+    public function getFormattedSalaryComplexityCoefficientAttribute()
+    {
+        return number_format((float) ($this->salary_complexity_coefficient ?? 0), 2);
+    }
+
+    public function getTypeLabelAttribute()
+    {
+        return $this->type ?: 'Chưa phân loại';
+    }
+
     /**
      * Scope lấy dịch vụ đang hoạt động.
      */
@@ -131,5 +172,13 @@ class Service extends Model
     public function scopeWithRoom($query)
     {
         return $query->whereNotNull('room_id');
+    }
+
+    /**
+     * Scope lấy dịch vụ có hệ số xử lý tính lương.
+     */
+    public function scopeWithSalaryCoefficient($query)
+    {
+        return $query->where('salary_complexity_coefficient', '>', 0);
     }
 }

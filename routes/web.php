@@ -23,6 +23,7 @@ use App\Http\Controllers\EmployeePatientRecordController;
 use App\Http\Controllers\MedicineController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\RevenueReportController;
+use App\Http\Controllers\DoctorPayrollController;
 
 // ==================== ROUTE CHÍNH ====================
 Route::get('/', function () {
@@ -142,6 +143,60 @@ Route::middleware('auth')->group(function () {
         Route::get('revenue/invoices/{invoice}', [RevenueReportController::class, 'showInvoice'])
             ->whereNumber('invoice')
             ->name('revenue.invoices.show');
+
+        // ----- Tính lương bác sĩ -----
+        Route::prefix('payroll')->name('payroll.')->group(function () {
+            Route::get('/', [DoctorPayrollController::class, 'index'])
+                ->name('index');
+
+            Route::get('settings', [DoctorPayrollController::class, 'settings'])
+                ->name('settings');
+
+            Route::post('settings', [DoctorPayrollController::class, 'saveSettings'])
+                ->name('settings.save');
+
+            Route::get('case-complexities', [DoctorPayrollController::class, 'caseComplexities'])
+                ->name('case-complexities');
+
+            // Lưu hệ số xử lý theo dịch vụ.
+            Route::put('service-complexities', [DoctorPayrollController::class, 'updateServiceComplexities'])
+                ->name('service-complexities.update');
+
+            // Route tương thích để tránh lỗi nếu form vẫn submit PUT về /case-complexities.
+            Route::put('case-complexities', [DoctorPayrollController::class, 'updateServiceComplexities'])
+                ->name('case-complexities.update');
+
+            Route::post('case-complexities', [DoctorPayrollController::class, 'storeCaseComplexity'])
+                ->name('case-complexities.store');
+
+            Route::delete('case-complexities/{complexity}', [DoctorPayrollController::class, 'deleteCaseComplexity'])
+                ->whereNumber('complexity')
+                ->name('case-complexities.delete');
+
+            Route::post('generate', [DoctorPayrollController::class, 'generate'])
+                ->name('generate');
+
+            Route::get('reports/monthly', [DoctorPayrollController::class, 'monthlyReport'])
+                ->name('reports.monthly');
+
+            Route::get('reports/doctor-yearly', [DoctorPayrollController::class, 'doctorYearlyReport'])
+                ->name('reports.doctor-yearly');
+
+            Route::get('reports/yearly', [DoctorPayrollController::class, 'yearlyReport'])
+                ->name('reports.yearly');
+
+            Route::patch('{payroll}/approve', [DoctorPayrollController::class, 'approve'])
+                ->whereNumber('payroll')
+                ->name('approve');
+
+            Route::patch('{payroll}/mark-paid', [DoctorPayrollController::class, 'markPaid'])
+                ->whereNumber('payroll')
+                ->name('mark-paid');
+
+            Route::get('{payroll}', [DoctorPayrollController::class, 'show'])
+                ->whereNumber('payroll')
+                ->name('show');
+        });
 
         // ----- Quản lý hồ sơ bệnh án cho admin -----
         Route::prefix('patient-records')->name('patient-records.')->group(function () {
@@ -356,51 +411,51 @@ Route::middleware('auth')->group(function () {
             ->name('reception.walk-in');
 
         // ----- Thanh toán / hóa đơn khám bệnh -----
-Route::prefix('invoices')->name('invoices.')->group(function () {
-    Route::get('/', [InvoiceController::class, 'index'])->name('index');
+        Route::prefix('invoices')->name('invoices.')->group(function () {
+            Route::get('/', [InvoiceController::class, 'index'])->name('index');
 
-    Route::get('{invoice}', [InvoiceController::class, 'show'])
-        ->whereNumber('invoice')
-        ->name('show');
+            Route::get('{invoice}', [InvoiceController::class, 'show'])
+                ->whereNumber('invoice')
+                ->name('show');
 
-    Route::get('{invoice}/print', [InvoiceController::class, 'print'])
-        ->whereNumber('invoice')
-        ->name('print');
+            Route::get('{invoice}/print', [InvoiceController::class, 'print'])
+                ->whereNumber('invoice')
+                ->name('print');
 
-    Route::post('{invoice}/medicines', [InvoiceController::class, 'addMedicine'])
-        ->whereNumber('invoice')
-        ->name('medicines.add');
+            Route::post('{invoice}/medicines', [InvoiceController::class, 'addMedicine'])
+                ->whereNumber('invoice')
+                ->name('medicines.add');
 
-    Route::delete('{invoice}/medicines/{index}', [InvoiceController::class, 'removeMedicine'])
-        ->whereNumber('invoice')
-        ->whereNumber('index')
-        ->name('medicines.remove');
+            Route::delete('{invoice}/medicines/{index}', [InvoiceController::class, 'removeMedicine'])
+                ->whereNumber('invoice')
+                ->whereNumber('index')
+                ->name('medicines.remove');
 
-    Route::put('{invoice}/extras', [InvoiceController::class, 'updateExtras'])
-        ->whereNumber('invoice')
-        ->name('extras.update');
+            Route::put('{invoice}/extras', [InvoiceController::class, 'updateExtras'])
+                ->whereNumber('invoice')
+                ->name('extras.update');
 
-    Route::post('{invoice}/send-to-patient', [InvoiceController::class, 'sendToPatient'])
-        ->whereNumber('invoice')
-        ->name('send-to-patient');
+            Route::post('{invoice}/send-to-patient', [InvoiceController::class, 'sendToPatient'])
+                ->whereNumber('invoice')
+                ->name('send-to-patient');
 
-    Route::post('{invoice}/pay', [InvoiceController::class, 'confirmPayment'])
-        ->whereNumber('invoice')
-        ->name('pay');
+            Route::post('{invoice}/pay', [InvoiceController::class, 'confirmPayment'])
+                ->whereNumber('invoice')
+                ->name('pay');
 
-    Route::post('{invoice}/cancel', [InvoiceController::class, 'cancel'])
-        ->whereNumber('invoice')
-        ->name('cancel');
-});
+            Route::post('{invoice}/cancel', [InvoiceController::class, 'cancel'])
+                ->whereNumber('invoice')
+                ->name('cancel');
+        });
 
-// ----- Thống kê doanh thu cho nhân viên -----
-Route::get('revenue', [RevenueReportController::class, 'employeeIndex'])
-    ->name('revenue.index');
+        // ----- Thống kê doanh thu cho nhân viên -----
+        Route::get('revenue', [RevenueReportController::class, 'employeeIndex'])
+            ->name('revenue.index');
 
-Route::get('revenue/invoices/{invoice}', [RevenueReportController::class, 'employeeShowInvoice'])
-    ->whereNumber('invoice')
-    ->name('revenue.invoices.show');
-        // Giữ route cũ để menu/link cũ không bị lỗi
+        Route::get('revenue/invoices/{invoice}', [RevenueReportController::class, 'employeeShowInvoice'])
+            ->whereNumber('invoice')
+            ->name('revenue.invoices.show');
+
         Route::get('payment', function () {
             return redirect()->route('employees.invoices.index');
         })->name('payment');
@@ -514,7 +569,6 @@ Route::get('revenue/invoices/{invoice}', [RevenueReportController::class, 'emplo
         Route::get('api/doctors-by-time', [AppointmentController::class, 'getDoctorsByTime'])
             ->name('api.doctors-by-time');
 
-        // ----- Hồ sơ bệnh án cá nhân cho bệnh nhân -----
         Route::get('patient-records', function () {
             return view('patient.patient-records.index');
         })->name('patient-records.index');
@@ -540,7 +594,6 @@ Route::get('revenue/invoices/{invoice}', [RevenueReportController::class, 'emplo
                 ->name('submit-payment-proof');
         });
 
-        // Giữ route cũ để menu/link cũ không bị lỗi
         Route::get('billing', function () {
             return redirect()->route('patient.invoices.index');
         })->name('invoices');

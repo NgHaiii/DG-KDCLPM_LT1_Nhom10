@@ -481,6 +481,10 @@
         $revenueUrl = \Illuminate\Support\Facades\Route::has('admin.revenue.index')
             ? route('admin.revenue.index')
             : '#';
+
+        $payrollUrl = \Illuminate\Support\Facades\Route::has('admin.payroll.index')
+            ? route('admin.payroll.index')
+            : '#';
     @endphp
 
     <aside class="sidebar">
@@ -581,12 +585,18 @@
             </li>
 
             <div class="nav-group-title">Tài chính</div>
-            <li class="nav-item">
-                <a href="{{ $revenueUrl }}" class="nav-link @if(request()->routeIs('admin.revenue.*')) active @endif">
-                    <i class="nav-icon ri-bar-chart-grouped-line"></i>
-                    <span>Thống kê doanh thu</span>
-                </a>
-            </li>
+<li class="nav-item">
+    <a href="{{ $revenueUrl }}" class="nav-link @if(request()->routeIs('admin.revenue.*')) active @endif">
+        <i class="nav-icon ri-bar-chart-grouped-line"></i>
+        <span>Thống kê doanh thu</span>
+    </a>
+</li>
+<li class="nav-item">
+    <a href="{{ $payrollUrl }}" class="nav-link @if(request()->routeIs('admin.payroll.*')) active @endif">
+        <i class="nav-icon ri-money-dollar-circle-line"></i>
+        <span>Tính lương bác sĩ</span>
+    </a>
+</li>
         </ul>
 
         @auth
