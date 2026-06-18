@@ -40,15 +40,6 @@
         Quay lại
     </a>
 
-    <button type="button" class="btn btn-secondary" onclick="window.print()">
-        <i class="ri-printer-line"></i>
-        In
-    </button>
-
-    <button type="button" class="btn btn-primary" onclick="exportPayrollExcel()">
-        <i class="ri-file-excel-2-line"></i>
-        Xuất Excel
-    </button>
 @endsection
 
 @section('styles')

@@ -628,13 +628,15 @@
                 </a>
             </li>
 
-            <li class="nav-item">
+                       <li class="nav-item">
                 <a href="{{ $patientProfilesUrl }}"
                    class="nav-link @if(request()->routeIs('doctor.patient-profiles.*') || request()->routeIs('doctor.medical-records.*')) active @endif">
                     <i class="nav-icon ri-folder-user-line"></i>
                     <span>Hồ sơ bệnh án</span>
                 </a>
             </li>
+
+            <div class="nav-group-title">Lương</div>
 
             <li class="nav-item">
                 <a href="{{ route('doctor.payroll.index') }}"
