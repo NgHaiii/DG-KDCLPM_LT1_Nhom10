@@ -886,4 +886,89 @@ class DoctorPayrollController extends Controller
 
         return array_intersect_key($data, array_flip($columns));
     }
+
+    public function doctorIndex(Request $request)
+    {
+        $doctorId = $this->getDoctorIdForUser();
+        if (!$doctorId) {
+            abort(403, 'Tài khoản không liên kết với thông tin bác sĩ.');
+        }
+
+        $month = (int) $request->input('month', now()->month);
+        $year = (int) $request->input('year', now()->year);
+
+        $query = DoctorPayroll::query()
+            ->where('doctor_id', $doctorId)
+            ->whereIn('status', ['approved', 'paid'])
+            ->where('salary_month', $month)
+            ->where('salary_year', $year);
+
+        $summaryQuery = clone $query;
+
+        $summary = [
+            'total_payrolls' => $summaryQuery->count(),
+            'gross_amount' => $summaryQuery->sum('gross_amount'),
+            'net_amount' => $summaryQuery->sum('net_amount'),
+            'paid_amount' => $summaryQuery->where('status', 'paid')->sum('net_amount'),
+        ];
+
+        $payrolls = $query
+            ->with(['doctor', 'salaryConfig', 'creator', 'approver'])
+            ->latest('generated_at')
+            ->latest()
+            ->paginate(12)
+            ->withQueryString();
+
+        return view('doctor.payroll.index', compact(
+            'payrolls',
+            'summary',
+            'month',
+            'year'
+        ));
+    }
+
+    public function doctorShow(DoctorPayroll $payroll)
+    {
+        $doctorId = $this->getDoctorIdForUser();
+        if (!$doctorId || $payroll->doctor_id !== $doctorId || !in_array($payroll->status, ['approved', 'paid'], true)) {
+            abort(403, 'Bạn không có quyền xem phiếu lương này hoặc phiếu lương chưa được xác nhận.');
+        }
+
+        $payroll->load(['doctor', 'salaryConfig', 'creator', 'approver']);
+
+        $complexities = DoctorCaseComplexity::query()
+            ->with(['appointment.service', 'patientProfile'])
+            ->where('doctor_id', $payroll->doctor_id)
+            ->where('salary_month', $payroll->salary_month)
+            ->where('salary_year', $payroll->salary_year)
+            ->latest('case_date')
+            ->get();
+
+        return view('doctor.payroll.show', compact('payroll', 'complexities'));
+    }
+
+    private function getDoctorIdForUser(): ?int
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return null;
+        }
+
+        // Tìm Employee liên kết với user này (không tự tạo để tránh lỗi DB)
+        $doctor = Employee::where('user_id', $user->id)->first();
+
+        if ($doctor) {
+            // Nếu là doctor role mà is_doctor chưa được đánh dấu → tự động cập nhật
+            if ($user->role === 'doctor' && !$doctor->is_doctor) {
+                $doctor->update(['is_doctor' => 1]);
+                $doctor->is_doctor = 1;
+            }
+            // Trả về id nếu là bác sĩ (role doctor hoặc is_doctor = true)
+            if ($user->role === 'doctor' || $doctor->is_doctor) {
+                return $doctor->id;
+            }
+        }
+
+        return null;
+    }
 }

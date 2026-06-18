@@ -636,6 +636,14 @@
                 </a>
             </li>
 
+            <li class="nav-item">
+                <a href="{{ route('doctor.payroll.index') }}"
+                   class="nav-link @if(request()->routeIs('doctor.payroll.*')) active @endif">
+                    <i class="nav-icon ri-wallet-3-line"></i>
+                    <span>Bảng lương</span>
+                </a>
+            </li>
+
             <div class="nav-group-title">Cài đặt</div>
 
             <li class="nav-item">

@@ -383,6 +383,11 @@ Route::middleware('auth')->group(function () {
 
             Route::get('duties', [DoctorScheduleController::class, 'getDoctorDuties'])->name('get-duties');
         });
+
+        Route::prefix('payroll')->name('payroll.')->group(function () {
+            Route::get('/', [DoctorPayrollController::class, 'doctorIndex'])->name('index');
+            Route::get('{payroll}', [DoctorPayrollController::class, 'doctorShow'])->name('show');
+        });
     });
 
     // ==================== EMPLOYEE PANEL ====================
