@@ -328,7 +328,7 @@
         </div>
 
         <div class="metric-card">
-            <div class="metric-icon">
+            <div class="metric-icon" style="background: #dcfce7; color: #16a34a;">
                 <i class="ri-checkbox-circle-line"></i>
             </div>
             <div>
@@ -425,6 +425,18 @@
                                 <i class="ri-circle-fill" style="font-size:8px;"></i>
                                 {{ $payroll->status_label }}
                             </div>
+
+                            @if($payroll->doctor_confirmed_at)
+                                <div class="badge success" style="font-size: 11px; padding: 5px 10px; min-height: 28px;">
+                                    <i class="ri-checkbox-circle-fill" style="font-size: 12px;"></i>
+                                    Đã xác nhận nhận lương
+                                </div>
+                            @elseif($payroll->status === 'paid')
+                                <div class="badge" style="background: #fef3c7; color: #92400e; font-size: 11px; padding: 5px 10px; min-height: 28px;">
+                                    <i class="ri-time-line" style="font-size: 12px;"></i>
+                                    Chưa xác nhận
+                                </div>
+                            @endif
 
                             <a href="{{ route('doctor.payroll.show', $payroll->id) }}" class="btn btn-secondary btn-sm" style="max-width: 100px;">
                                 <i class="ri-eye-line"></i>

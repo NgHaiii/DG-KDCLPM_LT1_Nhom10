@@ -386,6 +386,7 @@ Route::middleware('auth')->group(function () {
 
         Route::prefix('payroll')->name('payroll.')->group(function () {
             Route::get('/', [DoctorPayrollController::class, 'doctorIndex'])->name('index');
+            Route::patch('{payroll}/acknowledge', [DoctorPayrollController::class, 'doctorAcknowledge'])->name('acknowledge');
             Route::get('{payroll}', [DoctorPayrollController::class, 'doctorShow'])->name('show');
         });
     });

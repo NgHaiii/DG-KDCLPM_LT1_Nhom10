@@ -33,6 +33,7 @@ class DoctorPayroll extends Model
         'generated_at',
         'approved_at',
         'paid_at',
+        'doctor_confirmed_at',
         'notes',
     ];
 
@@ -56,6 +57,7 @@ class DoctorPayroll extends Model
         'generated_at' => 'datetime',
         'approved_at' => 'datetime',
         'paid_at' => 'datetime',
+        'doctor_confirmed_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -151,5 +153,10 @@ class DoctorPayroll extends Model
     public static function generateCode(int $doctorId, int $month, int $year): string
     {
         return 'LG' . $year . str_pad((string) $month, 2, '0', STR_PAD_LEFT) . 'BS' . str_pad((string) $doctorId, 4, '0', STR_PAD_LEFT);
+    }
+
+    public function isConfirmedByDoctor(): bool
+    {
+        return !is_null($this->doctor_confirmed_at);
     }
 }

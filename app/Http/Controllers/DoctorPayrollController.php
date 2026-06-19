@@ -904,12 +904,15 @@ class DoctorPayrollController extends Controller
             ->where('salary_year', $year);
 
         $summaryQuery = clone $query;
+        $paidQuery = clone $query;
+        $confirmedQuery = clone $query;
 
         $summary = [
             'total_payrolls' => $summaryQuery->count(),
-            'gross_amount' => $summaryQuery->sum('gross_amount'),
-            'net_amount' => $summaryQuery->sum('net_amount'),
-            'paid_amount' => $summaryQuery->where('status', 'paid')->sum('net_amount'),
+            'gross_amount' => (clone $query)->sum('gross_amount'),
+            'net_amount' => (clone $query)->sum('net_amount'),
+            'paid_amount' => $paidQuery->where('status', 'paid')->sum('net_amount'),
+            'confirmed_amount' => $confirmedQuery->whereNotNull('doctor_confirmed_at')->sum('net_amount'),
         ];
 
         $payrolls = $query
@@ -945,6 +948,28 @@ class DoctorPayrollController extends Controller
             ->get();
 
         return view('doctor.payroll.show', compact('payroll', 'complexities'));
+    }
+
+    public function doctorAcknowledge(DoctorPayroll $payroll)
+    {
+        $doctorId = $this->getDoctorIdForUser();
+        if (!$doctorId || $payroll->doctor_id !== $doctorId) {
+            abort(403, 'Bạn không có quyền thực hiện hành động này.');
+        }
+
+        if ($payroll->status !== 'paid') {
+            return back()->with('error', 'Chỉ có thể xác nhận khi ban quản trị đã thanh toán.');
+        }
+
+        if ($payroll->doctor_confirmed_at) {
+            return back()->with('error', 'Bạn đã xác nhận bảng lương này rồi.');
+        }
+
+        $payroll->update([
+            'doctor_confirmed_at' => now(),
+        ]);
+
+        return back()->with('success', 'Xác nhận đã nhận lương thành công.');
     }
 
     private function getDoctorIdForUser(): ?int

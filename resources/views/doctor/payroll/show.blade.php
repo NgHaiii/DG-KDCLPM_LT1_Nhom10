@@ -17,21 +17,6 @@
         'cancelled' => 'Đã hủy',
     ][$payroll->status] ?? $payroll->status;
 
-    $excelItems = $items->map(function ($item) {
-        return [
-            'work_date' => \Carbon\Carbon::parse($item['work_date'])->format('d/m/Y'),
-            'weekday' => $item['weekday'] ?? '',
-            'time' => trim(($item['start_time'] ?? '') . ' - ' . ($item['end_time'] ?? '')),
-            'shift_type' => $item['shift_type_label'] ?? $item['shift_type'] ?? '',
-            'work_hours' => (float) ($item['work_hours'] ?? 0),
-            'shift_coefficient' => (float) ($item['shift_coefficient'] ?? 0),
-            'completed_case_count' => (int) ($item['completed_case_count'] ?? 0),
-            'service_complexity_total' => (float) ($item['service_complexity_total'] ?? 0),
-            'manual_complexity_total' => (float) ($item['manual_complexity_total'] ?? 0),
-            'converted_hours' => (float) ($item['converted_hours'] ?? 0),
-            'amount' => (float) ($item['amount'] ?? 0),
-        ];
-    })->values();
 @endphp
 
 @section('header-actions')
@@ -39,6 +24,23 @@
         <i class="ri-arrow-left-line"></i>
         Quay lại
     </a>
+    @if($payroll->status === 'paid')
+        @if(!$payroll->doctor_confirmed_at)
+            <form action="{{ route('doctor.payroll.acknowledge', $payroll) }}" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn xác nhận đã nhận đầy đủ lương cho kỳ lương này?')">
+                @csrf
+                @method('PATCH')
+                <button type="submit" class="btn btn-success" style="background-color: #10b981; border-color: #10b981; color: white;">
+                    <i class="ri-checkbox-circle-line"></i>
+                    Xác nhận đã nhận lương
+                </button>
+            </form>
+        @else
+            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill font-semibold d-inline-flex align-items-center gap-1" style="background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; padding: 6px 12px; border-radius: 9999px; font-weight: 700; font-size: 14px;">
+                <i class="ri-checkbox-circle-fill" style="color: #10b981;"></i>
+                Đã nhận lương ({{ $payroll->doctor_confirmed_at->format('d/m/Y H:i') }})
+            </span>
+        @endif
+    @endif
 
 @endsection
 
@@ -378,419 +380,17 @@
         </div>
     @endif
 
-    <div class="actions-row" style="justify-content: center; border-top: 1px solid #dbe3ef; padding: 16px 22px;">
-        <span style="color: #64748b; font-size: 13px; font-weight: 700;">
+    <div class="actions-row" style="justify-content: center; border-top: 1px solid #dbe3ef; padding: 16px 22px; flex-direction: column; align-items: center; gap: 8px;">
+        @if($payroll->doctor_confirmed_at)
+            <div style="color: #15803d; font-size: 14px; font-weight: 800; display: flex; align-items: center; gap: 6px;">
+                <i class="ri-checkbox-circle-fill" style="color: #10b981;"></i>
+                Bạn đã xác nhận đã nhận đủ lương vào lúc {{ $payroll->doctor_confirmed_at->format('d/m/Y H:i') }}.
+            </div>
+        @endif
+        <span style="color: #64748b; font-size: 13px; font-weight: 700; text-align: center;">
             <i class="ri-information-line"></i>
             Bảng lương đã được xác nhận bởi Ban Quản Trị. Nếu có bất kỳ thắc mắc nào, vui lòng liên hệ bộ phận Hành chính - Nhân sự.
         </span>
     </div>
 </div>
-@endsection
-
-@section('scripts')
-<script>
-const payrollExport = {
-    code: @json($payroll->payroll_code),
-    doctor: @json($payroll->doctor?->name ?? 'Không rõ'),
-    degree: @json($payroll->doctor?->degree ?? ''),
-    period: @json('Tháng ' . $payroll->salary_month . '/' . $payroll->salary_year),
-    generatedAt: @json(optional($payroll->generated_at)->format('d/m/Y H:i') ?? $payroll->created_at?->format('d/m/Y H:i')),
-    status: @json($statusLabel),
-    baseHourlyRate: {{ (float) $payroll->base_hourly_rate }},
-    doctorCoefficient: {{ (float) $payroll->doctor_coefficient }},
-    totalWorkHours: {{ (float) $payroll->total_work_hours }},
-    totalConvertedHours: {{ (float) $payroll->total_converted_hours }},
-    totalComplexity: {{ (float) $payroll->total_patient_complexity_coefficient }},
-    grossAmount: {{ (float) $payroll->gross_amount }},
-    bonusAmount: {{ (float) $payroll->bonus_amount }},
-    deductionAmount: {{ (float) $payroll->deduction_amount }},
-    netAmount: {{ (float) $payroll->net_amount }},
-    notes: @json($payroll->notes ?? ''),
-    items: @json($excelItems),
-};
-
-function xmlEscape(value) {
-    return String(value ?? '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-}
-
-function excelCell(value, style = 'Text', type = 'String') {
-    if (type === 'Number') {
-        const number = Number(value || 0);
-        return `<Cell ss:StyleID="${style}"><Data ss:Type="Number">${number}</Data></Cell>`;
-    }
-
-    return `<Cell ss:StyleID="${style}"><Data ss:Type="String">${xmlEscape(value)}</Data></Cell>`;
-}
-
-function emptyCell(count = 1) {
-    return '<Cell></Cell>'.repeat(count);
-}
-
-function exportPayrollExcel() {
-    const p = payrollExport;
-    const fileName = `${p.code}-${new Date().toISOString().slice(0, 10)}.xls`;
-    const rows = [];
-
-    rows.push(`
-        <Row ss:Height="34">
-            <Cell ss:MergeAcross="10" ss:StyleID="Title">
-                <Data ss:Type="String">BẢNG LƯƠNG BÁC SĨ</Data>
-            </Cell>
-        </Row>
-    `);
-
-    rows.push(`
-        <Row ss:Height="24">
-            ${excelCell('Mã phiếu', 'Label')}
-            ${excelCell(p.code, 'Value')}
-            ${excelCell('Bác sĩ', 'Label')}
-            ${excelCell(p.doctor, 'Value')}
-            ${excelCell('Học vị', 'Label')}
-            ${excelCell(p.degree || 'Chưa cập nhật', 'Value')}
-            ${excelCell('Trạng thái', 'Label')}
-            ${excelCell(p.status, 'Value')}
-            ${emptyCell(3)}
-        </Row>
-    `);
-
-    rows.push(`
-        <Row ss:Height="24">
-            ${excelCell('Kỳ lương', 'Label')}
-            ${excelCell(p.period, 'Value')}
-            ${excelCell('Ngày lập', 'Label')}
-            ${excelCell(p.generatedAt, 'Value')}
-            ${excelCell('Tiền/giờ', 'Label')}
-            ${excelCell(p.baseHourlyRate, 'Currency', 'Number')}
-            ${excelCell('HS bác sĩ', 'Label')}
-            ${excelCell(p.doctorCoefficient, 'Number2', 'Number')}
-            ${emptyCell(3)}
-        </Row>
-    `);
-
-    rows.push(`
-        <Row ss:Height="24">
-            ${excelCell('Tổng giờ làm', 'Label')}
-            ${excelCell(p.totalWorkHours, 'Number2', 'Number')}
-            ${excelCell('Tổng giờ quy đổi', 'Label')}
-            ${excelCell(p.totalConvertedHours, 'Number2', 'Number')}
-            ${excelCell('Tổng hệ số ca bệnh', 'Label')}
-            ${excelCell(p.totalComplexity, 'Number2', 'Number')}
-            ${emptyCell(5)}
-        </Row>
-    `);
-
-    rows.push('<Row ss:Height="10"></Row>');
-
-    rows.push(`
-        <Row ss:Height="28">
-            ${excelCell('NGÀY', 'Header')}
-            ${excelCell('THỨ', 'Header')}
-            ${excelCell('GIỜ LÀM', 'Header')}
-            ${excelCell('LOẠI CA', 'Header')}
-            ${excelCell('SỐ GIỜ', 'HeaderCenter')}
-            ${excelCell('HS CA', 'HeaderCenter')}
-            ${excelCell('SỐ CA KHÁM', 'HeaderCenter')}
-            ${excelCell('HS DỊCH VỤ', 'HeaderCenter')}
-            ${excelCell('HS CỘNG THÊM', 'HeaderCenter')}
-            ${excelCell('GIỜ QUY ĐỔI', 'HeaderCenter')}
-            ${excelCell('THÀNH TIỀN', 'HeaderRight')}
-        </Row>
-    `);
-
-    if (p.items.length === 0) {
-        rows.push(`
-            <Row ss:Height="26">
-                <Cell ss:MergeAcross="10" ss:StyleID="Empty">
-                    <Data ss:Type="String">Chưa có dữ liệu chi tiết ca làm việc.</Data>
-                </Cell>
-            </Row>
-        `);
-    } else {
-        p.items.forEach((item, index) => {
-            const rowStyle = index % 2 === 0 ? 'Normal' : 'Alt';
-
-            rows.push(`
-                <Row ss:Height="24">
-                    ${excelCell(item.work_date, rowStyle)}
-                    ${excelCell(item.weekday, rowStyle)}
-                    ${excelCell(item.time, rowStyle)}
-                    ${excelCell(item.shift_type, rowStyle)}
-                    ${excelCell(item.work_hours, rowStyle + 'Number', 'Number')}
-                    ${excelCell(item.shift_coefficient, rowStyle + 'Number', 'Number')}
-                    ${excelCell(item.completed_case_count, rowStyle + 'Integer', 'Number')}
-                    ${excelCell(item.service_complexity_total, rowStyle + 'Number', 'Number')}
-                    ${excelCell(item.manual_complexity_total, rowStyle + 'Number', 'Number')}
-                    ${excelCell(item.converted_hours, rowStyle + 'Number', 'Number')}
-                    ${excelCell(item.amount, rowStyle + 'Currency', 'Number')}
-                </Row>
-            `);
-        });
-    }
-
-    rows.push('<Row ss:Height="10"></Row>');
-
-    rows.push(`
-        <Row ss:Height="26">
-            <Cell ss:MergeAcross="3" ss:StyleID="TotalLabel">
-                <Data ss:Type="String">TỔNG CỘNG</Data>
-            </Cell>
-            ${excelCell(p.totalWorkHours, 'TotalNumber', 'Number')}
-            ${emptyCell(2)}
-            <Cell ss:MergeAcross="1" ss:StyleID="TotalNumber">
-                <Data ss:Type="Number">${Number(p.totalComplexity || 0)}</Data>
-            </Cell>
-            ${excelCell(p.totalConvertedHours, 'TotalNumber', 'Number')}
-            ${excelCell(p.grossAmount, 'TotalCurrency', 'Number')}
-        </Row>
-    `);
-
-    rows.push(`
-        <Row ss:Height="24">
-            <Cell ss:MergeAcross="9" ss:StyleID="SummaryLabel">
-                <Data ss:Type="String">THƯỞNG</Data>
-            </Cell>
-            ${excelCell(p.bonusAmount, 'SummaryCurrency', 'Number')}
-        </Row>
-    `);
-
-    rows.push(`
-        <Row ss:Height="24">
-            <Cell ss:MergeAcross="9" ss:StyleID="SummaryLabel">
-                <Data ss:Type="String">KHẤU TRỪ</Data>
-            </Cell>
-            ${excelCell(p.deductionAmount, 'SummaryCurrency', 'Number')}
-        </Row>
-    `);
-
-    rows.push(`
-        <Row ss:Height="30">
-            <Cell ss:MergeAcross="9" ss:StyleID="NetLabel">
-                <Data ss:Type="String">THỰC NHẬN</Data>
-            </Cell>
-            ${excelCell(p.netAmount, 'NetCurrency', 'Number')}
-        </Row>
-    `);
-
-    if (p.notes) {
-        rows.push('<Row ss:Height="10"></Row>');
-        rows.push(`
-            <Row ss:Height="34">
-                <Cell ss:MergeAcross="10" ss:StyleID="Note">
-                    <Data ss:Type="String">Ghi chú: ${xmlEscape(p.notes)}</Data>
-                </Cell>
-            </Row>
-        `);
-    }
-
-    const workbook =
-        '<' + '?xml version="1.0" encoding="UTF-8"?>\n' +
-        '<' + '?mso-application progid="Excel.Sheet"?>\n' +
-        String.raw`<Workbook
-    xmlns="urn:schemas-microsoft-com:office:spreadsheet"
-    xmlns:o="urn:schemas-microsoft-com:office:office"
-    xmlns:x="urn:schemas-microsoft-com:office:excel"
-    xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
-
-    <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
-        <Author>DentalCare</Author>
-        <Company>DentalCare</Company>
-    </DocumentProperties>
-
-    <Styles>
-        <Style ss:ID="Default" ss:Name="Normal">
-            <Alignment ss:Vertical="Center"/>
-            <Font ss:FontName="Calibri" ss:Size="11"/>
-        </Style>
-
-        <Style ss:ID="Title">
-            <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
-            <Font ss:FontName="Calibri" ss:Size="18" ss:Bold="1" ss:Color="#0F172A"/>
-            <Interior ss:Color="#E0F2FE" ss:Pattern="Solid"/>
-            <Borders>
-                <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#38BDF8"/>
-            </Borders>
-        </Style>
-
-        <Style ss:ID="Label">
-            <Font ss:FontName="Calibri" ss:Bold="1" ss:Color="#334155"/>
-            <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
-            <Borders>
-                <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
-            </Borders>
-        </Style>
-
-        <Style ss:ID="Value">
-            <Font ss:FontName="Calibri" ss:Bold="1" ss:Color="#0F172A"/>
-            <Borders>
-                <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
-            </Borders>
-        </Style>
-
-        <Style ss:ID="Header">
-            <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
-            <Font ss:FontName="Calibri" ss:Bold="1" ss:Color="#FFFFFF"/>
-            <Interior ss:Color="#0284C7" ss:Pattern="Solid"/>
-            <Borders>
-                <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0369A1"/>
-                <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0369A1"/>
-                <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" stroke-linecap="round" ss:Color="#0369A1"/>
-                <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#0369A1"/>
-            </Borders>
-        </Style>
-
-        <Style ss:ID="HeaderCenter" ss:Parent="Header">
-            <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
-        </Style>
-
-        <Style ss:ID="HeaderRight" ss:Parent="Header">
-            <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
-        </Style>
-
-        <Style ss:ID="Normal">
-            <Borders>
-                <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
-            </Borders>
-        </Style>
-
-        <Style ss:ID="Alt">
-            <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
-            <Borders>
-                <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
-            </Borders>
-        </Style>
-
-        <Style ss:ID="NormalNumber" ss:Parent="Normal">
-            <Alignment ss:Horizontal="Center"/>
-            <NumberFormat ss:Format="0.00"/>
-        </Style>
-
-        <Style ss:ID="AltNumber" ss:Parent="Alt">
-            <Alignment ss:Horizontal="Center"/>
-            <NumberFormat ss:Format="0.00"/>
-        </Style>
-
-        <Style ss:ID="NormalInteger" ss:Parent="Normal">
-            <Alignment ss:Horizontal="Center"/>
-            <NumberFormat ss:Format="0"/>
-        </Style>
-
-        <Style ss:ID="AltInteger" ss:Parent="Alt">
-            <Alignment ss:Horizontal="Center"/>
-            <NumberFormat ss:Format="0"/>
-        </Style>
-
-        <Style ss:ID="NormalCurrency" ss:Parent="Normal">
-            <Alignment ss:Horizontal="Right"/>
-            <NumberFormat ss:Format="#,##0 [$₫-vi-VN]"/>
-        </Style>
-
-        <Style ss:ID="AltCurrency" ss:Parent="Alt">
-            <Alignment ss:Horizontal="Right"/>
-            <NumberFormat ss:Format="#,##0 [$₫-vi-VN]"/>
-        </Style>
-
-        <Style ss:ID="Number2">
-            <NumberFormat ss:Format="0.00"/>
-        </Style>
-
-        <Style ss:ID="Currency">
-            <NumberFormat ss:Format="#,##0 [$₫-vi-VN]"/>
-        </Style>
-
-        <Style ss:ID="TotalLabel">
-            <Font ss:FontName="Calibri" ss:Bold="1" ss:Color="#0F172A"/>
-            <Interior ss:Color="#E0F2FE" ss:Pattern="Solid"/>
-            <Borders>
-                <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BAE6FD"/>
-                <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#BAE6FD"/>
-            </Borders>
-        </Style>
-
-        <Style ss:ID="TotalNumber" ss:Parent="TotalLabel">
-            <Alignment ss:Horizontal="Center"/>
-            <NumberFormat ss:Format="0.00"/>
-        </Style>
-
-        <Style ss:ID="TotalCurrency" ss:Parent="TotalLabel">
-            <Alignment ss:Horizontal="Right"/>
-            <NumberFormat ss:Format="#,##0 [$₫-vi-VN]"/>
-        </Style>
-
-        <Style ss:ID="SummaryLabel">
-            <Alignment ss:Horizontal="Right"/>
-            <Font ss:FontName="Calibri" ss:Bold="1" ss:Color="#334155"/>
-        </Style>
-
-        <Style ss:ID="SummaryCurrency">
-            <Alignment ss:Horizontal="Right"/>
-            <Font ss:FontName="Calibri" ss:Bold="1" ss:Color="#334155"/>
-            <NumberFormat ss:Format="#,##0 [$₫-vi-VN]"/>
-        </Style>
-
-        <Style ss:ID="NetLabel">
-            <Alignment ss:Horizontal="Right"/>
-            <Font ss:FontName="Calibri" ss:Bold="1" ss:Size="13" ss:Color="#FFFFFF"/>
-            <Interior ss:Color="#16A34A" ss:Pattern="Solid"/>
-        </Style>
-
-        <Style ss:ID="NetCurrency">
-            <Alignment ss:Horizontal="Right"/>
-            <Font ss:FontName="Calibri" ss:Bold="1" ss:Size="13" ss:Color="#FFFFFF"/>
-            <Interior ss:Color="#16A34A" ss:Pattern="Solid"/>
-            <NumberFormat ss:Format="#,##0 [$₫-vi-VN]"/>
-        </Style>
-
-        <Style ss:ID="Empty">
-            <Alignment ss:Horizontal="Center"/>
-            <Font ss:FontName="Calibri" ss:Italic="1" ss:Color="#64748b"/>
-        </Style>
-
-        <Style ss:ID="Note">
-            <Alignment ss:WrapText="1"/>
-            <Font ss:FontName="Calibri" ss:Italic="1" ss:Color="#475569"/>
-            <Interior ss:Color="#FFFBEB" ss:Pattern="Solid"/>
-        </Style>
-    </Styles>
-
-    <Worksheet ss:Name="Bang luong">
-        <Table>
-            <Column ss:Width="105"/>
-            <Column ss:Width="95"/>
-            <Column ss:Width="120"/>
-            <Column ss:Width="125"/>
-            <Column ss:Width="80"/>
-            <Column ss:Width="80"/>
-            <Column ss:Width="95"/>
-            <Column ss:Width="95"/>
-            <Column ss:Width="110"/>
-            <Column ss:Width="105"/>
-            <Column ss:Width="135"/>
-            ${rows.join('')}
-        </Table>
-
-        <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
-            <FreezePanes/>
-            <FrozenNoSplit/>
-            <SplitHorizontal>6</SplitHorizontal>
-            <TopRowBottomPane>6</TopRowBottomPane>
-            <ActivePane>2</ActivePane>
-            <ProtectObjects>False</ProtectObjects>
-            <ProtectScenarios>False</ProtectScenarios>
-        </WorksheetOptions>
-    </Worksheet>
-</Workbook>`;
-
-    const blob = new Blob([workbook], { type: 'application/vnd.ms-excel;charset=utf-8' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-</script>
 @endsection
